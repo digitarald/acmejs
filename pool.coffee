@@ -1,42 +1,32 @@
 
 class Pool
 
-	constructor: (create, args, instances) ->
-
-		@create = create
-		@args = args or []
+	constructor: (@allocate, @instances = 0) ->
 		@entities = []
 
-		while instances--
-			@entities.push(@create.apply(this, @args))
+		while @instances--
+			@entities.push(@allocate())
 
-		@
-
-	next: () ->
-
+	acquire: () ->
 		for entity in @entities
-			if not entity.awake
-				entity.wakeup.apply(entity, arguments)
+			if not entity.acquired
+				entity.acquire.apply(entity, arguments)
 				return entity
 
-		entity = @create.apply(this, @args)
+		entity = @allocate()
 		@entities.push(entity)
-		entity.wakeup.apply(entity, arguments)
+		entity.acquire.apply(entity, arguments)
 
 		entity
 
 	update: (delta) ->
-
-		for entity in @entities
-			if entity.awake
-				entity.update(delta)
+		for entity in @entities when entity.acquired
+			entity.update(delta)
 		@
 
 	draw: (context) ->
-
-		for entity in @entities
-			if entity.awake
-				context.save()
-				entity.draw(context)
-				context.restore()
+		for entity in @entities when entity.acquired
+			context.save()
+			entity.draw(context)
+			context.restore()
 		@

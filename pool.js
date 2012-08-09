@@ -3,30 +3,28 @@ var Pool;
 
 Pool = (function() {
 
-  function Pool(create, args, instances) {
-    this.create = create;
-    this.args = args || [];
+  function Pool(allocate, instances) {
+    this.allocate = allocate;
+    this.instances = instances != null ? instances : 0;
     this.entities = [];
-    while (instances--) {
-      this.entities.push(this.create.apply(this, this.args));
+    while (this.instances--) {
+      this.entities.push(this.allocate());
     }
-    this;
-
   }
 
-  Pool.prototype.next = function() {
+  Pool.prototype.acquire = function() {
     var entity, _i, _len, _ref;
     _ref = this.entities;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
-      if (!entity.awake) {
-        entity.wakeup.apply(entity, arguments);
+      if (!entity.acquired) {
+        entity.acquire.apply(entity, arguments);
         return entity;
       }
     }
-    entity = this.create.apply(this, this.args);
+    entity = this.allocate();
     this.entities.push(entity);
-    entity.wakeup.apply(entity, arguments);
+    entity.acquire.apply(entity, arguments);
     return entity;
   };
 
@@ -35,7 +33,7 @@ Pool = (function() {
     _ref = this.entities;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
-      if (entity.awake) {
+      if (entity.acquired) {
         entity.update(delta);
       }
     }
@@ -47,11 +45,12 @@ Pool = (function() {
     _ref = this.entities;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
-      if (entity.awake) {
-        context.save();
-        entity.draw(context);
-        context.restore();
+      if (!entity.acquired) {
+        continue;
       }
+      context.save();
+      entity.draw(context);
+      context.restore();
     }
     return this;
   };

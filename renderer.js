@@ -11,8 +11,11 @@ Renderer = (function() {
   }
 
   Renderer.prototype.clear = function() {
-    this.canvas.width = this.size[0];
-    this.context.setTransform(1, 0, 0, 1, -this.center[0] + this.size[0] / 2, -this.center[1] + this.size[1] / 2);
+    var dx, dy;
+    dx = this.size[0] / 2;
+    dy = this.size[1] / 2;
+    this.context.translate(-this.center[0] + dx, -this.center[1] + dy);
+    this.context.clearRect(-dx, -dy, this.size[0], this.size[1]);
     return this;
   };
 

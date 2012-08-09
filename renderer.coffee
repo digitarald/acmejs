@@ -9,8 +9,10 @@ class Renderer
 		@size = Vec2(@canvas.width, @canvas.height)
 
 	clear: () ->
-		@canvas.width = @size[0]
-		@context.setTransform(1, 0, 0, 1, -@center[0] + @size[0] / 2 , -@center[1] + @size[1] / 2)
+		dx = @size[0] / 2
+		dy = @size[1] / 2
+		@context.translate(-@center[0] + dx , -@center[1] + dy)
+		@context.clearRect(-dx, -dy, @size[0], @size[1])
 		@
 
 	setCenter: (x, y) ->

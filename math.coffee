@@ -15,18 +15,23 @@ Vec2 = (fromOrX, y) ->
 #		return new Float32Array(Vec2Wrappped(fromOrX, y))
 
 Vec2.cache = [Vec2(), Vec2(), Vec2(), Vec2(), Vec2()]
-Vec2.angleCache = [Vec2(), Vec2()]
+Vec2.radCache = [Vec2(), Vec2()]
 
-Vec2.EPSILON = 0.00001
+e = 0.00001
 
-Vec2.set = (a, x, y) ->
-	a[0] = x
-	a[1] = y
-	return a
+sqrt = Math.sqrt
+
+Vec2.set = (result, x, y) ->
+	result[0] = x or 0
+	result[1] = y or 0
+	return result
+
+Vec2.copy = (result, b) ->
+	result[0] = b[0]
+	result[1] = b[1]
+	return result
 
 Vec2.eq = (a, b) ->
-	e = Vec2.EPSILON
-
 	d1 = Math.abs(a[0] - b[0])
 	d2 = Math.abs(a[1] - b[1])
 	return d1 < e and d2 < e
@@ -52,14 +57,14 @@ Vec2.mul = (a, b, result) ->
 	result[1] = a[1] * b[1]
 	return result
 
-Vec2.sca = (a, scl, result) ->
+Vec2.scal = (a, scalar, result) ->
 	result = result or a
 
-	result[0] = a[0] * scl
-	result[1] = a[1] * scl
+	result[0] = a[0] * scalar
+	result[1] = a[1] * scalar
 	return result
 
-Vec2.neg = (a, result) ->
+Vec2.inv = (a, result) ->
 	result = result or a
 
 	result[0] = -a[0]
@@ -71,17 +76,17 @@ Vec2.norm = (a, result) ->
 
 	x = a[0]
 	y = a[1]
-	len = Math.sqrt(x * x + y * y)
+	len = 1 / sqrt(x * x + y * y)
 
-	len = 1 / len
 	result[0] = x * len
 	result[1] = y * len
 	return result
 
+Vec2.lenSq = (a) ->
+	return a[0] * a[0] + a[1] * a[1]
+
 Vec2.len = (a) ->
-	x = a[0]
-	y = a[1]
-	return Math.sqrt(x * x + y * y)
+	return sqrt(a[0] * a[0] + a[1] * a[1])
 
 Vec2.dot = (a, b) ->
 	return a[0] * b[0] + a[1] * b[1]
@@ -92,27 +97,91 @@ Vec2.cross = (a, b) ->
 Vec2.dist = (a, b) ->
 	x = b[0] - a[0]
 	y = b[1] - a[1]
-	return Math.sqrt(x * x + y * y)
+	return sqrt(x * x + y * y)
 
-Vec2.angle = (a, b) ->
+Vec2.distSq = (a, b) ->
+	x = b[0] - a[0]
+	y = b[1] - a[1]
+	return x * x + y * y
+
+Vec2.rad = (a, b) ->
 	if not b
 		return Math.atan2(a[0], a[1])
 
 	return Math.acos(Vec2.dot(
-		Vec2.norm(a, Vec2.angleCache[0]),
-		Vec2.norm(b, Vec2.angleCache[1])
+		Vec2.norm(a, Vec2.radCache[0]),
+		Vec2.norm(b, Vec2.radCache[1])
 	))
 
-Vec2.clamp = (a, low, high, result) ->
+Vec2.rot = (a, rad, result) ->
 	result = result or a
 
-	result[0] = Math.clamp(a[0], low[0], high[0])
-	result[1] = Math.clamp(a[1], low[1], high[1])
+	sinA = Math.sin(rad)
+	cosA = Math.cos(rad)
+	x = a[0]
+	y = a[1]
+
+	result[0] = x * cosA - y * sinA
+	result[1] = x * sinA + y * cosA
 	return result
 
+Vec2.limit = (a, max, result) ->
+	result = result or a
+
+	x = a[0]
+	y = a[1]
+	len = sqrt(x * x + y * y)
+
+	if length > max
+		ratio = max / length
+		result[0] = x * ratio
+		result[1] = y * ratio
+	else if result isnt a
+		result[0] = x
+		result[1] = y
+
+	return result
+
+# Math
+
 Math.TAU = Math.PI * 2
+Math.PIRAD = 0.0174532925
 
 Math.clamp = (a, low, high) ->
 	if a < low
 		return low
 	return if a > high then high else a
+
+random = Math.random
+
+Math.randomFloat = (low, high) ->
+	return low + random() * (high - low + 1)
+
+Math.randomBool = (chance) ->
+	return random() <= chance
+
+# Tweens
+
+pow = Math.pow
+
+powIn = (strength = 2) ->
+	# (t) -> return pow(1, strength - 1) * pow(t, strength)
+	(t) -> return pow(t, strength)
+
+powOut = (strength) ->
+	fn = powIn(strength)
+	(t) -> return 1 - fn(1 - t)
+
+powInOut = (strength) ->
+	fn = powIn(strength)
+	(t) ->
+		return (if t < 0.5 then fn(t * 2) else (2 - fn(2 * (1 - t)))) / 2
+
+
+for transition, i in ['quad', 'cubic', 'quart', 'quint']
+	Math[transition + 'In'] = powIn(i + 2)
+	Math[transition + 'Out'] = powOut(i + 2)
+	Math[transition + 'InOut'] = powInOut(i + 2)
+
+Math.linear = ->
+	return t

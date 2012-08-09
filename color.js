@@ -3,7 +3,7 @@ var Color;
 
 Color = function(fromOrR, g, b, a) {
   if (typeof g !== void 0) {
-    return [fromOrR, g, b, a];
+    return [fromOrR || 0, g || 0, b || 0, typeof a === 'undefined' ? 1 : a];
   }
   if (fromOrR !== void 0) {
     return [fromOrR[0], fromOrR[1], fromOrR[2], fromOrR[3]];
@@ -11,19 +11,27 @@ Color = function(fromOrR, g, b, a) {
   return [0, 0, 0, 1];
 };
 
-Color.cache = [Color(), Color(), Color(), Color(), Color()];
+Color.cache = [Color(), Color(), Color(), Color()];
 
-Color.white = Color(255, 255, 255, 1);
+Color.white = Color(255, 255, 255);
 
-Color.black = Color(0, 0, 0, 1);
+Color.black = Color(0, 0, 0);
 
-Color.gray = Color(127, 127, 127, 1);
+Color.gray = Color(127, 127, 127);
 
 Color.set = function(result, r, g, b, a) {
   result[0] = r;
   result[1] = g;
   result[2] = b;
   result[3] = a;
+  return result;
+};
+
+Color.copy = function(result, b) {
+  result[0] = b[0];
+  result[1] = b[1];
+  result[2] = b[2];
+  result[3] = b[3];
   return result;
 };
 
@@ -41,7 +49,11 @@ Color.blend = function(a, t, b, alpha, result) {
 };
 
 Color.rgba = function(a) {
-  return "rgba(" + a[0] + ", " + a[1] + ", " + a[2] + ", " + a[3] + ")";
+  if (a[3] > 0.9999) {
+    return "rgb(" + (a[0] | 0) + ", " + (a[1] | 0) + ", " + (a[2] | 0) + ")";
+  } else {
+    return "rgba(" + (a[0] | 0) + ", " + (a[1] | 0) + ", " + (a[2] | 0) + ", " + a[3] + ")";
+  }
 };
 
 Color.tint = function(a, t, alpha, result) {
