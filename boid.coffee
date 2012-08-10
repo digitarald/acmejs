@@ -12,8 +12,7 @@ class Boid
 
 	release: ->
 		@acquired = false
-		delete @host.boid
-		delete @host
+		@host = @host.boid = null
 		@
 
 	react: (target) ->
@@ -22,26 +21,26 @@ class Boid
 		# Imitation : try to move in the same way than other boids
 
 
-class BoidPool extends Pool
+class Pool.Boids extends Pool
+
+	allocate: ->
+		return new	 Boid()
 
 	update: (delta) ->
-		entities = @entities
-		i = entities.length
+		boids = @buffer
+		i = boids.length
 		while i--
-			boid = entities[i]
+			boid = boids[i]
 			if not boid.acquired
 				continue
 
 			j = i
 			while j--
-				if not entities[j].acquired
+				if not boids[j].acquired
 					continue
 
-				boid.react(entities[j])
-
+				boid.react(boids[j])
 		@
 
 
-Boid.pool = new BoidPool(->
-	return new Boid()
-, 512)
+Boid.pool = new Pool.Boids(128)

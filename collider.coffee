@@ -10,8 +10,7 @@ class Collider
 	release: ->
 		@acquired = false
 		@host.pubsub.unsub(null, @)
-		delete @host.collider
-		delete @host
+		@host = @host.collider = null
 		@
 
 	collide: (target) ->
@@ -133,34 +132,26 @@ class Collider
 
 		return true
 
-Collider.Gravity = 100
+class Pool.Colliders extends Pool
 
-class ColliderPool extends Pool
+	allocate: ->
+		return new Collider()
 
 	update: (delta) ->
 		delta /= 1000
 
-		entities = @entities
-		i = entities.length
+		colliders = @buffer
+		i = colliders.length
 		while i--
-			collider = entities[i]
+			collider = colliders[i]
 			if not collider.acquired
 				continue
 
-			# collider.host.vel[1] += Collider.Gravity * delta
-
 			j = i
-
 			while j--
-				collider2 = entities[j]
-				if not collider2.acquired
-					continue
-
-				collider.collide(collider2)
-
+				if colliders[j].acquired
+					collider.collide(colliders[j])
 		@
 
 
-Collider.pool = new ColliderPool(->
-	return new Collider()
-, 512)
+Collider.pool = new Pool.Colliders(128)

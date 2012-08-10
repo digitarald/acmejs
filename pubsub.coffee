@@ -14,8 +14,7 @@ class Pubsub
 
 	release: ->
 		@acquired = false
-		delete @host.pubsub
-		delete @host
+		@host = @host.pubsub = null
 		@topics.length = @methods.length = @scopes.length = 0
 		@
 
@@ -53,7 +52,9 @@ class Pubsub
 			topics.length = scopes.length = methods.length = last
 		@
 
+class Pool.Pubsubs extends Pool
 
-Pubsub.pool = new Pool(->
-	return new Pubsub()
-, 512)
+	allocate: ->
+		return new Pubsub()
+
+Pubsub.pool = new Pool.Pubsubs(128)

@@ -3,18 +3,19 @@ var Pool;
 
 Pool = (function() {
 
-  function Pool(allocate, instances) {
-    this.allocate = allocate;
-    this.instances = instances != null ? instances : 0;
-    this.entities = [];
-    while (this.instances--) {
-      this.entities.push(this.allocate());
+  function Pool(preallocate) {
+    var i;
+    this.preallocate = preallocate != null ? preallocate : 0;
+    this.buffer = [];
+    i = this.preallocate;
+    while (i--) {
+      this.buffer.push(this.allocate());
     }
   }
 
   Pool.prototype.acquire = function() {
     var entity, _i, _len, _ref;
-    _ref = this.entities;
+    _ref = this.buffer;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
       if (!entity.acquired) {
@@ -22,15 +23,14 @@ Pool = (function() {
         return entity;
       }
     }
-    entity = this.allocate();
-    this.entities.push(entity);
+    this.buffer.push((entity = this.allocate()));
     entity.acquire.apply(entity, arguments);
     return entity;
   };
 
   Pool.prototype.update = function(delta) {
     var entity, _i, _len, _ref;
-    _ref = this.entities;
+    _ref = this.buffer;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
       if (entity.acquired) {
@@ -42,7 +42,7 @@ Pool = (function() {
 
   Pool.prototype.draw = function(context) {
     var entity, _i, _len, _ref;
-    _ref = this.entities;
+    _ref = this.buffer;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
       if (!entity.acquired) {

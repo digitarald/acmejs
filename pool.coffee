@@ -1,31 +1,30 @@
 
 class Pool
 
-	constructor: (@allocate, @instances = 0) ->
-		@entities = []
+	constructor: (@preallocate = 0) ->
+		@buffer = []
 
-		while @instances--
-			@entities.push(@allocate())
+		i = @preallocate
+		while i--
+			@buffer.push(@allocate())
 
 	acquire: () ->
-		for entity in @entities
+		for entity in @buffer
 			if not entity.acquired
 				entity.acquire.apply(entity, arguments)
 				return entity
 
-		entity = @allocate()
-		@entities.push(entity)
+		@buffer.push((entity = @allocate()))
 		entity.acquire.apply(entity, arguments)
-
-		entity
+		return entity
 
 	update: (delta) ->
-		for entity in @entities when entity.acquired
+		for entity in @buffer when entity.acquired
 			entity.update(delta)
 		@
 
 	draw: (context) ->
-		for entity in @entities when entity.acquired
+		for entity in @buffer when entity.acquired
 			context.save()
 			entity.draw(context)
 			context.restore()

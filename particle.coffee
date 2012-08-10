@@ -8,23 +8,17 @@ class Particle
 		@colorStart = Color()
 		@color = Color()
 
-		@friction = 20
-		@drag = 0 # 0.999
-
-	acquire: (posX, posY, dirX, dirY, @lifetime = 1000) ->
+	acquire: (pos, dir, @lifetime = 1000, @radius = 1, @mass = @radius) ->
 		@acquired = true
-		Vec2.set(@pos, posX, posY)
-		Vec2.set(@vel, dirX, dirY)
+		Vec2.copy(@pos, pos)
+		Vec2.copy(@vel, dir)
+
 		Vec2.set(@acc)
 		Color.copy(@color, @colorStart)
-
-		@radius = @mass = Math.randomFloat(3, 12) | 0
 		@massInv = 1 / @mass
 		@age = 0
 
 		Pubsub.pool.acquire(@)
-		Collider.pool.acquire(@)
-		# Boid.pool.acquire(@)
 		@
 
 	release: ->
@@ -33,13 +27,16 @@ class Particle
 		@
 
 
-class ParticlePool extends Pool
+class Pool.Particles extends Pool
 
-	update: (delta) ->
+	allocate: ->
+		return new Particle()
+
+	update: (delta, world) ->
 		oldVel = Vec2.cache[0]
 		cache = Vec2.cache[1]
 
-		for particle in @entities when particle.acquired
+		for particle in @buffer when particle.acquired
 
 			age = (particle.age += delta)
 
@@ -62,7 +59,7 @@ class ParticlePool extends Pool
 			# velocity += (a1 + a2) * time / 2;
 
 			vel = particle.vel
-			acc = Vec2.set(particle.acc, 0, 980) # Gravity
+			acc = Vec2.add(particle.acc, world.gravity) # Gravity
 			# Duplicate velocity to preserve momentum.
 			oldVel = Vec2.copy(oldVel, vel)
 
@@ -70,18 +67,18 @@ class ParticlePool extends Pool
 			Vec2.scal(acc, particle.massInv)
 
 			# Apply friction
-			if particle.friction
+			if world.friction
 				Vec2.add(
 					acc,
 					Vec2.scal(
 						Vec2.norm(Vec2.inv(vel, cache)),
-						particle.friction
+						world.friction
 					)
 				)
 
 			# Apply drag
-			if particle.drag
-				Vec2.scal(vel, particle.drag)
+			if world.drag
+				Vec2.scal(vel, world.drag)
 
 			Vec2.add(
 				particle.vel,
@@ -108,7 +105,7 @@ class ParticlePool extends Pool
 		TAU = Math.TAU
 
 		context.save()
-		for particle in @entities when particle.acquired
+		for particle in @buffer when particle.acquired
 
 			color = particle.color
 			context.fillStyle = Color.rgba(color)
@@ -121,7 +118,4 @@ class ParticlePool extends Pool
 		context.restore()
 		@
 
-
-Particle.pool = new ParticlePool(->
-	return new Particle()
-, 256)
+Particle.pool = new Pool.Particles(256)
