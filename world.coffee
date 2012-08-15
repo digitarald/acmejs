@@ -8,36 +8,39 @@ dir = Vec2()
 
 class World
 
-	constructor: () ->
+	constructor: (@renderer) ->
 		@updateQueue = [
 			Collider.pool,
+			Pool.borders,
+			Pool.boids,
 			Firework.pool,
 			Particle.pool
 		]
 		@drawQueue = [Particle.pool]
 
-		@pubsub = Pubsub.pool.acquire(@)
-		@firework = Firework.pool.acquire(
+		@pubsub = Pubsub.pool.alloc(@)
+		@firework = Firework.pool.alloc(
 			@,
 			Vec2(0, 0),
 			Vec2(800, 450),
 			Vec2(20, 20)
-			Vec2(15, 35)
-			Vec2(500, 500),
-			0.2
+			Vec2(5, 10)
+			Vec2(300, 300),
+			0.03
 		)
 
 		@steps = 0
-		@minStep = 10
-		@gravity = Vec2(0, 500)
-		@friction = 20
-		@drag = 0.9999
+		@minStep = 100 / 6
+		# @gravity = Vec2(0, 500)
+		@gravity = Vec2(0, 0)
+		@friction = 10
+		@drag = 1 # 0.9999
 
-	update: (delta) ->
-		if delta > 500
-			delta = 100
+	update: (dt) ->
+		if dt > 500
+			dt = 100
 
-		@steps += delta
+		@steps += dt
 
 		# Update
 		min = @minStep

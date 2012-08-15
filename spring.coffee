@@ -4,37 +4,33 @@ class Spring
 	constructor: ->
 		@center = Vec2()
 
-	acquire: (host, centerX, centerY) ->
-		@acquired = true
-		host.spring = @
-		host.pubsub.sub('release', @)
-		@host = host
+	alloc: (owner, centerX, centerY) ->
+		owner.spring = @
+		owner.pubsub.sub(@, 'free')
+		@owner = owner
 		Vec2.set(@center, centerX, centerY)
 
-	release: ->
-		@acquired = false
-		@host.pubsub.unsub(null, @)
-		delete @host.spring
-		delete @host
+	free: ->
+		@allocd = false
+		@owner.pubsub.unsub(@)
+		@owner = @owner.spring = null
 		@
 
-	update: (target) ->
 
+class Pool.Springs extends Pool
 
-class SpringPool extends Pool
+	instantiate: ->
+		return new Spring()
 
-	update: (delta) ->
-		for spring in @entities
-			if not spring.acquired
+	update: (dt) ->
+		for spring in @roster
+			if not spring.allocd
 				continue
 
 			center = spring.target?.pos or spring.center
 
-			spring.update(delta)
+			spring.update(dt)
 
 		@
 
-
-Spring.pool = new SpringPool(->
-	return new Spring()
-, 128)
+Spring.pool = new Pool.Springs(128)

@@ -3,53 +3,61 @@ var Pool;
 
 Pool = (function() {
 
-  function Pool(preallocate) {
+  function Pool(preinstantiate, cls) {
     var i;
-    this.preallocate = preallocate != null ? preallocate : 0;
-    this.buffer = [];
-    i = this.preallocate;
+    this.preinstantiate = preinstantiate != null ? preinstantiate : 0;
+    this.cls = cls;
+    this.roster = [];
+    i = this.preinstantiate;
     while (i--) {
-      this.buffer.push(this.allocate());
+      this.roster.push(this.instantiate());
     }
   }
 
-  Pool.prototype.acquire = function() {
+  Pool.prototype.instantiate = function() {
+    return new this.cls();
+  };
+
+  Pool.prototype.alloc = function() {
     var entity, _i, _len, _ref;
-    _ref = this.buffer;
+    _ref = this.roster;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
-      if (!entity.acquired) {
-        entity.acquire.apply(entity, arguments);
-        return entity;
+      if (!(!entity.allocd)) {
+        continue;
       }
+      entity.allocd = true;
+      entity.alloc.apply(entity, arguments);
+      return entity;
     }
-    this.buffer.push((entity = this.allocate()));
-    entity.acquire.apply(entity, arguments);
+    this.roster.push((entity = this.instantiate()));
+    entity.allocd = true;
+    entity.alloc.apply(entity, arguments);
     return entity;
   };
 
-  Pool.prototype.update = function(delta) {
+  Pool.prototype.update = function(dt, engine) {
     var entity, _i, _len, _ref;
-    _ref = this.buffer;
+    _ref = this.roster;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
-      if (entity.acquired) {
-        entity.update(delta);
+      if (entity.allocd) {
+        entity.update(dt, engine);
       }
     }
     return this;
   };
 
-  Pool.prototype.draw = function(context) {
+  Pool.prototype.draw = function(context, engine) {
     var entity, _i, _len, _ref;
-    _ref = this.buffer;
+    _ref = this.roster;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entity = _ref[_i];
-      if (!entity.acquired) {
+      if (!entity.allocd) {
         continue;
       }
       context.save();
-      entity.draw(context);
+      entity.draw(context, engine);
       context.restore();
     }
     return this;

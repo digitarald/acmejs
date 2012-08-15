@@ -1,31 +1,35 @@
 
 class Pool
 
-	constructor: (@preallocate = 0) ->
-		@buffer = []
+	constructor: (@preinstantiate = 0, @cls) ->
+		@roster = []
 
-		i = @preallocate
+		i = @preinstantiate
 		while i--
-			@buffer.push(@allocate())
+			@roster.push(@instantiate())
 
-	acquire: () ->
-		for entity in @buffer
-			if not entity.acquired
-				entity.acquire.apply(entity, arguments)
-				return entity
+	instantiate: () ->
+		return new @cls()
 
-		@buffer.push((entity = @allocate()))
-		entity.acquire.apply(entity, arguments)
+	alloc: () ->
+		for entity in @roster when not entity.allocd
+			entity.allocd = true
+			entity.alloc.apply(entity, arguments)
+			return entity
+
+		@roster.push((entity = @instantiate()))
+		entity.allocd = true
+		entity.alloc.apply(entity, arguments)
 		return entity
 
-	update: (delta) ->
-		for entity in @buffer when entity.acquired
-			entity.update(delta)
+	update: (dt, engine) ->
+		for entity in @roster when entity.allocd
+			entity.update(dt, engine)
 		@
 
-	draw: (context) ->
-		for entity in @buffer when entity.acquired
+	draw: (context, engine) ->
+		for entity in @roster when entity.allocd
 			context.save()
-			entity.draw(context)
+			entity.draw(context, engine)
 			context.restore()
 		@

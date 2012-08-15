@@ -6,23 +6,28 @@ var Boid,
 Boid = (function() {
 
   function Boid() {
-    this.aura = 100;
+    this.cohesionMod = 5;
+    this.avoidanceMod = 1;
+    this.imitationMod = 1;
   }
 
-  Boid.prototype.acquire = function(host) {
-    this.acquired = true;
-    host.boid = this;
-    this.host = host;
+  Boid.prototype.alloc = function(owner, perception, aura) {
+    this.perception = perception != null ? perception : 80;
+    this.aura = aura != null ? aura : 10;
+    owner.boid = this;
+    owner.pubsub.sub(this, 'free');
+    this.owner = owner;
+    this.perceptionSq = this.perception * this.perception;
+    this.auraSq = this.aura * this.aura;
     return this;
   };
 
-  Boid.prototype.release = function() {
-    this.acquired = false;
-    this.host = this.host.boid = null;
+  Boid.prototype.free = function() {
+    this.allocd = false;
+    this.owner.pubsub.unsub(this);
+    this.owner = this.owner.boid = null;
     return this;
   };
-
-  Boid.prototype.react = function(target) {};
 
   return Boid;
 
@@ -36,25 +41,63 @@ Pool.Boids = (function(_super) {
     return Boids.__super__.constructor.apply(this, arguments);
   }
 
-  Boids.prototype.allocate = function() {
+  Boids.prototype.instantiate = function() {
     return new Boid();
   };
 
-  Boids.prototype.update = function(delta) {
-    var boid, boids, i, j;
-    boids = this.buffer;
+  Boids.prototype.update = function(dt) {
+    var avoidance, avoidanceCount, boid1, boid2, boids, cohesion, cohesionCount, diff, diffSq, i, imitation, imitationCount, j, limit, owner1, owner2;
+    cohesion = Vec2.cache[0];
+    avoidance = Vec2.cache[1];
+    imitation = Vec2.cache[2];
+    limit = 100;
+    boids = this.roster;
     i = boids.length;
     while (i--) {
-      boid = boids[i];
-      if (!boid.acquired) {
+      boid1 = boids[i];
+      if (!boid1.allocd) {
         continue;
       }
-      j = i;
+      avoidanceCount = imitationCount = cohesionCount = 0;
+      j = boids.length;
       while (j--) {
-        if (!boids[j].acquired) {
+        boid2 = boids[j];
+        if (!boid2.allocd || boid1 === boid2) {
           continue;
         }
-        boid.react(boids[j]);
+        owner1 = boid1.owner;
+        owner2 = boid2.owner;
+        diffSq = Vec2.distSq(owner1.pos, owner2.pos);
+        if (diffSq < boid1.perceptionSq) {
+          if (!cohesionCount++) {
+            Vec2.copy(cohesion, owner2.pos);
+          } else {
+            Vec2.add(cohesion, owner2.pos);
+          }
+          if (!imitationCount++) {
+            Vec2.copy(imitation, owner2.vel);
+          } else {
+            Vec2.add(imitation, owner2.vel);
+          }
+        }
+        if (diffSq < boid1.auraSq) {
+          diff = Math.sqrt(diffSq);
+          Vec2.add(owner1.acc, Vec2.scal(Vec2.sub(owner1.pos, owner2.pos, avoidance), 2));
+        }
+      }
+      if (cohesionCount) {
+        if (cohesionCount > 1) {
+          Vec2.scal(cohesion, 1 / cohesionCount);
+        }
+        Vec2.limit(Vec2.sub(cohesion, owner1.pos), limit);
+        Vec2.add(owner1.acc, Vec2.scal(cohesion, boid1.cohesionMod));
+      }
+      if (imitationCount) {
+        if (imitationCount > 1) {
+          Vec2.scal(imitation, 1 / imitationCount);
+        }
+        Vec2.limit(imitation, limit);
+        Vec2.add(owner1.acc, Vec2.scal(imitation, boid1.imitationMod));
       }
     }
     return this;
@@ -64,4 +107,4 @@ Pool.Boids = (function(_super) {
 
 })(Pool);
 
-Boid.pool = new Pool.Boids(128);
+Pool.boids = new Pool.Boids(128);

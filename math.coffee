@@ -166,12 +166,10 @@ powIn = (strength = 2) ->
 	# (t) -> return pow(1, strength - 1) * pow(t, strength)
 	(t) -> return pow(t, strength)
 
-powOut = (strength) ->
-	fn = powIn(strength)
+toOut = (fn) ->
 	(t) -> return 1 - fn(1 - t)
 
-powInOut = (strength) ->
-	fn = powIn(strength)
+toInOut = (fn) ->
 	(t) ->
 		return (if t < 0.5 then fn(t * 2) else (2 - fn(2 * (1 - t)))) / 2
 
@@ -179,6 +177,6 @@ Math.linear = ->
 	return t
 
 for transition, i in ['quad', 'cubic', 'quart', 'quint']
-	Math[transition + 'In'] = powIn(i + 2)
-	Math[transition + 'Out'] = powOut(i + 2)
-	Math[transition + 'InOut'] = powInOut(i + 2)
+	Math[transition + 'In'] = fn = powIn(i + 2)
+	Math[transition + 'Out'] = toOut(fn)
+	Math[transition + 'InOut'] = toInOut(fn)

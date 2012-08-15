@@ -9,28 +9,27 @@ Particle = (function() {
     this.pos = Vec2();
     this.vel = Vec2();
     this.acc = Vec2();
-    this.colorStart = Color();
-    this.color = Color();
+    this.angle = Vec2();
   }
 
-  Particle.prototype.acquire = function(pos, dir, lifetime, radius, mass) {
+  Particle.prototype.alloc = function(pos, dir, lifetime, radius, mass) {
     this.lifetime = lifetime != null ? lifetime : 1000;
     this.radius = radius != null ? radius : 1;
     this.mass = mass != null ? mass : this.radius;
-    this.acquired = true;
     Vec2.copy(this.pos, pos);
     Vec2.copy(this.vel, dir);
     Vec2.set(this.acc);
-    Color.copy(this.color, this.colorStart);
     this.massInv = 1 / this.mass;
     this.age = 0;
-    Pubsub.pool.acquire(this);
+    this.maxVel = 120;
+    Pubsub.pool.alloc(this);
     return this;
   };
 
-  Particle.prototype.release = function() {
-    this.acquired = false;
-    this.pubsub.pub('release', this).release();
+  Particle.prototype.free = function() {
+    this.allocd = false;
+    this.pubsub.pub('free', this);
+    this.pubsub.free();
     return this;
   };
 
@@ -46,57 +45,56 @@ Pool.Particles = (function(_super) {
     return Particles.__super__.constructor.apply(this, arguments);
   }
 
-  Particles.prototype.allocate = function() {
+  Particles.prototype.instantiate = function() {
     return new Particle();
   };
 
-  Particles.prototype.update = function(delta, world) {
+  Particles.prototype.update = function(dt, engine) {
     var acc, age, cache, oldVel, particle, vel, _i, _len, _ref;
     oldVel = Vec2.cache[0];
     cache = Vec2.cache[1];
-    _ref = this.buffer;
+    _ref = this.roster;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       particle = _ref[_i];
-      if (!particle.acquired) {
+      if (!particle.allocd) {
         continue;
       }
-      age = (particle.age += delta);
+      age = (particle.age += dt);
       if (age > particle.lifetime) {
-        particle.release();
+        particle.free();
         continue;
       }
-      particle.color[3] = 1 - Math.quadIn(age / particle.lifetime);
       vel = particle.vel;
-      acc = Vec2.add(particle.acc, world.gravity);
+      acc = Vec2.add(particle.acc, Vec2.scal(engine.gravity, particle.massInv, cache));
       oldVel = Vec2.copy(oldVel, vel);
-      Vec2.scal(acc, particle.massInv);
-      if (world.friction) {
-        Vec2.add(acc, Vec2.scal(Vec2.norm(Vec2.inv(vel, cache)), world.friction));
+      if (engine.friction) {
+        Vec2.add(acc, Vec2.scal(Vec2.norm(Vec2.inv(vel, cache)), engine.friction));
       }
-      if (world.drag) {
-        Vec2.scal(vel, world.drag);
+      if (engine.drag < 1) {
+        Vec2.scal(vel, engine.drag);
       }
-      Vec2.add(particle.vel, Vec2.scal(acc, delta / 1000, cache));
-      Vec2.add(particle.pos, Vec2.scal(Vec2.add(oldVel, particle.vel), 0.5 * delta / 1000));
+      Vec2.limit(Vec2.add(vel, Vec2.scal(acc, dt / 1000, cache)), particle.maxVel);
+      Vec2.add(particle.pos, Vec2.scal(Vec2.add(oldVel, particle.vel), 0.5 * dt / 1000));
+      Vec2.copy(particle.angle, acc);
       Vec2.set(acc, 0, 0);
     }
     return this;
   };
 
   Particles.prototype.draw = function(context) {
-    var TAU, color, particle, _i, _len, _ref;
+    var TAU, particle, _i, _len, _ref;
     TAU = Math.TAU;
     context.save();
-    _ref = this.buffer;
+    context.globalCompositeOperation = 'xor';
+    _ref = this.roster;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       particle = _ref[_i];
-      if (!particle.acquired) {
+      if (!particle.allocd) {
         continue;
       }
-      color = particle.color;
-      context.fillStyle = Color.rgba(color);
+      context.fillStyle = Color.rgba(particle.color);
       context.beginPath();
-      context.arc(particle.pos[0] | 0, particle.pos[1] | 0, particle.radius, 0, TAU, true);
+      context.arc(particle.pos[0] | 0, particle.pos[1] | 0, particle.radius | 0, 0, TAU, true);
       context.closePath();
       context.fill();
     }
@@ -108,4 +106,4 @@ Pool.Particles = (function(_super) {
 
 })(Pool);
 
-Particle.pool = new Pool.Particles(256);
+Particle.pool = new Pool.Particles(128);

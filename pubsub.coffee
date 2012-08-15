@@ -1,4 +1,5 @@
-
+# Pubsub
+# pattern: Observer and Delegate
 class Pubsub
 
 	constructor: ->
@@ -6,55 +7,47 @@ class Pubsub
 		@scopes = []
 		@methods = []
 
-	acquire: (host) ->
-		@acquired = true
-		host.pubsub = @
-		@host = host
+	empty: ->
+
+	alloc: (owner) ->
+		owner.pubsub = @
+		@owner = owner
+		@length = 0
 		@
 
-	release: ->
-		@acquired = false
-		@host = @host.pubsub = null
+	free: ->
+		@allocd = false
+		@owner = @owner.pubsub = null
 		@topics.length = @methods.length = @scopes.length = 0
 		@
 
-	sub: (topic, scope, method) ->
-		@topics.push(topic)
+	sub: (scope, topic, method) ->
 		@scopes.push(scope)
+		@topics.push(topic)
 		@methods.push(method)
 		@
 
 	pub: (topic, a0, a1, a2, a3, a4, a5, a6, a7) ->
 		topics = @topics
-		scopes = @scopes
-		i = topics.length
+		empty = @empty
+		for scope, i in @scopes
+			if scope and (not topics[i] or topics[i] is topic)
+				if scope[@methods[i] or topic](a0, a1, a2, a3, a4, a5, a6, a7) is false
+					return false
+		return true
 
-		while i--
-			if scopes[i] and (not topics[i] or topics[i] is topic)
-				scopes[i][@methods[i] or topic](a0, a1, a2, a3, a4, a5, a6, a7)
-		@
-
-	unsub: (topic, scope, method) ->
+	unsub: (unscope, topic, method) ->
 		scopes = @scopes
 		topics = @topics
 		methods = @methods
-		last = before = i = scopes.length
-
-		while i--
-			if scopes[i] and (not topic or topics[i] is topic) and (not method or methods[i] is method)
-				# topics[i] = scopes[i] = methods[i] = null
-				 i isnt --last
-					topics[i] = topics[last]
-					scopes[i] = scopes[last]
-					methods[i] = methods[last]
-
-		if last isnt before
-			topics.length = scopes.length = methods.length = last
+		for scope, i in scopes
+			if scope and (not unscope or scope is unscope) and (not topic or topics[i] is topic) and (not method or methods[i] is method)
+				topics[i] = scopes[i] = methods[i] = null
 		@
 
 class Pool.Pubsubs extends Pool
 
-	allocate: ->
+	instantiate: ->
 		return new Pubsub()
 
 Pubsub.pool = new Pool.Pubsubs(128)

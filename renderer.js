@@ -8,19 +8,30 @@ Renderer = (function() {
     this.context = this.canvas.getContext('2d');
     this.center = Vec2();
     this.size = Vec2(this.canvas.width, this.canvas.height);
+    this.offscreen = document.createElement('canvas');
+    this.offscreen.width = this.size[0];
+    this.offscreen.height = this.size[1];
+    this.offcontext = this.offscreen.getContext('2d');
   }
 
-  Renderer.prototype.clear = function() {
+  Renderer.prototype.save = function() {
     var dx, dy;
     dx = this.size[0] / 2;
     dy = this.size[1] / 2;
-    this.context.translate(-this.center[0] + dx, -this.center[1] + dy);
-    this.context.clearRect(-dx, -dy, this.size[0], this.size[1]);
-    return this;
+    this.offcontext.save();
+    this.offcontext.translate(-this.center[0] + dx, -this.center[1] + dy);
+    this.offcontext.clearRect(-dx, -dy, this.size[0], this.size[1]);
+    return this.offcontext;
+  };
+
+  Renderer.prototype.restore = function() {
+    this.offcontext.restore();
+    this.context.clearRect(0, 0, this.size[0], this.size[1]);
+    return this.context.drawImage(this.offscreen, 0, 0);
   };
 
   Renderer.prototype.setCenter = function(x, y) {
-    this.center.set(Math.floor(x), Math.floor(y));
+    Vec2.set(this.center, x | 0, y | 0);
     return this;
   };
 

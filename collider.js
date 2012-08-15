@@ -7,49 +7,17 @@ Collider = (function() {
 
   function Collider() {}
 
-  Collider.prototype.acquire = function(host) {
-    this.acquired = true;
-    host.collider = this;
-    host.pubsub.sub('release', this);
-    return this.host = host;
+  Collider.prototype.alloc = function(owner) {
+    owner.collider = this;
+    owner.pubsub.sub(this, 'free');
+    return this.owner = owner;
   };
 
-  Collider.prototype.release = function() {
-    this.acquired = false;
-    this.host.pubsub.unsub(null, this);
-    this.host = this.host.collider = null;
+  Collider.prototype.free = function() {
+    this.allocd = false;
+    this.owner.pubsub.unsub(this);
+    this.owner = this.owner.collider = null;
     return this;
-  };
-
-  Collider.prototype.collide = function(target) {
-    var diff, diffSq, host1, host2, mass1, mass2, n, normal, radius1, radius2, radiusSum, vn1, vn2, vp1, vp1After, vp2, vp2After;
-    host1 = this.host;
-    host2 = target.host;
-    radius1 = host1.radius;
-    radius2 = host2.radius;
-    radiusSum = radius1 + radius2;
-    diffSq = Vec2.distSq(host1.pos, host2.pos);
-    if (diffSq > radiusSum * radiusSum) {
-      return false;
-    }
-    diff = Math.sqrt(diffSq) - radiusSum;
-    mass1 = host1.mass || radius1;
-    mass2 = host2.mass || radius2;
-    normal = Vec2.norm(Vec2.sub(host1.pos, host2.pos, Vec2.cache[0]));
-    if (diff < 0) {
-      Vec2.add(host1.pos, Vec2.scal(normal, -diff * radius1 / radiusSum, Vec2.cache[1]));
-      Vec2.add(host2.pos, Vec2.scal(normal, diff * radius2 / radiusSum, Vec2.cache[1]));
-    }
-    n = Vec2.set(Vec2.cache[1], normal[1], -normal[0]);
-    vp1 = Vec2.dot(host1.vel, normal);
-    vn1 = Vec2.dot(host1.vel, n);
-    vp2 = Vec2.dot(host2.vel, normal);
-    vn2 = Vec2.dot(host2.vel, n);
-    vp1After = (mass1 * vp1 + mass2 * (2 * vp2 - vp1)) / (mass1 + mass2);
-    vp2After = (mass1 * (2 * vp1 - vp2) + mass2 * vp2) / (mass1 + mass2);
-    Vec2.add(Vec2.scal(normal, vp1After, Vec2.cache[2]), Vec2.scal(n, vn1, Vec2.cache[3]), host1.vel);
-    Vec2.add(Vec2.scal(normal, vp2After, Vec2.cache[2]), Vec2.scal(n, vn2, Vec2.cache[3]), host2.vel);
-    return true;
   };
 
   return Collider;
@@ -64,25 +32,57 @@ Pool.Colliders = (function(_super) {
     return Colliders.__super__.constructor.apply(this, arguments);
   }
 
-  Colliders.prototype.allocate = function() {
+  Colliders.prototype.instantiate = function() {
     return new Collider();
   };
 
-  Colliders.prototype.update = function(delta) {
-    var collider, colliders, i, j;
-    delta /= 1000;
-    colliders = this.buffer;
+  Colliders.prototype.update = function(dt) {
+    var collider1, collider2, colliders, diff, diffSq, i, j, mass1, mass2, n, owner1, owner2, p, radius1, radius2, radiusSum, vn1, vn2, vp1, vp1After, vp2, vp2After;
+    dt /= 1000;
+    colliders = this.roster;
     i = colliders.length;
     while (i--) {
-      collider = colliders[i];
-      if (!collider.acquired) {
+      collider1 = colliders[i];
+      if (!collider1.allocd) {
         continue;
       }
       j = i;
       while (j--) {
-        if (colliders[j].acquired) {
-          collider.collide(colliders[j]);
+        collider2 = colliders[j];
+        if (!collider2.allocd) {
+          continue;
         }
+        owner1 = collider1.owner;
+        owner2 = collider2.owner;
+        radius1 = owner1.radius;
+        radius2 = owner2.radius;
+        radiusSum = radius1 + radius2;
+        diffSq = Vec2.distSq(owner1.pos, owner2.pos);
+        if (diffSq > radiusSum * radiusSum) {
+          continue;
+        }
+        diff = Math.sqrt(diffSq) - radiusSum;
+        mass1 = owner1.mass || radius1;
+        mass2 = owner2.mass || radius2;
+        p = Vec2.norm(Vec2.sub(owner1.pos, owner2.pos, Vec2.cache[0]));
+        if (diff < 0) {
+          Vec2.add(owner1.pos, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]));
+          Vec2.add(owner2.pos, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]));
+        }
+        n = Vec2.set(Vec2.cache[1], p[1], -p[0]);
+        vp1 = Vec2.dot(owner1.vel, p);
+        vn1 = Vec2.dot(owner1.vel, n);
+        vp2 = Vec2.dot(owner2.vel, p);
+        vn2 = Vec2.dot(owner2.vel, n);
+        vp1After = (mass1 * vp1 + mass2 * (2 * vp2 - vp1)) / (mass1 + mass2);
+        vp2After = (mass1 * (2 * vp1 - vp2) + mass2 * vp2) / (mass1 + mass2);
+        Vec2.add(Vec2.scal(p, vp1After, Vec2.cache[2]), Vec2.scal(n, vn1, Vec2.cache[3]), owner1.vel);
+        Vec2.add(Vec2.scal(p, vp2After, Vec2.cache[2]), Vec2.scal(n, vn2, Vec2.cache[3]), owner2.vel);
+        if (!owner2.pubsub) {
+          debugger;
+        }
+        owner1.pubsub.pub('collide', owner2, n);
+        owner2.pubsub.pub('collide', owner1, n);
       }
     }
     return this;

@@ -11,56 +11,55 @@ Pubsub = (function() {
     this.methods = [];
   }
 
-  Pubsub.prototype.acquire = function(host) {
-    this.acquired = true;
-    host.pubsub = this;
-    this.host = host;
+  Pubsub.prototype.empty = function() {};
+
+  Pubsub.prototype.alloc = function(owner) {
+    owner.pubsub = this;
+    this.owner = owner;
+    this.length = 0;
     return this;
   };
 
-  Pubsub.prototype.release = function() {
-    this.acquired = false;
-    this.host = this.host.pubsub = null;
+  Pubsub.prototype.free = function() {
+    this.allocd = false;
+    this.owner = this.owner.pubsub = null;
     this.topics.length = this.methods.length = this.scopes.length = 0;
     return this;
   };
 
-  Pubsub.prototype.sub = function(topic, scope, method) {
-    this.topics.push(topic);
+  Pubsub.prototype.sub = function(scope, topic, method) {
     this.scopes.push(scope);
+    this.topics.push(topic);
     this.methods.push(method);
     return this;
   };
 
   Pubsub.prototype.pub = function(topic, a0, a1, a2, a3, a4, a5, a6, a7) {
-    var i, scopes, topics;
+    var empty, i, scope, topics, _i, _len, _ref;
     topics = this.topics;
-    scopes = this.scopes;
-    i = topics.length;
-    while (i--) {
-      if (scopes[i] && (!topics[i] || topics[i] === topic)) {
-        scopes[i][this.methods[i] || topic](a0, a1, a2, a3, a4, a5, a6, a7);
+    empty = this.empty;
+    _ref = this.scopes;
+    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+      scope = _ref[i];
+      if (scope && (!topics[i] || topics[i] === topic)) {
+        if (scope[this.methods[i] || topic](a0, a1, a2, a3, a4, a5, a6, a7) === false) {
+          return false;
+        }
       }
     }
-    return this;
+    return true;
   };
 
-  Pubsub.prototype.unsub = function(topic, scope, method) {
-    var before, i, last, methods, scopes, topics;
+  Pubsub.prototype.unsub = function(unscope, topic, method) {
+    var i, methods, scope, scopes, topics, _i, _len;
     scopes = this.scopes;
     topics = this.topics;
     methods = this.methods;
-    last = before = i = scopes.length;
-    while (i--) {
-      if (scopes[i] && (!topic || topics[i] === topic) && (!method || methods[i] === method)) {
-        i !== --last;
-        topics[i] = topics[last];
-        scopes[i] = scopes[last];
-        methods[i] = methods[last];
+    for (i = _i = 0, _len = scopes.length; _i < _len; i = ++_i) {
+      scope = scopes[i];
+      if (scope && (!unscope || scope === unscope) && (!topic || topics[i] === topic) && (!method || methods[i] === method)) {
+        topics[i] = scopes[i] = methods[i] = null;
       }
-    }
-    if (last !== before) {
-      topics.length = scopes.length = methods.length = last;
     }
     return this;
   };
@@ -77,7 +76,7 @@ Pool.Pubsubs = (function(_super) {
     return Pubsubs.__super__.constructor.apply(this, arguments);
   }
 
-  Pubsubs.prototype.allocate = function() {
+  Pubsubs.prototype.instantiate = function() {
     return new Pubsub();
   };
 

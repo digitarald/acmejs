@@ -13,24 +13,25 @@ dir = Vec2();
 
 World = (function() {
 
-  function World() {
-    this.updateQueue = [Collider.pool, Firework.pool, Particle.pool];
+  function World(renderer) {
+    this.renderer = renderer;
+    this.updateQueue = [Collider.pool, Pool.borders, Pool.boids, Firework.pool, Particle.pool];
     this.drawQueue = [Particle.pool];
-    this.pubsub = Pubsub.pool.acquire(this);
-    this.firework = Firework.pool.acquire(this, Vec2(0, 0), Vec2(800, 450), Vec2(20, 20), Vec2(15, 35), Vec2(500, 500), 0.2);
+    this.pubsub = Pubsub.pool.alloc(this);
+    this.firework = Firework.pool.alloc(this, Vec2(0, 0), Vec2(800, 450), Vec2(20, 20), Vec2(5, 10), Vec2(300, 300), 0.03);
     this.steps = 0;
-    this.minStep = 10;
-    this.gravity = Vec2(0, 500);
-    this.friction = 20;
-    this.drag = 0.9999;
+    this.minStep = 100 / 6;
+    this.gravity = Vec2(0, 0);
+    this.friction = 10;
+    this.drag = 1;
   }
 
-  World.prototype.update = function(delta) {
+  World.prototype.update = function(dt) {
     var instance, min, _i, _len, _ref, _results;
-    if (delta > 500) {
-      delta = 100;
+    if (dt > 500) {
+      dt = 100;
     }
-    this.steps += delta;
+    this.steps += dt;
     min = this.minStep;
     _results = [];
     while (this.steps > min) {
