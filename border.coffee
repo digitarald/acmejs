@@ -1,64 +1,60 @@
 
-class Border
+class Border extends Component
 
-	alloc: (owner) ->
-		owner.border = @
-		owner.pubsub.sub(@, 'free')
-		@owner = owner
-		@
+	name: 'border'
 
-	free: ->
-		@allocd = false
-		@owner.pubsub.unsub(@)
-		@owner = @owner.border = null
-		@
+Border.simulate = (dt, scene) ->
+	size = Engine.renderer.client
+	viewport = Engine.renderer.pos
 
-class Pool.Borders extends Pool
+	horizontal = Vec2.set(
+		Vec2.cache[0],
+		viewport[0],
+		viewport[0] + size[0]
+	)
+	vertical = Vec2.set(
+		Vec2.cache[1],
+		viewport[1],
+		viewport[1] + size[1]
+	)
 
-	instantiate: ->
-		return new Border()
+	for border in @roster when border.enabled
+		parent = border.parent
+		pos = parent.transform.pos
+		vel = parent.kinetic.vel
+		radius = parent.radius
 
-	update: (dt, engine) ->
-		size = engine.renderer.size
-		center = engine.renderer.center
-		horizontal = Vec2.set(
-			Vec2.cache[0],
-			center[0] - size[0] / 2,
-			center[0] + size[0] / 2
-		)
-		vertical = Vec2.set(
-			Vec2.cache[1],
-			center[1] - size[1] / 2,
-			center[1] + size[1] / 2
-		)
+		hit = false
 
-		for border in @roster when border.allocd
-			pos = border.owner.pos
-			vel = border.owner.vel
-			radius = border.owner.radius
-
-			# horizontal
-			diff = pos[0] - radius - horizontal[0]
-			if diff < 0
+		# horizontal
+		diff = pos[0] - radius - horizontal[0]
+		if diff < 0
+			hit = true
+			pos[0] -= diff
+			vel[0] *= -1
+		else
+			diff = pos[0] + radius - horizontal[1]
+			if diff > 0
 				pos[0] -= diff
 				vel[0] *= -1
-			else
-				diff = pos[0] + radius - horizontal[1]
-				if diff > 0
-					pos[0] -= diff
-					vel[0] *= -1
+				hit = true
 
-			# vertical
-			diff = pos[1] - radius - vertical[0]
-			if diff < 0
+		# vertical
+		diff = pos[1] - radius - vertical[0]
+		if diff < 0
+			pos[1] -= diff
+			vel[1] *= -1
+			hit = true
+		else
+			diff = pos[1] + radius - vertical[1]
+			if diff > 0
 				pos[1] -= diff
 				vel[1] *= -1
-			else
-				diff = pos[1] + radius - vertical[1]
-				if diff > 0
-					pos[1] -= diff
-					vel[1] *= -1
-		@
+				hit = true
+
+		if border.kill and hit
+			parent.free()
+	@
 
 
-Pool.borders = new Pool.Borders()
+new Pool(Border).preinstantiate(128)

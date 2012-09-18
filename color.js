@@ -2,11 +2,11 @@
 var Color;
 
 Color = function(fromOrR, g, b, a) {
-  if (typeof g !== void 0) {
-    return [fromOrR || 0, g || 0, b || 0, typeof a === 'undefined' ? 1 : a];
+  if (typeof g !== 'undefined') {
+    return [fromOrR, g, b, typeof a === 'undefined' ? 1 : a];
   }
-  if (fromOrR !== void 0) {
-    return [fromOrR[0], fromOrR[1], fromOrR[2], fromOrR[3]];
+  if (typeof fromOrR !== 'undefined') {
+    return [fromOrR[0], fromOrR[1], fromOrR[2], '3' in fromOrR ? fromOrR[3] : 1];
   }
   return [0, 0, 0, 1];
 };
@@ -15,15 +15,13 @@ Color.cache = [Color(), Color(), Color(), Color()];
 
 Color.white = Color(255, 255, 255);
 
-Color.black = Color(0, 0, 0);
-
-Color.gray = Color(127, 127, 127);
+Color.black = Color();
 
 Color.set = function(result, r, g, b, a) {
-  result[0] = r;
-  result[1] = g;
-  result[2] = b;
-  result[3] = a;
+  result[0] = r || 0;
+  result[1] = g || 0;
+  result[2] = b || 0;
+  result[3] = a || 0;
   return result;
 };
 
@@ -35,12 +33,12 @@ Color.copy = function(result, b) {
   return result;
 };
 
-Color.blend = function(a, t, b, alpha, result) {
+Color.lerp = function(a, t, b, alpha, result) {
   result = result || a;
   result[0] = t * a[0] + (1 - t) * b[0];
   result[1] = t * a[1] + (1 - t) * b[1];
   result[2] = t * a[2] + (1 - t) * b[2];
-  if (alpha) {
+  if (alpha > 0.05) {
     result[3] = t * a[3] + (1 - t) * b[3];
   } else {
     result[3] = a[3];
@@ -49,21 +47,9 @@ Color.blend = function(a, t, b, alpha, result) {
 };
 
 Color.rgba = function(a) {
-  if (a[3] > 0.9999) {
+  if (a[3] > 0.98) {
     return "rgb(" + (a[0] | 0) + ", " + (a[1] | 0) + ", " + (a[2] | 0) + ")";
   } else {
     return "rgba(" + (a[0] | 0) + ", " + (a[1] | 0) + ", " + (a[2] | 0) + ", " + a[3] + ")";
   }
-};
-
-Color.tint = function(a, t, alpha, result) {
-  return Color.blend(a, t, Color.white, alpha, result);
-};
-
-Color.shade = function(a, t, alpha, result) {
-  return Color.blend(a, t, Color.black, alpha, result);
-};
-
-Color.tone = function(a, t, alpha, result) {
-  return Color.blend(a, t, Color.gray, alpha, result);
 };

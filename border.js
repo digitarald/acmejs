@@ -3,83 +3,68 @@ var Border,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Border = (function() {
+Border = (function(_super) {
 
-  function Border() {}
+  __extends(Border, _super);
 
-  Border.prototype.alloc = function(owner) {
-    owner.border = this;
-    owner.pubsub.sub(this, 'free');
-    this.owner = owner;
-    return this;
-  };
+  function Border() {
+    return Border.__super__.constructor.apply(this, arguments);
+  }
 
-  Border.prototype.free = function() {
-    this.allocd = false;
-    this.owner.pubsub.unsub(this);
-    this.owner = this.owner.border = null;
-    return this;
-  };
+  Border.prototype.name = 'border';
 
   return Border;
 
-})();
+})(Component);
 
-Pool.Borders = (function(_super) {
-
-  __extends(Borders, _super);
-
-  function Borders() {
-    return Borders.__super__.constructor.apply(this, arguments);
-  }
-
-  Borders.prototype.instantiate = function() {
-    return new Border();
-  };
-
-  Borders.prototype.update = function(dt, engine) {
-    var border, center, diff, horizontal, pos, radius, size, vel, vertical, _i, _len, _ref;
-    size = engine.renderer.size;
-    center = engine.renderer.center;
-    horizontal = Vec2.set(Vec2.cache[0], center[0] - size[0] / 2, center[0] + size[0] / 2);
-    vertical = Vec2.set(Vec2.cache[1], center[1] - size[1] / 2, center[1] + size[1] / 2);
-    _ref = this.roster;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      border = _ref[_i];
-      if (!border.allocd) {
-        continue;
-      }
-      pos = border.owner.pos;
-      vel = border.owner.vel;
-      radius = border.owner.radius;
-      diff = pos[0] - radius - horizontal[0];
-      if (diff < 0) {
+Border.simulate = function(dt, scene) {
+  var border, diff, hit, horizontal, parent, pos, radius, size, vel, vertical, viewport, _i, _len, _ref;
+  size = Engine.renderer.client;
+  viewport = Engine.renderer.pos;
+  horizontal = Vec2.set(Vec2.cache[0], viewport[0], viewport[0] + size[0]);
+  vertical = Vec2.set(Vec2.cache[1], viewport[1], viewport[1] + size[1]);
+  _ref = this.roster;
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    border = _ref[_i];
+    if (!border.enabled) {
+      continue;
+    }
+    parent = border.parent;
+    pos = parent.transform.pos;
+    vel = parent.kinetic.vel;
+    radius = parent.radius;
+    hit = false;
+    diff = pos[0] - radius - horizontal[0];
+    if (diff < 0) {
+      hit = true;
+      pos[0] -= diff;
+      vel[0] *= -1;
+    } else {
+      diff = pos[0] + radius - horizontal[1];
+      if (diff > 0) {
         pos[0] -= diff;
         vel[0] *= -1;
-      } else {
-        diff = pos[0] + radius - horizontal[1];
-        if (diff > 0) {
-          pos[0] -= diff;
-          vel[0] *= -1;
-        }
-      }
-      diff = pos[1] - radius - vertical[0];
-      if (diff < 0) {
-        pos[1] -= diff;
-        vel[1] *= -1;
-      } else {
-        diff = pos[1] + radius - vertical[1];
-        if (diff > 0) {
-          pos[1] -= diff;
-          vel[1] *= -1;
-        }
+        hit = true;
       }
     }
-    return this;
-  };
+    diff = pos[1] - radius - vertical[0];
+    if (diff < 0) {
+      pos[1] -= diff;
+      vel[1] *= -1;
+      hit = true;
+    } else {
+      diff = pos[1] + radius - vertical[1];
+      if (diff > 0) {
+        pos[1] -= diff;
+        vel[1] *= -1;
+        hit = true;
+      }
+    }
+    if (border.kill && hit) {
+      parent.free();
+    }
+  }
+  return this;
+};
 
-  return Borders;
-
-})(Pool);
-
-Pool.borders = new Pool.Borders();
+new Pool(Border).preinstantiate(128);

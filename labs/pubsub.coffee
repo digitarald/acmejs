@@ -9,15 +9,15 @@ class Pubsub
 
 	empty: ->
 
-	alloc: (owner) ->
-		owner.pubsub = @
-		@owner = owner
+	alloc: (parent) ->
+		parent.pubsub = @
+		@parent = parent
 		@length = 0
 		@
 
 	free: ->
 		@allocd = false
-		@owner = @owner.pubsub = null
+		@parent = @parent.pubsub = null
 		@topics.length = @methods.length = @scopes.length = 0
 		@
 

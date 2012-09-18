@@ -7,17 +7,17 @@ Fsm = (function() {
     this.states = {};
   }
 
-  Fsm.prototype.alloc = function(owner) {
-    owner.sm = this;
-    owner.pubsub.sub(this, 'free');
-    this.owner = owner;
+  Fsm.prototype.alloc = function(parent) {
+    parent.sm = this;
+    parent.pubsub.sub(this, 'free');
+    this.parent = parent;
     return this;
   };
 
   Fsm.prototype.free = function() {
     this.allocd = false;
-    this.owner.pubsub.unsub(this);
-    this.owner = this.owner.sm = null;
+    this.parent.pubsub.unsub(this);
+    this.parent = this.parent.sm = null;
     return this;
   };
 

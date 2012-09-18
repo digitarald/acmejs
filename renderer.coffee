@@ -1,31 +1,84 @@
 
 class Renderer
 
-	constructor: (id) ->
-		@canvas = document.getElementById(id)
-		@context = @canvas.getContext('2d')
+	constructor: (@container, client) ->
+		@container = @container
+		@client = Vec2(client)
 
-		@center = Vec2()
-		@size = Vec2(@canvas.width, @canvas.height)
+		@canvas = document.createElement('canvas')
+		@container.appendChild(@canvas)
+		@ctx = @canvas.getContext('2d')
 
-		@offscreen = document.createElement('canvas')
-		@offscreen.width = @size[0]
-		@offscreen.height = @size[1]
-		@offcontext = @offscreen.getContext('2d')
+		# @debug = []
 
-	save: () ->
-		dx = @size[0] / 2
-		dy = @size[1] / 2
-		@offcontext.save()
-		@offcontext.translate(-@center[0] + dx , -@center[1] + dy)
-		@offcontext.clearRect(-dx, -dy, @size[0], @size[1])
-		@offcontext
+		@browser = Vec2()
+		@content = Vec2()
+		@margin = Vec2()
+		@pos = Vec2()
+		@scale = 1
 
-	restore: () ->
-		@offcontext.restore()
-		@context.clearRect(0, 0, @size[0], @size[1])
-		@context.drawImage(@offscreen, 0, 0)
+		@buf = document.createElement('canvas')
+		@bufctx = @buf.getContext('2d')
 
-	setCenter: (x, y) ->
-		Vec2.set(@center, x | 0, y | 0)
+		window.addEventListener('resize', @, false)
+		window.addEventListener('orientationchange', @, false)
+
+		@reflow()
+
+	handleEvent: ->
+		@reflow()
+		@
+
+	reflow: ->
+		Vec2.set(@browser, window.innerWidth, window.innerHeight)
+		Vec2.scal(Vec2.copy(@content, @client), @scale)
+		Vec2.scal(
+			Vec2.sub(@browser, @client, @margin),
+			0.5
+		)
+
+		@buf.width = @canvas.width = @client[0]
+		@buf.height = @canvas.height = @client[1]
+		@container.style.left = @margin[0] + 'px'
+		@container.style.top = @margin[1] + 'px'
+		@container.style.width = @client[0] + 'px'
+		@container.style.height = @client[1] + 'px'
+		@
+
+	save: ->
+		dx = @client[0] / 2
+		dy = @client[1] / 2
+		@bufctx.save()
+		@bufctx.translate(@pos[0] | 0 , @pos[1] | 0)
+		@bufctx.clearRect(0, 0, @client[0], @client[1])
+		@bufctx
+
+	restore: ->
+
+		# i = Math.min(@debug.length, 16)
+		# if i
+		#	@bufctx.strokeStyle = Color.rgba(Color.gray)
+		#	@bufctx.lineWidth = 1
+		#	@bufctx.beginPath()
+		#	while i -= 2
+		#		@bufctx.moveTo(@debug[i][0] | 0, @debug[i][1] | 0)
+		#		@bufctx.lineTo(
+		#			(@debug[i][0] + @debug[i + 1][0]) | 0,
+		#			(@debug[i][1] + @debug[i + 1][1]) | 0
+		#		)
+		#	@bufctx.closePath()
+		#	@bufctx.stroke()
+		#	@debug.length = 0
+
+		@bufctx.restore()
+		@ctx.clearRect(0, 0, @client[0], @client[1])
+		@ctx.drawImage(@buf, 0, 0)
+		@
+
+	center: (pos) ->
+		Vec2.set(
+			@pos,
+			pos[0] - @client[0] / 2,
+			pos[0] - @client[1] / 2
+		)
 		@

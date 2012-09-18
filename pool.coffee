@@ -1,35 +1,62 @@
 
 class Pool
 
-	constructor: (@preinstantiate = 0, @cls) ->
-		@roster = []
+	@loops: ['fixedUpdate', 'simulate', 'update', 'lateUpdate', 'render']
 
-		i = @preinstantiate
+	constructor: (@cls) ->
+		@roster = []
+		@name = cls.prototype.name
+
+		@cls.pool = @
+
+		for fn in Pool.loops
+			if fn of cls
+				@[fn] = cls[fn]
+			else if fn of cls.prototype
+				@[fn] = @forEach(fn)
+			else
+				continue
+			Pool.stacks[fn].push(@)
+
+		# Semantic sugar
+		cls.alloc = =>
+			return @.alloc.apply(@, arguments)
+
+	toString: ->
+		return 'Pool ' + @name + '[' + @roster.length + ']'
+
+	preinstantiate: (i) ->
 		while i--
 			@roster.push(@instantiate())
+		@
 
 	instantiate: () ->
 		return new @cls()
 
 	alloc: () ->
-		for entity in @roster when not entity.allocd
-			entity.allocd = true
-			entity.alloc.apply(entity, arguments)
-			return entity
+		roster = @roster
+		i = roster.length
+		while i--
+			if not roster[i].enabled
+				entity = roster[i]
+				break
 
-		@roster.push((entity = @instantiate()))
-		entity.allocd = true
+		if not entity
+			roster.push((entity = @instantiate()))
+
+		entity.enabled = entity.allocd = true
 		entity.alloc.apply(entity, arguments)
 		return entity
 
-	update: (dt, engine) ->
-		for entity in @roster when entity.allocd
-			entity.update(dt, engine)
-		@
+	forEach: (fn) ->
+		return (dt, scene) ->
+			roster = @roster
+			i = roster.length
+			while i--
+				if roster[i].enabled
+					roster[i][fn](dt, scene)
+			@
 
-	draw: (context, engine) ->
-		for entity in @roster when entity.allocd
-			context.save()
-			entity.draw(context, engine)
-			context.restore()
-		@
+Pool.stacks = {}
+for fn in Pool.loops
+	Pool.stacks[fn] = []

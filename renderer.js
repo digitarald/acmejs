@@ -3,35 +3,62 @@ var Renderer;
 
 Renderer = (function() {
 
-  function Renderer(id) {
-    this.canvas = document.getElementById(id);
-    this.context = this.canvas.getContext('2d');
-    this.center = Vec2();
-    this.size = Vec2(this.canvas.width, this.canvas.height);
-    this.offscreen = document.createElement('canvas');
-    this.offscreen.width = this.size[0];
-    this.offscreen.height = this.size[1];
-    this.offcontext = this.offscreen.getContext('2d');
+  function Renderer(container, client) {
+    this.container = container;
+    this.container = this.container;
+    this.client = Vec2(client);
+    this.canvas = document.createElement('canvas');
+    this.container.appendChild(this.canvas);
+    this.ctx = this.canvas.getContext('2d');
+    this.browser = Vec2();
+    this.content = Vec2();
+    this.margin = Vec2();
+    this.pos = Vec2();
+    this.scale = 1;
+    this.buf = document.createElement('canvas');
+    this.bufctx = this.buf.getContext('2d');
+    window.addEventListener('resize', this, false);
+    window.addEventListener('orientationchange', this, false);
+    this.reflow();
   }
+
+  Renderer.prototype.handleEvent = function() {
+    this.reflow();
+    return this;
+  };
+
+  Renderer.prototype.reflow = function() {
+    Vec2.set(this.browser, window.innerWidth, window.innerHeight);
+    Vec2.scal(Vec2.copy(this.content, this.client), this.scale);
+    Vec2.scal(Vec2.sub(this.browser, this.client, this.margin), 0.5);
+    this.buf.width = this.canvas.width = this.client[0];
+    this.buf.height = this.canvas.height = this.client[1];
+    this.container.style.left = this.margin[0] + 'px';
+    this.container.style.top = this.margin[1] + 'px';
+    this.container.style.width = this.client[0] + 'px';
+    this.container.style.height = this.client[1] + 'px';
+    return this;
+  };
 
   Renderer.prototype.save = function() {
     var dx, dy;
-    dx = this.size[0] / 2;
-    dy = this.size[1] / 2;
-    this.offcontext.save();
-    this.offcontext.translate(-this.center[0] + dx, -this.center[1] + dy);
-    this.offcontext.clearRect(-dx, -dy, this.size[0], this.size[1]);
-    return this.offcontext;
+    dx = this.client[0] / 2;
+    dy = this.client[1] / 2;
+    this.bufctx.save();
+    this.bufctx.translate(this.pos[0] | 0, this.pos[1] | 0);
+    this.bufctx.clearRect(0, 0, this.client[0], this.client[1]);
+    return this.bufctx;
   };
 
   Renderer.prototype.restore = function() {
-    this.offcontext.restore();
-    this.context.clearRect(0, 0, this.size[0], this.size[1]);
-    return this.context.drawImage(this.offscreen, 0, 0);
+    this.bufctx.restore();
+    this.ctx.clearRect(0, 0, this.client[0], this.client[1]);
+    this.ctx.drawImage(this.buf, 0, 0);
+    return this;
   };
 
-  Renderer.prototype.setCenter = function(x, y) {
-    Vec2.set(this.center, x | 0, y | 0);
+  Renderer.prototype.center = function(pos) {
+    Vec2.set(this.pos, pos[0] - this.client[0] / 2, pos[0] - this.client[1] / 2);
     return this;
   };
 

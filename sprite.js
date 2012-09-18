@@ -3,26 +3,81 @@ var Sprite;
 
 Sprite = (function() {
 
-  function Sprite(image) {
-    var context;
-    if (context = image.getContext('2d')) {
-      this.context = context;
+  function Sprite(srcOrReflow, size) {
+    var img,
+      _this = this;
+    this.size = size != null ? size : Vec2();
+    this.offsetDefault = Vec2();
+    this.buffer = document.createElement('canvas');
+    this.bufferCtx = this.buffer.getContext('2d');
+    this.scale = -1;
+    switch (typeof srcOrReflow) {
+      case 'string':
+        this.img = img = new Image();
+        img.onload = function() {
+          if (!img.onload) {
+            return;
+          }
+          img.onload = null;
+          Vec2.set(_this.size, img.width, img.height);
+          return _this.refresh();
+        };
+        img.src = srcOrReflow;
+        if (img.onload && img.complete) {
+          img.onload();
+        }
+        break;
+      case 'function':
+        this.reflow = srcOrReflow;
+        this.refresh();
+        break;
     }
   }
 
-  Sprite.prototype.draw = function(dt) {
-    var color;
-    color = Color(255, 255, 255);
-    this.grad = context.createRadialGradient(0, 0, 0, 150);
-    this.grad.addColorStop(0, Color.rgba(color));
-    color[3] -= 0.36;
-    this.grad.addColorStop(0.5, Color.rgba(color));
-    color[3] -= 0.02;
-    this.grad.addColorStop(0.8, Color.rgba(color));
-    color[3] -= 0.1;
-    this.grad.addColorStop(0.9, Color.rgba(color));
-    color[3] -= 0;
-    return this.grad.addColorStop(1, Color.rgba(color));
+  Sprite.prototype.draw = function(ctx, to, crop, offset) {
+    if (crop == null) {
+      crop = this.size;
+    }
+    if (offset == null) {
+      offset = this.offsetDefault;
+    }
+    if (this.ready) {
+      ctx.drawImage(this.buffer, offset[0], offset[1], crop[0], crop[1], to[0] | 0, to[1] | 0, crop[0], crop[1]);
+    }
+    return this;
+  };
+
+  Sprite.prototype.reflow = function(ctx, scale) {
+    var data, height, i, width, x, y, _i, _j;
+    width = this.img.width = this.size[0] * scale | 0;
+    height = this.img.height = this.size[1] * scale | 0;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(this.img, 0, 0, width, height);
+    if (scale !== 1) {
+      data = ctx.getImageData(0, 0, width, height).data;
+      for (x = _i = 0; _i <= width; x = _i += 1) {
+        for (y = _j = 0; _j <= height; y = _j += 1) {
+          i = (y * width + x) * 4;
+          ctx.fillStyle = "rgba(" + data[i] + ", " + data[i + 1] + ", " + data[i + 2] + ", " + (data[i + 3] / 255) + ")";
+          ctx.fillRect(x * scale, y * scale, scale, scale);
+        }
+      }
+    }
+    return this;
+  };
+
+  Sprite.prototype.refresh = function(ctx, scale) {
+    if (scale == null) {
+      scale = 1;
+    }
+    if (this.scale !== scale) {
+      this.scale = scale;
+      this.buffer.width = this.size[0] * scale;
+      this.buffer.height = this.size[1] * scale;
+      this.reflow(this.bufferCtx, scale);
+      this.ready = true;
+    }
+    return this;
   };
 
   return Sprite;

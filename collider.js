@@ -3,93 +3,70 @@ var Collider,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Collider = (function() {
+Collider = (function(_super) {
 
-  function Collider() {}
+  __extends(Collider, _super);
 
-  Collider.prototype.alloc = function(owner) {
-    owner.collider = this;
-    owner.pubsub.sub(this, 'free');
-    return this.owner = owner;
-  };
+  function Collider() {
+    return Collider.__super__.constructor.apply(this, arguments);
+  }
 
-  Collider.prototype.free = function() {
-    this.allocd = false;
-    this.owner.pubsub.unsub(this);
-    this.owner = this.owner.collider = null;
-    return this;
-  };
+  Collider.prototype.name = 'collider';
 
   return Collider;
 
-})();
+})(Component);
 
-Pool.Colliders = (function(_super) {
-
-  __extends(Colliders, _super);
-
-  function Colliders() {
-    return Colliders.__super__.constructor.apply(this, arguments);
-  }
-
-  Colliders.prototype.instantiate = function() {
-    return new Collider();
-  };
-
-  Colliders.prototype.update = function(dt) {
-    var collider1, collider2, colliders, diff, diffSq, i, j, mass1, mass2, n, owner1, owner2, p, radius1, radius2, radiusSum, vn1, vn2, vp1, vp1After, vp2, vp2After;
-    dt /= 1000;
-    colliders = this.roster;
-    i = colliders.length;
-    while (i--) {
-      collider1 = colliders[i];
-      if (!collider1.allocd) {
+Collider.simulate = function(dt) {
+  var collider1, collider2, colliders, diff, diffSq, i, j, mass1, mass2, n, p, parent1, parent2, pos1, pos2, radius1, radius2, radiusSum, vel1, vel2, vn1, vn2, vp1, vp1After, vp2, vp2After;
+  colliders = this.roster;
+  i = colliders.length;
+  while (i--) {
+    collider1 = colliders[i];
+    if (!collider1.enabled) {
+      continue;
+    }
+    j = i;
+    while (j--) {
+      collider2 = colliders[j];
+      if (!collider2.enabled) {
         continue;
       }
-      j = i;
-      while (j--) {
-        collider2 = colliders[j];
-        if (!collider2.allocd) {
-          continue;
-        }
-        owner1 = collider1.owner;
-        owner2 = collider2.owner;
-        radius1 = owner1.radius;
-        radius2 = owner2.radius;
-        radiusSum = radius1 + radius2;
-        diffSq = Vec2.distSq(owner1.pos, owner2.pos);
-        if (diffSq > radiusSum * radiusSum) {
-          continue;
-        }
-        diff = Math.sqrt(diffSq) - radiusSum;
-        mass1 = owner1.mass || radius1;
-        mass2 = owner2.mass || radius2;
-        p = Vec2.norm(Vec2.sub(owner1.pos, owner2.pos, Vec2.cache[0]));
-        if (diff < 0) {
-          Vec2.add(owner1.pos, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]));
-          Vec2.add(owner2.pos, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]));
-        }
-        n = Vec2.set(Vec2.cache[1], p[1], -p[0]);
-        vp1 = Vec2.dot(owner1.vel, p);
-        vn1 = Vec2.dot(owner1.vel, n);
-        vp2 = Vec2.dot(owner2.vel, p);
-        vn2 = Vec2.dot(owner2.vel, n);
-        vp1After = (mass1 * vp1 + mass2 * (2 * vp2 - vp1)) / (mass1 + mass2);
-        vp2After = (mass1 * (2 * vp1 - vp2) + mass2 * vp2) / (mass1 + mass2);
-        Vec2.add(Vec2.scal(p, vp1After, Vec2.cache[2]), Vec2.scal(n, vn1, Vec2.cache[3]), owner1.vel);
-        Vec2.add(Vec2.scal(p, vp2After, Vec2.cache[2]), Vec2.scal(n, vn2, Vec2.cache[3]), owner2.vel);
-        if (!owner2.pubsub) {
-          debugger;
-        }
-        owner1.pubsub.pub('collide', owner2, n);
-        owner2.pubsub.pub('collide', owner1, n);
+      parent1 = collider1.parent;
+      parent2 = collider2.parent;
+      radius1 = parent1.radius;
+      radius2 = parent2.radius;
+      pos1 = parent1.transform.pos;
+      pos2 = parent2.transform.pos;
+      radiusSum = radius1 + radius2;
+      diffSq = Vec2.distSq(pos1, pos2);
+      if (diffSq > radiusSum * radiusSum) {
+        continue;
       }
+      diff = Math.sqrt(diffSq) - radiusSum;
+      vel1 = parent1.kinetic.vel;
+      vel2 = parent2.kinetic.vel;
+      mass1 = parent1.kinetic.mass;
+      mass2 = parent2.kinetic.mass;
+      p = Vec2.norm(Vec2.sub(pos1, pos2, Vec2.cache[0]));
+      if (diff < 0) {
+        Vec2.add(pos1, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]));
+        Vec2.add(pos2, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]));
+      }
+      n = Vec2.set(Vec2.cache[1], p[1], -p[0]);
+      vp1 = Vec2.dot(vel1, p);
+      vn1 = Vec2.dot(vel1, n);
+      vp2 = Vec2.dot(vel2, p);
+      vn2 = Vec2.dot(vel2, n);
+      vp1After = (mass1 * vp1 + mass2 * (2 * vp2 - vp1)) / (mass1 + mass2);
+      vp2After = (mass1 * (2 * vp1 - vp2) + mass2 * vp2) / (mass1 + mass2);
+      Vec2.add(Vec2.scal(p, vp1After, Vec2.cache[2]), Vec2.scal(n, vn1, Vec2.cache[3]), vel1);
+      Vec2.add(Vec2.scal(p, vp2After, Vec2.cache[2]), Vec2.scal(n, vn2, Vec2.cache[3]), vel2);
+      parent1.pub('collide', parent2, n);
+      parent2.pub('collide', parent1, n);
     }
-    return this;
-  };
+  }
+  return this;
+};
 
-  return Colliders;
-
-})(Pool);
-
-Collider.pool = new Pool.Colliders(128);
+new Pool(Collider);

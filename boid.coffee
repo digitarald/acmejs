@@ -1,97 +1,127 @@
 
-class Boid
+class Boid extends Component
+
+	name: 'boid'
 
 	constructor: ->
-		@cohesionMod = 5
-		@avoidanceMod = 1
+		super()
+		@mod = 1
+		@cohesionMod = 0.5
+		@avoidanceMod = 2
 		@imitationMod = 1
 
-	alloc: (owner, @perception = 80, @aura = 10) ->
-		owner.boid = @
-		owner.pubsub.sub(@, 'free')
-		@owner = owner
+	alloc: (parent, @perception = 200, aura) ->
+		super(parent)
+		@aura = aura or @parent.radius * 1.5
 
 		@perceptionSq = @perception * @perception
 		@auraSq = @aura * @aura
 		@
 
-	free: ->
-		@allocd = false
-		@owner.pubsub.unsub(@)
-		@owner = @owner.boid = null
-		@
+Boid.fixedUpdate = (dt) ->
+	cohesion = Vec2.cache[0]
+	avoidance = Vec2.cache[1]
+	imitation = Vec2.cache[2]
+	cache = Vec2.cache[3]
+	stretch = Vec2.cache[4]
+	acc = Vec2.cache[4]
 
-class Pool.Boids extends Pool
+	limit = Kinetic.maxAcc / 3
 
-	instantiate: ->
-		return new Boid()
+	boids = @roster
+	i = len = boids.length
+	while i--
+		boid1 = boids[i]
+		if not boid1.enabled
+			continue
 
-	update: (dt) ->
-		cohesion = Vec2.cache[0]
-		avoidance = Vec2.cache[1]
-		imitation = Vec2.cache[2]
+		avoidanceCount = imitationCount  = cohesionCount = 0
+		parent1 = boid1.parent
+		pos1 = parent1.transform.pos
+		vel = parent1.kinetic.vel
+		Vec2.set(acc)
 
-		limit = 100
+		j = len
+		while j--
+			boid2 = boids[j]
+			if not boid2.enabled or boid1 is boid2
+				continue
 
-		boids = @roster
-		i = boids.length
-		while i--
-			boid1 = boids[i]
-			continue if not boid1.allocd
+			parent2 = boid2.parent
+			pos2 = parent2.transform.pos
 
-			avoidanceCount = imitationCount  = cohesionCount = 0
+			diffSq = Vec2.distSq(pos1, pos2)
 
-			j = boids.length
-			while j--
-				boid2 = boids[j]
-				continue if not boid2.allocd or boid1 is boid2
+			if diffSq < boid1.perceptionSq
+				Vec2.sub(pos2, pos1, stretch)
+				Vec2.scal(stretch, Math.sqrt(parent1.kinetic.mass / parent2.kinetic.mass))
 
-				owner1 = boid1.owner
-				owner2 = boid2.owner
+				# diff = Math.sqrt(diffSq)
+				# Vec2.scal(stretch, Math.quadInOut(diff / boid1.perception), cache)
 
-				diffSq = Vec2.distSq(owner1.pos, owner2.pos)
+				# Cohesion : try to approach other boids
+				if not cohesionCount++
+					Vec2.copy(cohesion, stretch)
+				else
+					Vec2.add(cohesion, stretch)
 
-				if diffSq < boid1.perceptionSq
-
-					# Cohesion : try to approach other boids
-					if not cohesionCount++
-						Vec2.copy(cohesion, owner2.pos)
-					else
-						Vec2.add(cohesion, owner2.pos)
-
-					# Imitation : try to move in the same way than other boids
-					if not imitationCount++
-						Vec2.copy(imitation, owner2.vel)
-					else
-						Vec2.add(imitation, owner2.vel)
+				# Imitation : try to move in the same way than other boids
+				# fit = Vec2.scal(parent2.vel, Math.quadOut(diff / boid1.perceptionSq), cache)
+				if not imitationCount++
+					Vec2.copy(imitation, parent2.kinetic.vel)
+				else
+					Vec2.add(imitation, parent2.kinetic.vel)
 
 				# Avoidance : try to keep a minimum distance between others.
 				if diffSq < boid1.auraSq
-					diff = Math.sqrt(diffSq)
-					Vec2.add(
-						owner1.acc,
-						Vec2.scal(
-							Vec2.sub(owner1.pos, owner2.pos, avoidance),
-							2
-						)
-					)
+					if not avoidanceCount++
+						Vec2.copy(avoidance, stretch)
+					else
+						Vec2.add(avoidance, stretch)
 
-			if cohesionCount
-				if cohesionCount > 1
-					Vec2.scal(cohesion, 1 / cohesionCount)
-				Vec2.limit(
-					Vec2.sub(cohesion, owner1.pos),
-					limit
+		mod = boid1.mod
+
+		if cohesionCount and boid1.cohesionMod
+			if cohesionCount > 1
+				Vec2.scal(cohesion, 1 / cohesionCount)
+			Vec2.add(parent1.kinetic.acc,
+				Vec2.scal(
+					cohesion,
+					boid1.cohesionMod * mod
 				)
-				Vec2.add(owner1.acc, Vec2.scal(cohesion, boid1.cohesionMod))
+			)
+			# engine.renderer.debug.push(Vec2(pos1), Vec2(cohesion))
 
-			if imitationCount
-				if imitationCount > 1
-					Vec2.scal(imitation, 1 / imitationCount)
-				Vec2.limit(imitation, limit)
-				Vec2.add(owner1.acc, Vec2.scal(imitation, boid1.imitationMod))
+		if imitationCount and boid1.imitationMod
+			if imitationCount > 1
+				Vec2.scal(imitation, 1 / imitationCount)
+			Vec2.add(acc,
+				Vec2.scal(
+					imitation,
+					boid1.imitationMod * mod
+				)
+			)
+			Vec2.add(
+				parent1.kinetic.acc,
+				Vec2.sub(acc, vel)
+			)
 
-		@
+		if avoidanceCount and boid1.avoidanceMod
+			if avoidanceCount > 1
+				Vec2.scal(avoidance, 1 / avoidanceCount)
+			Vec2.sub(parent1.kinetic.acc,
+				Vec2.scal(
+					avoidance,
+					boid1.avoidanceMod * mod
+				)
+			)
+
+	@
 
 
-Pool.boids = new Pool.Boids(128)
+Boid.explode = (scene) ->
+	for comp in Boid.pool.roster when comp.enabled
+		comp.parent.explode()
+	@
+
+new Pool(Boid)

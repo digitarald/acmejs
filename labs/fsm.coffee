@@ -6,16 +6,16 @@ class Fsm
 	constructor: () ->
 		@states = {}
 
-	alloc: (owner) ->
-		owner.sm = @
-		owner.pubsub.sub(@, 'free')
-		@owner = owner
+	alloc: (parent) ->
+		parent.sm = @
+		parent.pubsub.sub(@, 'free')
+		@parent = parent
 		@
 
 	free: ->
 		@allocd = false
-		@owner.pubsub.unsub(@)
-		@owner = @owner.sm = null
+		@parent.pubsub.unsub(@)
+		@parent = @parent.sm = null
 		@
 
 	start: (name) ->

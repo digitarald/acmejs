@@ -1,118 +1,93 @@
 
-class Particle
+class Particle extends Composite
+
+	name: 'particle'
 
 	constructor: () ->
-		@pos = Vec2()
-		@vel = Vec2()
-		@acc = Vec2()
-		@angle = Vec2()
+		super()
+		@color = Color()
 
-	alloc: (pos, dir, @lifetime = 1000, @radius = 1, @mass = @radius) ->
-		Vec2.copy(@pos, pos)
-		Vec2.copy(@vel, dir)
-		Vec2.set(@acc)
-		# Color.copy(@color, @colorStart)
-		@massInv = 1 / @mass
+	alloc: (parent, pos, acc, @lifetime = 1, @radius = 1, mass = radius / 3) ->
+		super(parent)
+		Color.copy(@color, Color.white)
+		Transform.alloc(@, pos)
+		kinetic = Kinetic.alloc(@, mass)
+		Vec2.add(kinetic.acc, acc)
 		@age = 0
-		@maxVel = 120
-
-		Pubsub.pool.alloc(@)
+		@sharpness = Math.randomFloat(0, 0.25)
+		@alpha = Math.randomFloat(0.8, 1)
+		@innerRadius = @radius * @sharpness
 		@
 
-	free: ->
-		@allocd = false
-		@pubsub.pub('free', @)
-		@pubsub.free()
+	update: (dt, scene) ->
+		if (@age += dt) >= @lifetime
+			@free()
 		@
 
+Particle.render = (ctx) ->
+	ctx.save()
+	ctx.globalCompositeOperation = 'lighter'
 
-class Pool.Particles extends Pool
+	crop = Vec2.set(Vec2.cache[0], 50, 50)
+	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
 
-	instantiate: ->
-		return new Particle()
+	for particle in @roster when particle.enabled
+		radius = particle.radius | 0
+		if not radius
+			continue
 
-	update: (dt, engine) ->
-		oldVel = Vec2.cache[0]
-		cache = Vec2.cache[1]
+		color = particle.color
+		pos = particle.transform.pos
 
-		for particle in @roster when particle.allocd
+		grad = ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], radius)
+		color[3] = particle.alpha * (1 - Math.quadIn(particle.age / particle.lifetime))
+		grad.addColorStop(0, Color.rgba(color))
+		color[3] = 0
+		grad.addColorStop(1, Color.rgba(color))
+		ctx.fillStyle = grad
+		ctx.beginPath()
+		ctx.arc(pos[0], pos[1], radius, 0, Math.TAU, true)
+		ctx.closePath()
+		ctx.fill()
 
-			age = (particle.age += dt)
+	ctx.restore()
+	@
 
-			if age > particle.lifetime
-				particle.free()
-				continue
+Particle.renderSprite = (ctx) ->
+	ctx.save()
+	ctx.globalCompositeOperation = 'lighter'
 
-			# Using alpha = more CPU
-			# particle.color[3] = 1 - Math.quadIn(age / particle.lifetime)
+	crop = Vec2.set(Vec2.cache[0], 50, 50)
+	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
 
-			# Integrate
+	for particle in @roster when particle.enabled
+		radius = particle.radius | 0
+		if not radius
+			continue
 
-			vel = particle.vel
-			acc = Vec2.add(
-				particle.acc,
-				# Scale gravity force to mass.
-				Vec2.scal(engine.gravity, particle.massInv, cache)
-			)
-			# Duplicate velocity to preserve momentum.
-			oldVel = Vec2.copy(oldVel, vel)
+		pos = Vec2.add(particle.transform.pos, cropOffset, Vec2.cache[2])
+		offset = Vec2.set(Vec2.cache[3], 0, 50 * (radius - 1))
 
-			# Apply friction
-			if engine.friction
-				Vec2.add(
-					acc,
-					Vec2.scal(
-						Vec2.norm(Vec2.inv(vel, cache)),
-						engine.friction
-					)
-				)
+		ctx.globalAlpha = 1 - Math.quintIn(particle.age / particle.lifetime)
+		Particle.sprite.draw(ctx, pos, crop, offset)
 
-			# Apply drag
-			if engine.drag < 1
-				Vec2.scal(vel, engine.drag)
+	ctx.restore()
+	@
 
-			Vec2.limit(
-				Vec2.add(
-					vel,
-					Vec2.scal(acc, dt / 1000, cache)
-				),
-				# Constrain
-				particle.maxVel
-			)
+Particle.sprite = new Sprite((ctx) ->
+	color = Color(Color.white)
+	for radius in [1..25] by 1
+		top = 25 + 50 * (radius - 1)
+		grad = ctx.createRadialGradient(25, top, 0, 25, top, radius)
+		for i in [0..1] by 0.1
+			color[3] = Math.quadIn(i)
+			grad.addColorStop(1 - i, Color.rgba(color))
+		ctx.fillStyle = grad
+		ctx.beginPath()
+		ctx.arc(25, top, radius, 0, Math.TAU, true)
+		ctx.closePath()
+		ctx.fill()
+, Vec2(50, 50 * 25))
 
-			# Add velocity to position
-			Vec2.add(
-				particle.pos,
-				Vec2.scal(Vec2.add(oldVel, particle.vel), 0.5 * dt / 1000)
-			)
 
-			Vec2.copy(particle.angle, acc)
-
-			# Reset forces
-			Vec2.set(acc, 0, 0)
-
-			# Euler
-			# Vec2.add(
-			# 	particle.pos,
-			# 	Vec2.scal(particle.vel, dt / 1000, oldVel)
-			# )
-		@
-
-	draw: (context) ->
-		TAU = Math.TAU
-
-		context.save()
-		context.globalCompositeOperation = 'xor'
-
-		for particle in @roster when particle.allocd
-			context.fillStyle = Color.rgba(particle.color)
-
-			context.beginPath()
-			context.arc(particle.pos[0] | 0, particle.pos[1] | 0, particle.radius | 0, 0, TAU, true)
-			context.closePath()
-			context.fill()
-
-		context.restore()
-		@
-
-Particle.pool = new Pool.Particles(128)
+new Pool(Particle)

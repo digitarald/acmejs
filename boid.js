@@ -3,108 +3,119 @@ var Boid,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Boid = (function() {
+Boid = (function(_super) {
+
+  __extends(Boid, _super);
+
+  Boid.prototype.name = 'boid';
 
   function Boid() {
-    this.cohesionMod = 5;
-    this.avoidanceMod = 1;
+    Boid.__super__.constructor.call(this);
+    this.mod = 1;
+    this.cohesionMod = 0.5;
+    this.avoidanceMod = 2;
     this.imitationMod = 1;
   }
 
-  Boid.prototype.alloc = function(owner, perception, aura) {
-    this.perception = perception != null ? perception : 80;
-    this.aura = aura != null ? aura : 10;
-    owner.boid = this;
-    owner.pubsub.sub(this, 'free');
-    this.owner = owner;
+  Boid.prototype.alloc = function(parent, perception, aura) {
+    this.perception = perception != null ? perception : 200;
+    Boid.__super__.alloc.call(this, parent);
+    this.aura = aura || this.parent.radius * 1.5;
     this.perceptionSq = this.perception * this.perception;
     this.auraSq = this.aura * this.aura;
     return this;
   };
 
-  Boid.prototype.free = function() {
-    this.allocd = false;
-    this.owner.pubsub.unsub(this);
-    this.owner = this.owner.boid = null;
-    return this;
-  };
-
   return Boid;
 
-})();
+})(Component);
 
-Pool.Boids = (function(_super) {
-
-  __extends(Boids, _super);
-
-  function Boids() {
-    return Boids.__super__.constructor.apply(this, arguments);
-  }
-
-  Boids.prototype.instantiate = function() {
-    return new Boid();
-  };
-
-  Boids.prototype.update = function(dt) {
-    var avoidance, avoidanceCount, boid1, boid2, boids, cohesion, cohesionCount, diff, diffSq, i, imitation, imitationCount, j, limit, owner1, owner2;
-    cohesion = Vec2.cache[0];
-    avoidance = Vec2.cache[1];
-    imitation = Vec2.cache[2];
-    limit = 100;
-    boids = this.roster;
-    i = boids.length;
-    while (i--) {
-      boid1 = boids[i];
-      if (!boid1.allocd) {
+Boid.fixedUpdate = function(dt) {
+  var acc, avoidance, avoidanceCount, boid1, boid2, boids, cache, cohesion, cohesionCount, diffSq, i, imitation, imitationCount, j, len, limit, mod, parent1, parent2, pos1, pos2, stretch, vel;
+  cohesion = Vec2.cache[0];
+  avoidance = Vec2.cache[1];
+  imitation = Vec2.cache[2];
+  cache = Vec2.cache[3];
+  stretch = Vec2.cache[4];
+  acc = Vec2.cache[4];
+  limit = Kinetic.maxAcc / 3;
+  boids = this.roster;
+  i = len = boids.length;
+  while (i--) {
+    boid1 = boids[i];
+    if (!boid1.enabled) {
+      continue;
+    }
+    avoidanceCount = imitationCount = cohesionCount = 0;
+    parent1 = boid1.parent;
+    pos1 = parent1.transform.pos;
+    vel = parent1.kinetic.vel;
+    Vec2.set(acc);
+    j = len;
+    while (j--) {
+      boid2 = boids[j];
+      if (!boid2.enabled || boid1 === boid2) {
         continue;
       }
-      avoidanceCount = imitationCount = cohesionCount = 0;
-      j = boids.length;
-      while (j--) {
-        boid2 = boids[j];
-        if (!boid2.allocd || boid1 === boid2) {
-          continue;
+      parent2 = boid2.parent;
+      pos2 = parent2.transform.pos;
+      diffSq = Vec2.distSq(pos1, pos2);
+      if (diffSq < boid1.perceptionSq) {
+        Vec2.sub(pos2, pos1, stretch);
+        Vec2.scal(stretch, Math.sqrt(parent1.kinetic.mass / parent2.kinetic.mass));
+        if (!cohesionCount++) {
+          Vec2.copy(cohesion, stretch);
+        } else {
+          Vec2.add(cohesion, stretch);
         }
-        owner1 = boid1.owner;
-        owner2 = boid2.owner;
-        diffSq = Vec2.distSq(owner1.pos, owner2.pos);
-        if (diffSq < boid1.perceptionSq) {
-          if (!cohesionCount++) {
-            Vec2.copy(cohesion, owner2.pos);
-          } else {
-            Vec2.add(cohesion, owner2.pos);
-          }
-          if (!imitationCount++) {
-            Vec2.copy(imitation, owner2.vel);
-          } else {
-            Vec2.add(imitation, owner2.vel);
-          }
+        if (!imitationCount++) {
+          Vec2.copy(imitation, parent2.kinetic.vel);
+        } else {
+          Vec2.add(imitation, parent2.kinetic.vel);
         }
         if (diffSq < boid1.auraSq) {
-          diff = Math.sqrt(diffSq);
-          Vec2.add(owner1.acc, Vec2.scal(Vec2.sub(owner1.pos, owner2.pos, avoidance), 2));
+          if (!avoidanceCount++) {
+            Vec2.copy(avoidance, stretch);
+          } else {
+            Vec2.add(avoidance, stretch);
+          }
         }
-      }
-      if (cohesionCount) {
-        if (cohesionCount > 1) {
-          Vec2.scal(cohesion, 1 / cohesionCount);
-        }
-        Vec2.limit(Vec2.sub(cohesion, owner1.pos), limit);
-        Vec2.add(owner1.acc, Vec2.scal(cohesion, boid1.cohesionMod));
-      }
-      if (imitationCount) {
-        if (imitationCount > 1) {
-          Vec2.scal(imitation, 1 / imitationCount);
-        }
-        Vec2.limit(imitation, limit);
-        Vec2.add(owner1.acc, Vec2.scal(imitation, boid1.imitationMod));
       }
     }
-    return this;
-  };
+    mod = boid1.mod;
+    if (cohesionCount && boid1.cohesionMod) {
+      if (cohesionCount > 1) {
+        Vec2.scal(cohesion, 1 / cohesionCount);
+      }
+      Vec2.add(parent1.kinetic.acc, Vec2.scal(cohesion, boid1.cohesionMod * mod));
+    }
+    if (imitationCount && boid1.imitationMod) {
+      if (imitationCount > 1) {
+        Vec2.scal(imitation, 1 / imitationCount);
+      }
+      Vec2.add(acc, Vec2.scal(imitation, boid1.imitationMod * mod));
+      Vec2.add(parent1.kinetic.acc, Vec2.sub(acc, vel));
+    }
+    if (avoidanceCount && boid1.avoidanceMod) {
+      if (avoidanceCount > 1) {
+        Vec2.scal(avoidance, 1 / avoidanceCount);
+      }
+      Vec2.sub(parent1.kinetic.acc, Vec2.scal(avoidance, boid1.avoidanceMod * mod));
+    }
+  }
+  return this;
+};
 
-  return Boids;
+Boid.explode = function(scene) {
+  var comp, _i, _len, _ref;
+  _ref = Boid.pool.roster;
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    comp = _ref[_i];
+    if (comp.enabled) {
+      comp.parent.explode();
+    }
+  }
+  return this;
+};
 
-})(Pool);
-
-Pool.boids = new Pool.Boids(128);
+new Pool(Boid);

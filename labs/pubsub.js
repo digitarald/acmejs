@@ -13,16 +13,16 @@ Pubsub = (function() {
 
   Pubsub.prototype.empty = function() {};
 
-  Pubsub.prototype.alloc = function(owner) {
-    owner.pubsub = this;
-    this.owner = owner;
+  Pubsub.prototype.alloc = function(parent) {
+    parent.pubsub = this;
+    this.parent = parent;
     this.length = 0;
     return this;
   };
 
   Pubsub.prototype.free = function() {
     this.allocd = false;
-    this.owner = this.owner.pubsub = null;
+    this.parent = this.parent.pubsub = null;
     this.topics.length = this.methods.length = this.scopes.length = 0;
     return this;
   };

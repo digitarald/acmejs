@@ -3,107 +3,123 @@ var Particle,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Particle = (function() {
+Particle = (function(_super) {
+
+  __extends(Particle, _super);
+
+  Particle.prototype.name = 'particle';
 
   function Particle() {
-    this.pos = Vec2();
-    this.vel = Vec2();
-    this.acc = Vec2();
-    this.angle = Vec2();
+    Particle.__super__.constructor.call(this);
+    this.color = Color();
   }
 
-  Particle.prototype.alloc = function(pos, dir, lifetime, radius, mass) {
-    this.lifetime = lifetime != null ? lifetime : 1000;
+  Particle.prototype.alloc = function(parent, pos, acc, lifetime, radius, mass) {
+    var kinetic;
+    this.lifetime = lifetime != null ? lifetime : 1;
     this.radius = radius != null ? radius : 1;
-    this.mass = mass != null ? mass : this.radius;
-    Vec2.copy(this.pos, pos);
-    Vec2.copy(this.vel, dir);
-    Vec2.set(this.acc);
-    this.massInv = 1 / this.mass;
+    if (mass == null) {
+      mass = radius / 3;
+    }
+    Particle.__super__.alloc.call(this, parent);
+    Color.copy(this.color, Color.white);
+    Transform.alloc(this, pos);
+    kinetic = Kinetic.alloc(this, mass);
+    Vec2.add(kinetic.acc, acc);
     this.age = 0;
-    this.maxVel = 120;
-    Pubsub.pool.alloc(this);
+    this.sharpness = Math.randomFloat(0, 0.25);
+    this.alpha = Math.randomFloat(0.8, 1);
+    this.innerRadius = this.radius * this.sharpness;
     return this;
   };
 
-  Particle.prototype.free = function() {
-    this.allocd = false;
-    this.pubsub.pub('free', this);
-    this.pubsub.free();
+  Particle.prototype.update = function(dt, scene) {
+    if ((this.age += dt) >= this.lifetime) {
+      this.free();
+    }
     return this;
   };
 
   return Particle;
 
-})();
+})(Composite);
 
-Pool.Particles = (function(_super) {
-
-  __extends(Particles, _super);
-
-  function Particles() {
-    return Particles.__super__.constructor.apply(this, arguments);
+Particle.render = function(ctx) {
+  var color, crop, cropOffset, grad, particle, pos, radius, _i, _len, _ref;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  crop = Vec2.set(Vec2.cache[0], 50, 50);
+  cropOffset = Vec2.set(Vec2.cache[1], -25, -25);
+  _ref = this.roster;
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    particle = _ref[_i];
+    if (!particle.enabled) {
+      continue;
+    }
+    radius = particle.radius | 0;
+    if (!radius) {
+      continue;
+    }
+    color = particle.color;
+    pos = particle.transform.pos;
+    grad = ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], radius);
+    color[3] = particle.alpha * (1 - Math.quadIn(particle.age / particle.lifetime));
+    grad.addColorStop(0, Color.rgba(color));
+    color[3] = 0;
+    grad.addColorStop(1, Color.rgba(color));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(pos[0], pos[1], radius, 0, Math.TAU, true);
+    ctx.closePath();
+    ctx.fill();
   }
+  ctx.restore();
+  return this;
+};
 
-  Particles.prototype.instantiate = function() {
-    return new Particle();
-  };
-
-  Particles.prototype.update = function(dt, engine) {
-    var acc, age, cache, oldVel, particle, vel, _i, _len, _ref;
-    oldVel = Vec2.cache[0];
-    cache = Vec2.cache[1];
-    _ref = this.roster;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      particle = _ref[_i];
-      if (!particle.allocd) {
-        continue;
-      }
-      age = (particle.age += dt);
-      if (age > particle.lifetime) {
-        particle.free();
-        continue;
-      }
-      vel = particle.vel;
-      acc = Vec2.add(particle.acc, Vec2.scal(engine.gravity, particle.massInv, cache));
-      oldVel = Vec2.copy(oldVel, vel);
-      if (engine.friction) {
-        Vec2.add(acc, Vec2.scal(Vec2.norm(Vec2.inv(vel, cache)), engine.friction));
-      }
-      if (engine.drag < 1) {
-        Vec2.scal(vel, engine.drag);
-      }
-      Vec2.limit(Vec2.add(vel, Vec2.scal(acc, dt / 1000, cache)), particle.maxVel);
-      Vec2.add(particle.pos, Vec2.scal(Vec2.add(oldVel, particle.vel), 0.5 * dt / 1000));
-      Vec2.copy(particle.angle, acc);
-      Vec2.set(acc, 0, 0);
+Particle.renderSprite = function(ctx) {
+  var crop, cropOffset, offset, particle, pos, radius, _i, _len, _ref;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  crop = Vec2.set(Vec2.cache[0], 50, 50);
+  cropOffset = Vec2.set(Vec2.cache[1], -25, -25);
+  _ref = this.roster;
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    particle = _ref[_i];
+    if (!particle.enabled) {
+      continue;
     }
-    return this;
-  };
-
-  Particles.prototype.draw = function(context) {
-    var TAU, particle, _i, _len, _ref;
-    TAU = Math.TAU;
-    context.save();
-    context.globalCompositeOperation = 'xor';
-    _ref = this.roster;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      particle = _ref[_i];
-      if (!particle.allocd) {
-        continue;
-      }
-      context.fillStyle = Color.rgba(particle.color);
-      context.beginPath();
-      context.arc(particle.pos[0] | 0, particle.pos[1] | 0, particle.radius | 0, 0, TAU, true);
-      context.closePath();
-      context.fill();
+    radius = particle.radius | 0;
+    if (!radius) {
+      continue;
     }
-    context.restore();
-    return this;
-  };
+    pos = Vec2.add(particle.transform.pos, cropOffset, Vec2.cache[2]);
+    offset = Vec2.set(Vec2.cache[3], 0, 50 * (radius - 1));
+    ctx.globalAlpha = 1 - Math.quintIn(particle.age / particle.lifetime);
+    Particle.sprite.draw(ctx, pos, crop, offset);
+  }
+  ctx.restore();
+  return this;
+};
 
-  return Particles;
+Particle.sprite = new Sprite(function(ctx) {
+  var color, grad, i, radius, top, _i, _j, _results;
+  color = Color(Color.white);
+  _results = [];
+  for (radius = _i = 1; _i <= 25; radius = _i += 1) {
+    top = 25 + 50 * (radius - 1);
+    grad = ctx.createRadialGradient(25, top, 0, 25, top, radius);
+    for (i = _j = 0; _j <= 1; i = _j += 0.1) {
+      color[3] = Math.quadIn(i);
+      grad.addColorStop(1 - i, Color.rgba(color));
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(25, top, radius, 0, Math.TAU, true);
+    ctx.closePath();
+    _results.push(ctx.fill());
+  }
+  return _results;
+}, Vec2(50, 50 * 25));
 
-})(Pool);
-
-Particle.pool = new Pool.Particles(128);
+new Pool(Particle);
