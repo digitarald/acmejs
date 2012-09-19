@@ -1,24 +1,33 @@
 
 class Pool
 
-	@loops: ['fixedUpdate', 'simulate', 'update', 'lateUpdate', 'render']
+	@methodNames: ['fixedUpdate', 'simulate', 'update', 'lateUpdate', 'render']
+
+	@methodRegx: /^(?:on|did)[A-Z]/
+
+	@byMethod: {}
 
 	constructor: (@cls) ->
 		@roster = []
-		@name = cls.prototype.name
-
+		proto = cls.prototype
+		@name = proto.name
 		@cls.pool = @
 
-		for fn in Pool.loops
+		names = Pool.methodNames
+		for fn in Object.keys(proto).concat(Object.keys(cls))
+			if Pool.methodRegx.test(fn) and names.indexOf(fn) is -1
+				names.push(fn)
+
+		for fn in names
 			if fn of cls
 				@[fn] = cls[fn]
 			else if fn of cls.prototype
 				@[fn] = @forEach(fn)
 			else
 				continue
-			Pool.stacks[fn].push(@)
+			Pool.byMethod[fn].push(@)
 
-		# Semantic sugar
+		# Semantic su1gar
 		cls.alloc = =>
 			return @.alloc.apply(@, arguments)
 
@@ -49,14 +58,20 @@ class Pool
 		return entity
 
 	forEach: (fn) ->
-		return (dt, scene) ->
+		return (a0, a1, a2, a3, a4, a5, a6, a7) ->
 			roster = @roster
 			i = roster.length
-			while i--
-				if roster[i].enabled
-					roster[i][fn](dt, scene)
+			while i-- when roster[i].enabled
+				roster[i][fn](a0, a1, a2, a3)
 			@
 
-Pool.stacks = {}
-for fn in Pool.loops
-	Pool.stacks[fn] = []
+for fn in Pool.methodNames
+	Pool.byMethod[fn] = []
+
+Pool.call = (fn, a0, a1, a2, a3) ->
+	stack = @byMethod[fn]
+	i = stack.length
+	while i--
+		stack[i][fn](a0, a1, a2, a3)
+
+

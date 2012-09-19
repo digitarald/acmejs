@@ -23,10 +23,12 @@ Composite = (function() {
   };
 
   Composite.prototype.free = function() {
-    var key;
+    var key, subs, topic;
     this.enabled = this.allocd = false;
-    if (this.scopes) {
-      this.scopes.length = this.topics.length = this.methods.length = 0;
+    if (subs = this.subs) {
+      for (topic in this.subs) {
+        this.subs[topic].length = 0;
+      }
     }
     for (key in this.components) {
       this.components[key].free();
@@ -52,40 +54,50 @@ Composite = (function() {
   };
 
   Composite.prototype.sub = function(scope, topic, method) {
-    if (!this.scopes) {
-      this.topics = [];
-      this.scopes = [];
-      this.methods = [];
+    var items, refs, subs;
+    subs = this.subs || (this.subs = {});
+    items = subs[topic] || (subs[topic] = []);
+    items.push(scope, method);
+    refs = scope.refPubs || (scope.refPubs = []);
+    if (refs.indexOf(this) !== -1) {
+      refs.push(this);
     }
-    this.scopes.push(scope);
-    this.topics.push(topic);
-    this.methods.push(method);
     return this;
   };
 
   Composite.prototype.pub = function(topic, a0, a1, a2, a3, a4, a5, a6, a7) {
-    var i, scope, scopes, topics, _i, _len;
-    if ((scopes = this.scopes)) {
-      topics = this.topics;
-      for (i = _i = 0, _len = scopes.length; _i < _len; i = ++_i) {
-        scope = scopes[i];
-        if (scope && (!topics[i] || topics[i] === topic)) {
-          scope[this.methods[i] || topic](a0, a1, a2, a3, a4, a5, a6, a7);
+    var i, items, scope;
+    if (this.subs && (items = this.subs[topic] && (i = items.length))) {
+      while (i -= 2) {
+        if (scope = items[i]) {
+          scope[items[i + 1] || topic](a0, a1, a2, a3, a4, a5, a6, a7);
         }
       }
     }
     return this;
   };
 
-  Composite.prototype.unsub = function(unscope, topic, method) {
-    var i, methods, scope, scopes, topics, _i, _len;
-    if ((scopes = this.scopes)) {
-      topics = this.topics;
-      methods = this.methods;
-      for (i = _i = 0, _len = scopes.length; _i < _len; i = ++_i) {
-        scope = scopes[i];
-        if (scope && (!unscope || scope === unscope) && (!topic || topics[i] === topic) && (!method || methods[i] === method)) {
-          topics[i] = scopes[i] = methods[i] = null;
+  Composite.prototype.unsub = function(unscope, untopic) {
+    var i, items, length, scope, subs, topic;
+    if (subs = this.subs) {
+      for (topic in subs) {
+        items = subs[topic];
+        if (!((i = items.length) && (!untopic || untopic === topic))) {
+          continue;
+        }
+        length = i / 2;
+        while (i -= 2) {
+          if (scope = items[i]) {
+            if (unscope && scope !== unscope) {
+              continue;
+            } else {
+              items[i] = null;
+            }
+            length--;
+          }
+        }
+        if (!length) {
+          items.length = 0;
         }
       }
     }

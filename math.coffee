@@ -1,16 +1,12 @@
 
+typedArray = Float32Array
+
 Vec2 = (fromOrX, y) ->
 	if typeof y isnt 'undefined'
-		return [fromOrX, y]
-	if typeof fromOrX isnt 'undefined'
-		return [fromOrX[0], fromOrX[1]]
-	return [0, 0]
-
-# TODO: Performance tests
-if 'Float32Array' of window
-	Vec2Wrappped = Vec2
-	Vec2 = (fromOrX, y) ->
-		return new Float32Array(Vec2Wrappped(fromOrX, y))
+		return new typedArray([fromOrX, y])
+	else if typeof fromOrX isnt 'undefined'
+		return new typedArray([fromOrX[0], fromOrX[1]])
+	else return new typedArray([0, 0])
 
 Vec2.zero = Vec2()
 Vec2.cache = [Vec2(), Vec2(), Vec2(), Vec2(), Vec2()]
@@ -111,14 +107,13 @@ Vec2.limit = (a, max, result) ->
 		result[1] = y
 	return result
 
-# Vec2.rad = (a, b) ->
-#	if not b
-#		return Math.atan2(a[0], a[1])
-
-#	return Math.acos(Vec2.dot(
-#		Vec2.norm(a, radCache[0]),
-#		Vec2.norm(b, radCache[1])
-#	))
+Vec2.rad = (a, b) ->
+	if not b
+		return Math.atan2(a[1], a[0])
+	return Math.acos(Vec2.dot(
+		Vec2.norm(a, radCache[0]),
+		Vec2.norm(b, radCache[1])
+	))
 
 Vec2.rot = (a, rad, result) ->
 	result = result or a
@@ -129,6 +124,16 @@ Vec2.rot = (a, rad, result) ->
 	result[0] = x * cosA - y * sinA
 	result[1] = x * sinA + y * cosA
 	return result
+
+Vec2.lookAt = (a, b, result) ->
+	result = result or a
+	len = Vec2.len(a)
+	return Vec2.norm(Vec2.rot(
+		a,
+		Math.atan2(b[0] - a[0], b[1] - a[1]) - Math.atan2(a[1], a[0]),
+		result
+	), null, len)
+
 
 # Math
 

@@ -3,18 +3,30 @@ var Pool, fn, _i, _len, _ref;
 
 Pool = (function() {
 
-  Pool.loops = ['fixedUpdate', 'simulate', 'update', 'lateUpdate', 'render'];
+  Pool.methodNames = ['fixedUpdate', 'simulate', 'update', 'lateUpdate', 'render'];
+
+  Pool.methodRegx = /^(?:on|did)[A-Z]/;
+
+  Pool.byMethod = {};
 
   function Pool(cls) {
-    var fn, _i, _len, _ref,
+    var fn, names, proto, _i, _j, _len, _len1, _ref,
       _this = this;
     this.cls = cls;
     this.roster = [];
-    this.name = cls.prototype.name;
+    proto = cls.prototype;
+    this.name = proto.name;
     this.cls.pool = this;
-    _ref = Pool.loops;
+    names = Pool.methodNames;
+    _ref = Object.keys(proto).concat(Object.keys(cls));
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       fn = _ref[_i];
+      if (Pool.methodRegx.test(fn) && names.indexOf(fn) === -1) {
+        names.push(fn);
+      }
+    }
+    for (_j = 0, _len1 = names.length; _j < _len1; _j++) {
+      fn = names[_j];
       if (fn in cls) {
         this[fn] = cls[fn];
       } else if (fn in cls.prototype) {
@@ -22,7 +34,7 @@ Pool = (function() {
       } else {
         continue;
       }
-      Pool.stacks[fn].push(this);
+      Pool.byMethod[fn].push(this);
     }
     cls.alloc = function() {
       return _this.alloc.apply(_this, arguments);
@@ -63,13 +75,13 @@ Pool = (function() {
   };
 
   Pool.prototype.forEach = function(fn) {
-    return function(dt, scene) {
+    return function(a0, a1, a2, a3, a4, a5, a6, a7) {
       var i, roster;
       roster = this.roster;
       i = roster.length;
       while (i--) {
         if (roster[i].enabled) {
-          roster[i][fn](dt, scene);
+          roster[i][fn](a0, a1, a2, a3);
         }
       }
       return this;
@@ -80,10 +92,19 @@ Pool = (function() {
 
 })();
 
-Pool.stacks = {};
-
-_ref = Pool.loops;
+_ref = Pool.methodNames;
 for (_i = 0, _len = _ref.length; _i < _len; _i++) {
   fn = _ref[_i];
-  Pool.stacks[fn] = [];
+  Pool.byMethod[fn] = [];
 }
+
+Pool.call = function(fn, a0, a1, a2, a3) {
+  var i, stack, _results;
+  stack = this.byMethod[fn];
+  i = stack.length;
+  _results = [];
+  while (i--) {
+    _results.push(stack[i][fn](a0, a1, a2, a3));
+  }
+  return _results;
+};

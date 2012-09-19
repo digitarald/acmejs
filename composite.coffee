@@ -18,8 +18,9 @@ class Composite
 
 	free: () ->
 		@enabled = @allocd = false
-		if @scopes
-			@scopes.length = @topics.length = @methods.length = 0
+		if subs = @subs
+			for topic of @subs
+				@subs[topic].length = 0
 
 		for key of @components
 			@components[key].free()
@@ -41,29 +42,33 @@ class Composite
 
 	# Pubsub
 	sub: (scope, topic, method) ->
-		if not @scopes
-			@topics = []
-			@scopes = []
-			@methods = []
-		@scopes.push(scope)
-		@topics.push(topic)
-		@methods.push(method)
+		subs = @subs or (@subs = {})
+		items = subs[topic] or (subs[topic] = [])
+		items.push(scope, method)
+
+		refs = scope.refPubs or (scope.refPubs = [])
+		if refs.indexOf(@) isnt -1
+			refs.push(@)
 		@
 
 	pub: (topic, a0, a1, a2, a3, a4, a5, a6, a7) ->
-		if (scopes = @scopes)
-			topics = @topics
-			for scope, i in scopes
-				if scope and (not topics[i] or topics[i] is topic)
-					scope[@methods[i] or topic](a0, a1, a2, a3, a4, a5, a6, a7)
+		if @subs and items = @subs[topic] and i = items.length
+			while i -= 2 when scope = items[i]
+				scope[items[i + 1] or topic](a0, a1, a2, a3, a4, a5, a6, a7)
 		@
 
-	unsub: (unscope, topic, method) ->
-		if (scopes = @scopes)
-			topics = @topics
-			methods = @methods
-			for scope, i in scopes
-				if scope and (not unscope or scope is unscope) and (not topic or topics[i] is topic) and (not method or methods[i] is method)
-					topics[i] = scopes[i] = methods[i] = null
+	unsub: (unscope, untopic) ->
+		if subs = @subs
+			for topic, items of subs when (i = items.length) and (not untopic or untopic is topic)
+				length = i / 2
+				while i -= 2
+					if scope = items[i]
+						if unscope and scope isnt unscope
+							continue
+						else
+							items[i]	= null
+				  length--
+				if not length
+					items.length = 0
 		@
 
