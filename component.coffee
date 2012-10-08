@@ -1,29 +1,42 @@
+
+require('./math')
+
 # Base class for everything attached to a composite
 class Component
 
-	name: 'component'
-
-	constructor: ->
-		@uid = Math.uid()
-		@parent = null
+	type: 'component'
 
 	toString: ->
-		return "Component #{@name}##{@uid} [#{@parent}]"
+		return "Component #{@type}##{@uid} [#{@parent}]"
 
-	alloc: (@parent) ->
-		@scene = parent.scene or parent
-		parent[@name] = parent.components[@uid] = @
-		@enabled = true
+	alloc: (presets) ->
+		components = @parent.components
+		for type of components
+			@[type] = component = components[type]
+			component[@type] = @
+		@parent[@type] = @
+		@parent.components[@type] = @
+		if @reset
+			@reset(presets)
 		@
 
 	free: ->
-		@enabled = @allocd = false
-		delete @parent.components[@uid]
-		@scene = @parent = @parent[@name] = null
+		delete @parent.components[@type]
+		components = @parent.components
+		for type of components
+			delete @[components[type].type]
+			delete components[type][@type]
+		@parent[@type] = null
+		@pool.free(@)
 		@
 
-	enable: ->
-		@enabled = true
+	enable: (state) ->
+		@enabled = state ?= not @state
+		@parent.pub('onComponent' + (if state then 'Enable' else 'Disable'), @)
+		@
 
-	disable: ->
-		@enabled = false
+	sub: (scope = @, topic, method) ->
+		@parent.sub(scope, topic, method)
+		@
+
+module.exports = Component

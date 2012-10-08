@@ -1,7 +1,11 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
+
 
 class Effector extends Component
 
-	name: 'effector'
+	type: 'effector'
 
 	alloc: (parent, @radius = 100, @mass = @parent.mass) ->
 		super(parent)
@@ -58,3 +62,5 @@ Effector.simulate = (dt) ->
 	@
 
 new Pool(Effector)
+
+module.exports = Effector

@@ -1,7 +1,20 @@
+Composite = require('./composite')
+Pool = require('./pool')
+{Vec2} = require('./math')
+Color = require('./color')
+Engine = require('./engine')
+Particle = require('./particle')
+Kinetic = require('./kinetic')
+Border = require('./border')
+Boid = require('./boid')
 
 class Catapult extends Composite
 
-	name: 'catapult'
+	type: 'catapult'
+
+	presets:
+		pos: Vec2()
+		color: Color.white
 
 	constructor: ->
 		@pos = Vec2()
@@ -10,11 +23,10 @@ class Catapult extends Composite
 		@end = Vec2()
 		@acc = Vec2()
 		@accNorm = Vec2()
-		super()
 
-	alloc: (parent, pos) ->
-		Vec2.copy(@pos, pos)
-		Color.copy(@color, Color.white)
+	reset: (presets) ->
+		Vec2.copy(@pos, presets.pos)
+		Color.copy(@color, presets.color)
 
 		@state = null
 		@radius = 90
@@ -22,7 +34,7 @@ class Catapult extends Composite
 		@fireRadius = @radius * 0.1
 		@listenRadiusSq = @listenRadius * @listenRadius
 		Vec2.set(@acc)
-		super(parent)
+		@
 
 	update: (dt) ->
 		if @state is 'fired'
@@ -33,13 +45,13 @@ class Catapult extends Composite
 
 			randAcc = Kinetic.maxAcc * 0.2
 
-			for i in [0..Math.randomFloat(50, 75)] by 1
+			for i in [0..Math.rand(50, 75)] by 1
 				Vec2.add(
 					acc,
 					Vec2.set(
 						rand,
-						Math.randomFloat(-randAcc, randAcc),
-						Math.randomFloat(-randAcc, randAcc)
+						Math.rand(-randAcc, randAcc),
+						Math.rand(-randAcc, randAcc)
 					),
 					perAcc
 				)
@@ -48,18 +60,18 @@ class Catapult extends Composite
 					@pos,
 					Vec2.set(
 						rand,
-						Math.randomFloat(-5, 5),
-						Math.randomFloat(-5, 5)
+						Math.rand(-5, 5),
+						Math.rand(-5, 5)
 					),
 					perPos
 				)
 
 				particle = Particle.alloc(
-					@scene,
+					@root,
 					perPos,
 					perAcc,
-					Math.randomFloat(15, 25, Math.cubicOut),
-					Math.randomFloat(1, 15, Math.quadIn)
+					Math.rand(15, 25, Math.cubicOut),
+					Math.rand(1, 15, Math.quadIn)
 				)
 				Boid.alloc(particle)
 				# Collider.alloc(particle)
@@ -131,3 +143,5 @@ class Catapult extends Composite
 		@
 
 new Pool(Catapult)
+
+module.exports = Catapult

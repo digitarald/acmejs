@@ -1,18 +1,28 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
 
 class Jitter extends Component
 
-	name: 'jitter'
+	type: 'jitter'
 
-	alloc: (parent, @factor = 0.8, @force = 1000) ->
-		super(parent)
+	presets:
+		factor: 0.8
+		force: 1000
+
+	reset: (presets) ->
+		{@factor, @force} = presets
+		@
 
 	fixedUpdate: (dt) ->
-		if Math.randomBool(@factor)
+		if Math.chance(@factor)
 			rand = Vec2.set(
 				Vec2.cache[0],
-				Math.randomFloat(-@force, @force),
-				Math.randomFloat(-@force, @force)
+				Math.rand(-@force, @force),
+				Math.rand(-@force, @force)
 			)
 			Vec2.add(@parent.kinetic.acc, rand)
 
 new Pool(Jitter)
+
+module.exports = Jitter

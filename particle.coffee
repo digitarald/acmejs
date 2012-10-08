@@ -1,93 +1,116 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
+Color = require('./color')
+Transform = require('./transform')
+Kinetic = require('./kinetic')
+Sprite = require('./sprite').Asset
 
-class Particle extends Composite
+class Particle extends Component
 
-	name: 'particle'
+	type: 'particle'
 
-	constructor: () ->
-		super()
-		@color = Color()
+	presets:
+		lifetime: 1
+		radius: 1
+		sprite: Particle.sprite
+		shrink: Math.quintIn
+		fade: Math.quintIn
 
-	alloc: (parent, pos, acc, @lifetime = 1, @radius = 1, mass = radius / 3) ->
-		super(parent)
-		Color.copy(@color, Color.white)
-		Transform.alloc(@, pos)
-		kinetic = Kinetic.alloc(@, mass)
-		Vec2.add(kinetic.acc, acc)
+	reset: (presets) ->
+		{@lifetime, @radius, @sprite, @shrink, @fade} = presets
 		@age = 0
-		@sharpness = Math.randomFloat(0, 0.25)
-		@alpha = Math.randomFloat(0.8, 1)
-		@innerRadius = @radius * @sharpness
 		@
 
 	update: (dt, scene) ->
 		if (@age += dt) >= @lifetime
-			@free()
+			@parent.free()
 		@
+
+	onKineticSleep: ->
+		@parent.free()
+		false
+
+# Particle.render = (ctx) ->
+#	ctx.save()
+#	ctx.globalCompositeOperation = 'lighter'
+
+#	crop = Vec2.set(Vec2.cache[0], 50, 50)
+#	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
+
+#	for particle in @roster when particle.enabled
+#		radius = particle.radius | 0
+#		if not radius
+#			continue
+
+#		color = particle.color
+#		pos = particle.transform.pos
+
+#		grad = ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], radius)
+#		color[3] = particle.alpha * (1 - Math.quadIn(particle.age / particle.lifetime))
+#		grad.addColorStop(0, Color.rgba(color))
+#		color[3] = 0
+#		grad.addColorStop(1, Color.rgba(color))
+#		ctx.fillStyle = grad
+#		ctx.beginPath()
+#		ctx.arc(pos[0], pos[1], radius, 0, Math.TAU, true)
+#		ctx.closePath()
+#		ctx.fill()
+
+#	ctx.restore()
+#	@
+
+Particle.defaultComposite = 'lighter'
 
 Particle.render = (ctx) ->
 	ctx.save()
-	ctx.globalCompositeOperation = 'lighter'
+	composite = Particle.defaultComposite
+	if composite
+		ctx.globalCompositeOperation = composite
 
 	crop = Vec2.set(Vec2.cache[0], 50, 50)
 	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
 
 	for particle in @roster when particle.enabled
-		radius = particle.radius | 0
-		if not radius
-			continue
-
-		color = particle.color
-		pos = particle.transform.pos
-
-		grad = ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], radius)
-		color[3] = particle.alpha * (1 - Math.quadIn(particle.age / particle.lifetime))
-		grad.addColorStop(0, Color.rgba(color))
-		color[3] = 0
-		grad.addColorStop(1, Color.rgba(color))
-		ctx.fillStyle = grad
-		ctx.beginPath()
-		ctx.arc(pos[0], pos[1], radius, 0, Math.TAU, true)
-		ctx.closePath()
-		ctx.fill()
-
-	ctx.restore()
-	@
-
-Particle.renderSprite = (ctx) ->
-	ctx.save()
-	ctx.globalCompositeOperation = 'lighter'
-
-	crop = Vec2.set(Vec2.cache[0], 50, 50)
-	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
-
-	for particle in @roster when particle.enabled
-		radius = particle.radius | 0
-		if not radius
+		radius = particle.radius
+		if particle.shrink
+			radius *= 1 - particle.shrink(particle.age / particle.lifetime)
+		if not (radius = radius | 0)
 			continue
 
 		pos = Vec2.add(particle.transform.pos, cropOffset, Vec2.cache[2])
 		offset = Vec2.set(Vec2.cache[3], 0, 50 * (radius - 1))
 
-		ctx.globalAlpha = 1 - Math.quintIn(particle.age / particle.lifetime)
-		Particle.sprite.draw(ctx, pos, crop, offset)
+		alpha = 1
+		if particle.fade
+			alpha -= particle.fade(particle.age / particle.lifetime)
+		ctx.globalAlpha = alpha
+
+		particle.sprite.draw(ctx, pos, crop, offset)
 
 	ctx.restore()
 	@
 
-Particle.sprite = new Sprite((ctx) ->
-	color = Color(Color.white)
-	for radius in [1..25] by 1
-		top = 25 + 50 * (radius - 1)
-		grad = ctx.createRadialGradient(25, top, 0, 25, top, radius)
-		for i in [0..1] by 0.1
-			color[3] = Math.quadIn(i)
-			grad.addColorStop(1 - i, Color.rgba(color))
-		ctx.fillStyle = grad
-		ctx.beginPath()
-		ctx.arc(25, top, radius, 0, Math.TAU, true)
-		ctx.closePath()
-		ctx.fill()
-, Vec2(50, 50 * 25))
+Particle.generateSprite = (color = Color.white, alpha = 1, max = 25) ->
+	color = Color(color)
+	size = max * 2
+	return new Sprite((ctx) ->
+		for radius in [1..max] by 1
+			top = max + size * (radius - 1)
+			grad = ctx.createRadialGradient(max, top, 0, max, top, radius)
+			color[3] = alpha
+			grad.addColorStop(0, Color.rgba(color))
+			color[3] = 0
+			grad.addColorStop(1, Color.rgba(color))
+			ctx.fillStyle = grad
+			ctx.beginPath()
+			ctx.arc(max, top, radius, 0, Math.TAU, true)
+			ctx.closePath()
+			ctx.fill()
+	, Vec2(size, size * max))
 
+Particle.sprite = Particle.generateSprite()
 
 new Pool(Particle)
+
+module.exports = Particle

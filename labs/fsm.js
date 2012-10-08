@@ -21,13 +21,13 @@ Fsm = (function() {
     return this;
   };
 
-  Fsm.prototype.start = function(name) {
-    this.state = name;
+  Fsm.prototype.start = function(type) {
+    this.state = type;
     return this;
   };
 
   Fsm.prototype.add = function(state) {
-    this.states[this.state.name] = this.state;
+    this.states[this.state.type] = this.state;
     return this;
   };
 
@@ -37,7 +37,7 @@ Fsm = (function() {
     return this;
   };
 
-  Fsm.prototype.get = function(name) {
+  Fsm.prototype.get = function(type) {
     return this.state;
   };
 
@@ -51,10 +51,10 @@ Fsm.State = (function() {
 
   State.prototype.children = {};
 
-  function State(fsm, name, options) {
+  function State(fsm, type, options) {
     var parent, state, _i, _len, _ref;
     this.fsm = fsm;
-    this.name = name;
+    this.type = type;
     if (options == null) {
       options = {};
     }
@@ -66,7 +66,7 @@ Fsm.State = (function() {
     }
     parent = this.parent;
     if (parent) {
-      this.from[this.name] = parent.children[this.name] = true;
+      this.from[this.type] = parent.children[this.type] = true;
     }
   }
 

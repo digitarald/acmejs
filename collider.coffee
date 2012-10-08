@@ -1,7 +1,21 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
+Engine = require('./engine')
 
+# FIXME: Circle Collider only
+# http://gamedev.tutsplus.com/tutorials/implementation/when-worlds-collide-simulating-circle-circle-collisions/
+# https://sites.google.com/site/t3hprogrammer/research/circle-circle-collision-tutorial#TOC-Dynamic-Circle-Circle-Collision
 class Collider extends Component
 
-	name: 'collider'
+	type: 'collider'
+
+	presets:
+		trigger: false
+
+	reset: (presets) ->
+		@trigger = presets.trigger
+		@
 
 Collider.simulate = (dt) ->
 	colliders = @roster
@@ -19,8 +33,8 @@ Collider.simulate = (dt) ->
 
 			parent1 = collider1.parent
 			parent2 = collider2.parent
-			radius1 = parent1.radius
-			radius2 = parent2.radius
+			radius1 = parent1.radius or parent1.bounds.radius
+			radius2 = parent2.radius or parent2.bounds.radius
 			pos1 = parent1.transform.pos
 			pos2 = parent2.transform.pos
 
@@ -30,13 +44,21 @@ Collider.simulate = (dt) ->
 			if diffSq > radiusSum * radiusSum
 				continue
 
-			diff = Math.sqrt(diffSq) - radiusSum
+			p = Vec2.norm(Vec2.sub(pos1, pos2, Vec2.cache[0]))
+			diff = Math.sqrt(diffSq)
+
+			if collider1.trigger or collider2.trigger
+				# debugger
+				parent1.pub('onTrigger', parent2, p, diff)
+				parent2.pub('onTrigger', parent1, p, diff)
+				continue
+
+			diff -= radiusSum
 			vel1 = parent1.kinetic.vel
 			vel2 = parent2.kinetic.vel
-			mass1 = parent1.kinetic.mass
-			mass2 = parent2.kinetic.mass
+			mass1 = parent1.kinetic.mass or 1
+			mass2 = parent2.kinetic.mass or 1
 
-			p = Vec2.norm(Vec2.sub(pos1, pos2, Vec2.cache[0]))
 			if diff < 0
 				Vec2.add(pos1, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]))
 				Vec2.add(pos2, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]))
@@ -44,7 +66,8 @@ Collider.simulate = (dt) ->
 			# p = Vec2.norm(Vec2.sub(parent1.pos, parent2.pos, Vec2.cache[0]))
 
 			# normal vector to collision direction
-			n = Vec2.set(Vec2.cache[1], p[1], -p[0])
+			# n = Vec2.set(Vec2.cache[1], p[1], -p[0])
+			n = Vec2.perp(p, Vec2.cache[1])
 
 			vp1 = Vec2.dot(vel1, p) # velocity of P1 along collision direction
 			vn1 = Vec2.dot(vel1, n) # velocity of P1 normal to collision direction
@@ -66,8 +89,10 @@ Collider.simulate = (dt) ->
 				vel2
 			)
 
-			parent1.pub('collide', parent2, n)
-			parent2.pub('collide', parent1, n)
+			parent1.pub('onCollide', parent2, n)
+			parent2.pub('onCollide', parent1, n)
 	@
 
 new Pool(Collider)
+
+module.exports = Collider

@@ -1,16 +1,29 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
+Engine = require('./engine')
 
 class Input extends Component
 
-	name: 'input'
+	type: 'input'
 
 	constructor: () ->
 		@pos = Vec2()
+		@touchState = null # TODO: Better default value
+		@axis - Vec2()
 		@prevPos = Vec2()
 		@queue = []
 
 		@map =
 			32: 'space'
 			192: 'debug'
+
+		@keyNames = []
+		@keys = {}
+		for code, key of @map
+			if not ~@keyNames.indexOf(key)
+				@keyNames.push(key)
+				@keys[key] = null
 
 		@throttled =
 			mousemove: true
@@ -29,37 +42,37 @@ class Input extends Component
 				mouseup: 'endTouch'
 				keydown: 'keyStart'
 				keyup: 'keyEnd'
-
-		for name of @events
-			document.addEventListener(name, @, false)
+		for type of @events
+			document.addEventListener(type, @, false)
 
 	handleEvent: (event) ->
+		if event.metaKey
+			return
+		event.preventDefault()
 		type = event.type
-		if type of @throttled and @queued is type
+		if @throttled[type] and @queued is type
 			@queue[@queue.length - 1] = event
 		else
 			@queued = type
 			@queue.push(event)
+		true
 
 	keyStart: (event) ->
-		if not event.metaKey
-			code = event.keyCode
-			if not @keyState and code of @map
-				@keyState = 'began'
-				@key = @map[code]
-			return false
+		if (key = @map[event.keyCode]) and not @keys[key]
+			@keys[key] = 'began'
+			Engine.pub('onKeyBegan', key)
 		@
 
 	keyEnd: (event) ->
-		if @keyState
-			@keyState = 'ended'
+		if key = @map[event.keyCode]
+			@keys[key] = 'ended'
+			Engine.pub('onKeyEnded', key)
 		@
 
 	startTouch: (event) ->
 		@resolve(event)
 		if not @touchState and not event.metaKey
 			@touchState = 'began'
-			return false
 		@
 
 	moveTouch: (event) ->
@@ -70,20 +83,22 @@ class Input extends Component
 		@
 
 	endTouch: (event) ->
+		@resolve(event)
 		if @touchState and (not @hasTouch or not event.targetTouches.length)
 			@touchState = 'ended'
 		@
 
 	resolve: (event) ->
-		@prevTime = @time
-		@time = event.timeStamp / 1000
 		coords = if @hasTouch then event.targetTouches[0] else event
 		if coords
+			@prevTime = @time
+			@time = event.timeStamp / 1000
 			Vec2.copy(@prevPos, @pos)
+			renderer = Engine.renderer
 			Vec2.set(
 				@pos,
-				coords.pageX - Engine.renderer.margin[0],
-				coords.pageY - Engine.renderer.margin[1]
+				(coords.pageX - renderer.margin[0]) / renderer.scale | 0,
+				(coords.pageY - renderer.margin[1]) / renderer.scale | 0
 			)
 		@
 
@@ -96,14 +111,16 @@ class Input extends Component
 				@touchState = null
 				break
 
-		switch @keyState
-			when 'began'
-				@keyState = 'pressed'
-				break
-			when 'ended'
-				@keyState = null
-				break
-
+		keys = @keys
+		for key in @keyNames
+			switch keys[key]
+				when 'began'
+					keys[key] = 'pressed'
+					Engine.pub('onKeyPressed', key)
+					break
+				when 'ended'
+					keys[key] = null
+					break
 
 		event = @queue.shift()
 		if event
@@ -111,4 +128,6 @@ class Input extends Component
 		@queued = null
 		@
 
-new Pool(Input)
+pool = new Pool(Input)
+
+module.exports = Input

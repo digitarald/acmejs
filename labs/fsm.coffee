@@ -18,19 +18,19 @@ class Fsm
 		@parent = @parent.sm = null
 		@
 
-	start: (name) ->
-		@state = name
+	start: (type) ->
+		@state = type
 		@
 
 	add: (state) ->
-		@states[@state.name] = @state
+		@states[@state.type] = @state
 		@
 
 	set: (toName) ->
 		to = @states[toName]
 		@
 
-	get: (name) ->
+	get: (type) ->
 		return @state
 
 
@@ -40,11 +40,11 @@ class Fsm.State
 	from: {}
 	children: {}
 
-	constructor: (@fsm, @name, options = {}) ->
+	constructor: (@fsm, @type, options = {}) ->
 		@parent = options.parent or null
 		for state in options.from or []
 			@from[state] = true
 
 		parent = @parent
 		if parent
-			@from[@name] = parent.children[@name] = true
+			@from[@type] = parent.children[@type] = true

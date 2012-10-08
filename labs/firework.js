@@ -7,7 +7,7 @@ Firework = (function(_super) {
 
   __extends(Firework, _super);
 
-  Firework.prototype.name = 'firework';
+  Firework.prototype.type = 'firework';
 
   function Firework() {
     this.center = Vec2();
@@ -37,17 +37,17 @@ Firework = (function(_super) {
       return;
     }
     input = Engine.input;
-    if (!input.touchState || !Math.randomBool(this.chance)) {
+    if (!input.touchState || !Math.chance(this.chance)) {
       return;
     }
     pos = Vec2.cache[1];
     dir = Vec2.cache[2];
     origin = Vec2.add(Engine.renderer.pos, input.to, Vec2.cache[0]);
     _results = [];
-    for (i = _i = 0, _ref = Math.randomFloat(this.amount[0], this.amount[1]); _i <= _ref; i = _i += 1) {
-      Vec2.add(Vec2.set(pos, Math.randomFloat(-this.spread[0] / 2, this.spread[0] / 2), Math.randomFloat(-this.spread[1] / 2, this.spread[1] / 2)), origin);
-      Vec2.set(dir, Math.randomFloat(-this.acc[0], this.acc[0]), Math.randomFloat(-this.acc[1], this.acc[1]));
-      particle = Particle.pool.alloc(scene, pos, dir, Math.randomFloat(5000, 10000), Math.randomFloat(1, 4), 1);
+    for (i = _i = 0, _ref = Math.rand(this.amount[0], this.amount[1]); _i <= _ref; i = _i += 1) {
+      Vec2.add(Vec2.set(pos, Math.rand(-this.spread[0] / 2, this.spread[0] / 2), Math.rand(-this.spread[1] / 2, this.spread[1] / 2)), origin);
+      Vec2.set(dir, Math.rand(-this.acc[0], this.acc[0]), Math.rand(-this.acc[1], this.acc[1]));
+      particle = Particle.pool.alloc(scene, pos, dir, Math.rand(5000, 10000), Math.rand(1, 4), 1);
       Boid.alloc(particle);
       _results.push(Border.alloc(particle));
     }

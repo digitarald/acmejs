@@ -1,7 +1,7 @@
 
 class Firework extends Component
 
-	name: 'firework'
+	type: 'firework'
 
 	constructor: ->
 		@center = Vec2()
@@ -28,7 +28,7 @@ class Firework extends Component
 
 		input = Engine.input
 
-		if not input.touchState or not Math.randomBool(@chance)
+		if not input.touchState or not Math.chance(@chance)
 			return
 
 		pos = Vec2.cache[1]
@@ -38,31 +38,31 @@ class Firework extends Component
 			input.to,
 			Vec2.cache[0]
 		)
-		# @center[0] + Math.randomFloat(-@size[0] / 2, @size[0] / 2),
-		# @center[1] + Math.randomFloat(-@size[1] / 2, @size[1] / 2)
+		# @center[0] + Math.rand(-@size[0] / 2, @size[0] / 2),
+		# @center[1] + Math.rand(-@size[1] / 2, @size[1] / 2)
 
 
-		for i in [0..Math.randomFloat(@amount[0], @amount[1])] by 1
+		for i in [0..Math.rand(@amount[0], @amount[1])] by 1
 			Vec2.add(
 				Vec2.set(
 					pos,
-					Math.randomFloat(-@spread[0] / 2, @spread[0] / 2),
-					Math.randomFloat(-@spread[1] / 2, @spread[1] / 2)
+					Math.rand(-@spread[0] / 2, @spread[0] / 2),
+					Math.rand(-@spread[1] / 2, @spread[1] / 2)
 				),
 				origin
 			)
 			Vec2.set(
 				dir,
-				Math.randomFloat(-@acc[0], @acc[0]),
-				Math.randomFloat(-@acc[1], @acc[1])
+				Math.rand(-@acc[0], @acc[0]),
+				Math.rand(-@acc[1], @acc[1])
 			)
 
 			particle = Particle.pool.alloc(
 				scene,
 				pos,
 				dir,
-				Math.randomFloat(5000, 10000),
-				Math.randomFloat(1, 4),
+				Math.rand(5000, 10000),
+				Math.rand(1, 4),
 				1
 			)
 

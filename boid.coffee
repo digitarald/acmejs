@@ -1,19 +1,25 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
+Kinetic = require('./kinetic')
 
 class Boid extends Component
 
-	name: 'boid'
+	type: 'boid'
+
+	presets:
+		perception: 200
 
 	constructor: ->
-		super()
 		@mod = 1
 		@cohesionMod = 0.5
 		@avoidanceMod = 2
 		@imitationMod = 1
 
-	alloc: (parent, @perception = 200, aura) ->
-		super(parent)
-		@aura = aura or @parent.radius * 1.5
+	reset: (presets) ->
+		@perception = presets.perception
 
+		@aura = aura or @parent.radius * 1.5 # FIXME: Bounds
 		@perceptionSq = @perception * @perception
 		@auraSq = @aura * @aura
 		@
@@ -22,8 +28,7 @@ Boid.fixedUpdate = (dt) ->
 	cohesion = Vec2.cache[0]
 	avoidance = Vec2.cache[1]
 	imitation = Vec2.cache[2]
-	cache = Vec2.cache[3]
-	stretch = Vec2.cache[4]
+	stretch = Vec2.cache[3]
 	acc = Vec2.cache[4]
 
 	limit = Kinetic.maxAcc / 3
@@ -125,3 +130,5 @@ Boid.explode = (scene) ->
 	@
 
 new Pool(Boid)
+
+module.exports = Boid

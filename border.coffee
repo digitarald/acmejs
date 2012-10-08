@@ -1,10 +1,18 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
+Engine = require('./engine')
 
 class Border extends Component
 
-	name: 'border'
+	type: 'border'
+
+	reset: () ->
+		@kill = null
+		@bounciness = 1
 
 Border.simulate = (dt, scene) ->
-	size = Engine.renderer.client
+	size = Engine.renderer.content
 	viewport = Engine.renderer.pos
 
 	horizontal = Vec2.set(
@@ -20,41 +28,47 @@ Border.simulate = (dt, scene) ->
 
 	for border in @roster when border.enabled
 		parent = border.parent
+		bounciness = border.bounciness
 		pos = parent.transform.pos
 		vel = parent.kinetic.vel
-		radius = parent.radius
+		radius = parent.radius or parent.bounds.radius # FIXME
+		if border.kill
+			radius *= -1 # kill after crossing border
 
-		hit = false
+		hit = null
 
 		# horizontal
 		diff = pos[0] - radius - horizontal[0]
 		if diff < 0
-			hit = true
 			pos[0] -= diff
-			vel[0] *= -1
+			vel[0] *= -bounciness
+			hit = 0
 		else
 			diff = pos[0] + radius - horizontal[1]
 			if diff > 0
 				pos[0] -= diff
-				vel[0] *= -1
-				hit = true
+				vel[0] *= -bounciness
+				hit = 0
 
 		# vertical
 		diff = pos[1] - radius - vertical[0]
 		if diff < 0
 			pos[1] -= diff
-			vel[1] *= -1
-			hit = true
+			vel[1] *= -bounciness
+			hit = 1
 		else
 			diff = pos[1] + radius - vertical[1]
 			if diff > 0
 				pos[1] -= diff
-				vel[1] *= -1
-				hit = true
+				vel[1] *= -bounciness
+				hit = 1
 
-		if border.kill and hit
-			parent.free()
+		if hit?
+			parent.pub('onBorder', hit)
+			if border.kill
+				parent.free()
 	@
 
+new Pool(Border)
 
-new Pool(Border).preinstantiate(128)
+module.exports = Border

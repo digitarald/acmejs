@@ -1,139 +1,124 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
+
+addForce = Vec2()
 
 class Kinetic extends Component
 
-	@maxVel = 500
-	@maxAcc = 10000
-	@sleep = 1
-	@sleepSq = @sleep * @sleep
+	type: 'kinetic'
 
-	name: 'kinetic'
+	@gravity: null # Vec2(0, 500)
+
+	@friction: 15
+
+	@drag: 0.999
+
+	presets:
+		mass: 0
+		drag: Kinetic.drag
+		friction: Kinetic.friction
+		fixed: false
+		maxVel: 75
+		maxAcc: 2000
+		acc: Vec2()
+		vel: Vec2()
 
 	constructor: () ->
-		super()
 		@vel = Vec2()
 		@acc = Vec2()
+		@sleepVelSq = 1
 
-	alloc: (parent, @mass = 0) ->
-		super(parent)
-		Vec2.set(@vel)
-		Vec2.set(@acc)
-		@pos = parent.transform.pos
-
-		@sleeping = true
-		@fixed = false
-		@massInv = if mass then 1 / mass else 0
-		@maxVel = Kinetic.maxVel # + factor * 75
-		@maxAcc = Kinetic.maxAcc # + factor * 2000
-		@drag = @scene.drag
-		@friction = @scene.friction
+	reset: (presets) ->
+		{@mass, @drag, @friction, @fixed, @maxVel, @maxAcc} = presets
+		Vec2.copy(@vel, presets.vel)
+		Vec2.copy(@acc, presets.acc)
+		@pos = @transform.pos
+		@sleeping = false
 		@
 
+	applyForce: (acc, ignoreMass, constant) ->
+		if not ignoreMass and @mass
+			Vec2.scal(acc, 1 / @mass, addForce)
+		else
+			Vec2.copy(addForce, acc)
+		if constant and not @force
+			Force.alloc(@)
+		Vec2.add((if constant then @force.force else @acc), addForce)
+		@
+
+
 Kinetic.simulate = (dt, scene) ->
-	dtSq = dt * dt * 0.5
 	copyVel = Vec2.cache[0]
-	copyAcc = Vec2.cache[1]
-	cache = Vec2.cache[2]
+	cache = Vec2.cache[1]
+	epsilon = Math.epsilon
 
 	for kinetic in @roster when kinetic.enabled and not kinetic.fixed
 		# Integrate
 		vel = kinetic.vel
 		acc = kinetic.acc
 
+		# if not Vec2.validate(vel) or not Vec2.validate(acc)
+		#	debugger
+
 		# Apply scene gravity
-		if scene.gravity and kinetic.mass > 0.01
+		if scene.gravity and kinetic.mass > epsilon
 			Vec2.add(
 				acc,
-				Vec2.scal(scene.gravity, kinetic.massInv, cache)
+				Vec2.scal(scene.gravity, 1 / kinetic.mass, cache)
 			)
 
 		# Apply friction
-		if not kinetic.sleeping
-			if kinetic.friction
-				Vec2.add(
-					acc,
-					Vec2.scal(
-						Vec2.norm(vel, cache),
-						-kinetic.friction
-					)
-				)
-
-		# Scale forces to mass.
-		# Vec2.scal(acc, kinetic.massInv)
-
-		Vec2.add(
-			kinetic.pos,
+		if kinetic.friction
 			Vec2.add(
-				Vec2.scal(vel, dt, copyVel), # Preserve momentum
-				Vec2.scal(acc, dtSq, copyAcc)
+				acc,
+				Vec2.scal(
+					Vec2.norm(vel, cache),
+					-kinetic.friction
+				)
 			)
-		)
+
+		# http://www.richardlord.net/presentations/physics-for-flash-games
+		#	https://github.com/soulwire/Coffee-Physics/tree/master/source/engine/integrator
+
+		if kinetic.maxAcc
+			Vec2.limit(acc, kinetic.maxAcc)
+
+		Vec2.copy(copyVel, vel)
+		Vec2.add(vel, Vec2.scal(acc, dt, cache))
+		if kinetic.maxVel
+			Vec2.limit(vel, kinetic.maxVel)
+		Vec2.scal(Vec2.add(copyVel, vel), dt / 2)
+
+		if Vec2.lenSq(copyVel) > kinetic.sleepVelSq
+			Vec2.add(kinetic.pos, copyVel)
+			kinetic.transform.dirty = true
 
 		Vec2.add(
 			vel,
 			Vec2.scal(acc, dt)
 		)
 
-		# Vec2.add(
-		#	vel,
-		#	Vec2.scal(
-		#		Vec2.limit(acc, kinetic.maxAcc),
-		#		dt,
-		#		cache
-		#	)
-		# )
-
-		# Gentle max velocity
-		# currentVel = Vec2.len(vel)
-		# factor = 1 / currentVel / kinetic.maxVel
-		# if factor < 0.99
-		#	Vec2.scal(
-		#		vel,
-		#		factor + (1 - factor) * 2
-		#	)
-
-		# Add velocity to position
-		# Vec2.add(
-		#	kinetic.pos,
-		#	Vec2.scal(
-		#		Vec2.add(copyVel, vel),
-		#		0.5 * dt
-		#	)
-		# )
-
-
 		# Apply drag
 		if kinetic.drag < 1
 			Vec2.scal(vel, kinetic.drag)
 
-		# Euler
-		# Vec2.add(
-		#	kinetic.pos,
-		#	Vec2.scal(
-		#		Vec2.limit(vel, kinetic.maxVel),
-		#		dt,
-		#		cache
-		#	)
-		# )
-
-		# Improved Verlet
-		# p1 = position;
-		# v1 = velocity;
-		# a1 = acceleration( p1, v1);
-		# p2 = p1 + v1 * time;
-		# v2 = v1 + a1 * time;
-		# a2 = acceleration( p2, v2);
-		# position += (v1 + v2) * time / 2;
-		# velocity += (a1 + a2) * time / 2;
-
-		# console.log(Vec2.len(vel), Vec2.len(cache))
-		# debugger
-
-		kinetic.sleeping = Vec2.lenSq(vel) < Kinetic.sleep
-
-		# Vec2.copy(kinetic.angle, acc)
+		# Check sleep
+		if kinetic.sleepVelSq
+			if Vec2.lenSq(vel) < kinetic.sleepVelSq
+				if not kinetic.sleeping
+					Vec2.set(vel)
+					kinetic.sleeping = true
+					kinetic.parent.pubUp('onKineticSleep', kinetic)
+			else
+				if kinetic.sleeping
+					kinetic.sleeping = false
+					kinetic.parent.pubUp('onKineticWake', kinetic)
 
 		# Reset forces
 		Vec2.set(acc)
 	@
 
 new Pool(Kinetic)
+
+module.exports = Kinetic

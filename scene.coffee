@@ -1,97 +1,79 @@
-
-MAX_SPEED = 150
-
-origin = Vec2()
-current = Vec2()
-pos = Vec2()
-dir = Vec2()
+Component = require('./component')
+Composite = require('./composite')
+Pool = require('./pool')
+Engine = require('./engine')
+{Vec2} = require('./math')
+Catapult = require('./catapult')
+Sprite = require('./sprite').Asset
+Particle = require('./particle')
 
 class Scene extends Composite
 
-	name: 'scene'
+	type: 'scene'
 
 	constructor: () ->
-		super()
 		@gravity = null # Vec2(0, 500)
 		@friction = 0 # 5
 		@drag = 1 # 0.9999
 
-		# Firework.pool.alloc(
-		#	@,
-		#	Vec2(0, 0),
-		#	Vec2(800, 450),
-		#	Vec2(20, 20)
-		#	Vec2(5, 10)
-		#	Vec2(1200, 1200),
-		#	0.3
-		# )
-
-		@catapult = Catapult.alloc(
-			@,
-			Vec2(100, 540)
-		)
+		@catapult = Catapult.alloc(@, Vec2(100, 540))
 		Sky.alloc(@)
 		Earth.alloc(@, Vec2(840, 520))
 
+module.exports = Scene
 
-class Earth extends Composite
+# Earth
 
-	name: 'earth'
+class Earth extends Component
 
-	constructor: () ->
-		super()
-		@pos = Vec2()
+	type: 'earth'
 
-		@radius = 50
-		@pos = Vec2()
-		@vel = Vec2()
-		@acc = Vec2()
-
-	alloc: (parent, pos) ->
-		super(parent)
-		Vec2.copy(@pos, pos)
-		# Boid.alloc(@, 300)
+	onTrigger: (entity) ->
+		pos = entity.transform.pos
+		entity.free()
+		require('./explosion').alloc(@, pos)
+		@
 
 	render: (ctx) ->
-		Earth.sprite.draw(ctx, @pos)
+		Earth.sprite.draw(ctx, @transform.pos)
+		@
 
 Earth.sprite = new Sprite('assets/earth.png')
 
 new Pool(Earth)
 
+# Sky
 
-class Sky extends Composite
+class Sky extends Component
 
-	name: 'sky'
+	type: 'sky'
 
 	constructor: () ->
-		super()
 		@stars = []
 
-	alloc: (parent, pos) ->
-		super(parent)
+	reset: () ->
 		size = Engine.renderer.client
 
 		for i in [0..100]
 			@stars.push(
 				Vec2(
-					Math.randomFloat(-size[0] / 2, size[0] * 1.5),
-					Math.randomFloat(-size[1] / 2, size[1] * 1.5)
+					Math.rand(-size[0] / 2, size[0] * 1.5),
+					Math.rand(-size[1] / 2, size[1] * 1.5)
 				),
-				Math.randomFloat(1, 10) | 0,
-				Math.randomFloat(1, 4) | 0
+				Math.rand(1, 10) | 0,
+				Math.rand(1, 4) | 0
 			)
 
 	update: (dt, scene) ->
 		input = Engine.input
 		pos = input.pos
-		if input.keyState is 'began' and input.key is 'space'
+		if input.keys.space is 'began'
 			pos = input.pos
-			Explosion.alloc(@, pos)
+			require('./explosion').alloc(@, pos)
 			# Boid.explode()
 
 		if input.touchState is 'began' and scene.catapult.state isnt 'active'
-			Meteor.alloc(@, pos)
+			require('./../meteor').alloc(@, pos)
 		@
 
 	render: (ctx, scene) ->

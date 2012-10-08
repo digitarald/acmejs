@@ -1,16 +1,37 @@
+Component = require('./component')
+Pool = require('./pool')
+{Vec2} = require('./math')
 
 class Transform extends Component
 
-	name: 'transform'
+	type: 'transform'
+
+	presets:
+		pos: Vec2()
+		angle: 0
 
 	constructor: () ->
-		super()
 		@pos = Vec2()
+		@worldPos = Vec2()
 
-	alloc: (parent, pos) ->
-		super(parent)
-		Vec2.copy(@pos, pos)
-		@rotation = 0
+	reset: (presets) ->
+		Vec2.copy(@pos, presets.pos)
+		@worldAngle = @angle = presets.angle
+		@
+
+	toWorld: () ->
+		# composit = @parent
+		# while composit = composit.parent …
+		@worldPos.copy(@pos)
+		@worldAngle = @angle
+		@
+
+	transform: (ctx) ->
+		ctx.translate(@pos[0] | 0, @pos[1] | 0)
+		if @angle
+			ctx.rotate(@angle)
 		@
 
 new Pool(Transform)
+
+module.exports = Transform

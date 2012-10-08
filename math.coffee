@@ -1,23 +1,28 @@
 
-typedArray = Float32Array
+Mat = Math # compression win
+Mat.epsilon = 0.001
+{sqrt, pow, abs, random, epsilon} = Mat
+Mat.TypedArray = typedArray = Float64Array or Float32Array or (arr) -> arr
 
 Vec2 = (fromOrX, y) ->
-	if typeof y isnt 'undefined'
+	if y?
 		return new typedArray([fromOrX, y])
-	else if typeof fromOrX isnt 'undefined'
-		return new typedArray([fromOrX[0], fromOrX[1]])
-	else return new typedArray([0, 0])
+	if fromOrX?
+		return new typedArray(fromOrX)
+	return new typedArray(Vec2.zero)
 
-Vec2.zero = Vec2()
+Vec2.zero = Vec2.center = Vec2(0, 0)
 Vec2.cache = [Vec2(), Vec2(), Vec2(), Vec2(), Vec2()]
+Vec2.topLeft = Vec2(1, -1)
+Vec2.topCenter = Vec2(0, -1)
+Vec2.topRight = Vec2(-1, -1)
+Vec2.centerLeft = Vec2(1, 0)
+Vec2.centerRight = Vec2(-1, 0)
+Vec2.bottomLeft = Vec2(1, 1)
+Vec2.bottomCenter = Vec2(0, 1)
+Vec2.bottomRight = Vec2(-1, 1)
+
 radCache = [Vec2(), Vec2()]
-
-e = 0.0001
-
-sqrt = Math.sqrt
-pow = Math.pow
-abs = Math.abs
-random = Math.random
 
 Vec2.set = (result, x, y) ->
 	result[0] = x or 0
@@ -29,37 +34,38 @@ Vec2.copy = (result, b) ->
 	result[1] = b[1]
 	return result
 
+Vec2.valid = (a) ->
+	return not (isNaN(a[0]) or isNaN(a[0]))
+
 Vec2.eq = (a, b) ->
-	d1 = abs(a[0] - b[0])
-	d2 = abs(a[1] - b[1])
-	return d1 < e and d2 < e
+	return abs(a[0] - b[0]) < epsilon and abs(a[1] - b[1]) < epsilon
 
 Vec2.add = (a, b, result) ->
-	result = result or a
+	result or= a
 	result[0] = a[0] + b[0]
 	result[1] = a[1] + b[1]
 	return result
 
 Vec2.sub = (a, b, result) ->
-	result = result or a
+	result or= a
 	result[0] = a[0] - b[0]
 	result[1] = a[1] - b[1]
 	return result
 
 Vec2.mul = (a, b, result) ->
-	result = result or a
+	result or= a
 	result[0] = a[0] * b[0]
 	result[1] = a[1] * b[1]
 	return result
 
 Vec2.scal = (a, scalar, result) ->
-	result = result or a
+	result or= a
 	result[0] = a[0] * scalar
 	result[1] = a[1] * scalar
 	return result
 
 Vec2.norm = (a, result, scalar = 1) ->
-	result = result or a
+	result or= a
 	x = a[0]
 	y = a[1]
 	len = scalar / (sqrt(x * x + y * y) or 1)
@@ -80,9 +86,17 @@ Vec2.cross = (a, b) ->
 	return a[0] * b[1] - a[1] * b[0]
 
 Vec2.lerp = (a, b, scalar, result) ->
-	result = result or a
+	result or= a
 	result[0] = a[0] + scalar * (b[0] - a[0])
 	result[1] = a[1] + scalar * (b[1] - a[1])
+	return result
+
+# http://www.cas.kth.se/CURE/doc-cure-2.2.1/html/toolbox_2src_2Math_2Vector2D_8hh-source.html
+Vec2.perp = (a, result) ->
+	result or= a
+	x = a[0]
+	result[0] = a[1]
+	result[1] = -x
 	return result
 
 Vec2.dist = (a, b) ->
@@ -96,7 +110,7 @@ Vec2.distSq = (a, b) ->
 	return x * x + y * y
 
 Vec2.limit = (a, max, result) ->
-	result = result or a
+	result or= a
 	x = a[0]
 	y = a[1]
 	if (ratio = max / sqrt(x * x + y * y)) < 1
@@ -109,16 +123,16 @@ Vec2.limit = (a, max, result) ->
 
 Vec2.rad = (a, b) ->
 	if not b
-		return Math.atan2(a[1], a[0])
-	return Math.acos(Vec2.dot(
+		return Mat.atan2(a[1], a[0])
+	return Mat.acos(Vec2.dot(
 		Vec2.norm(a, radCache[0]),
 		Vec2.norm(b, radCache[1])
 	))
 
-Vec2.rot = (a, rad, result) ->
-	result = result or a
-	sinA = Math.sin(rad)
-	cosA = Math.cos(rad)
+Vec2.rot = (a, theta, result) ->
+	result or= a
+	sinA = Mat.sin(theta)
+	cosA = Mat.cos(theta)
 	x = a[0]
 	y = a[1]
 	result[0] = x * cosA - y * sinA
@@ -126,33 +140,35 @@ Vec2.rot = (a, rad, result) ->
 	return result
 
 Vec2.lookAt = (a, b, result) ->
-	result = result or a
+	result or= a
 	len = Vec2.len(a)
 	return Vec2.norm(Vec2.rot(
 		a,
-		Math.atan2(b[0] - a[0], b[1] - a[1]) - Math.atan2(a[1], a[0]),
+		Mat.atan2(b[0] - a[0], b[1] - a[1]) - Mat.atan2(a[1], a[0]),
 		result
 	), null, len)
 
 
 # Math
 
-Math.TAU = Math.PI * 2
-# Math.PIRAD = 0.0174532925
+{random, pow} = Mat
 
-Math.UID = 1
-Math.uid = ->
-	return Math.UID++
+Mat.TAU = Mat.PI * 2
+# Mat.PIRAD = 0.0174532925
 
-Math.clamp = (a, low, high) ->
+Mat.UID = 1
+Mat.uid = ->
+	return Mat.UID++
+
+Mat.clamp = (a, low, high) ->
 	if a < low
 		return low
 	return if a > high then high else a
 
-Math.randomFloat = (low, high, ease) ->
-	return low + (ease or Math.linear)(random()) * (high - low + 1)
+Mat.rand = (low, high, ease) ->
+	return low + (ease or Mat.linear)(random()) * (high - low + 1)
 
-Math.randomBool = (chance) ->
+Mat.chance = (chance) ->
 	return random() <= chance
 
 # Tweens
@@ -168,10 +184,12 @@ toInOut = (fn) ->
 	(t) ->
 		return (if t < 0.5 then fn(t * 2) else (2 - fn(2 * (1 - t)))) / 2
 
-Math.linear = (t) ->
+Mat.linear = (t) ->
 	return t
 
 for transition, i in ['quad', 'cubic', 'quart', 'quint']
-	Math[transition + 'In'] = fn = powIn(i + 2)
-	Math[transition + 'Out'] = toOut(fn)
-	Math[transition + 'InOut'] = toInOut(fn)
+	Mat[transition + 'In'] = fn = powIn(i + 2)
+	Mat[transition + 'Out'] = toOut(fn)
+	Mat[transition + 'InOut'] = toInOut(fn)
+
+module.exports.Vec2 = Vec2
