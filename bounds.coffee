@@ -12,16 +12,12 @@ class Bounds extends Component
 		size: Vec2()
 
 	constructor: () ->
-		@topLeft = Vec2()
-		@bottomRight = Vec2()
 		@size = Vec2()
 
 	reset: (presets) ->
 		Vec2.copy(@size, presets.size)
 		@shape = presets.shape
 		@radius = presets.radius
-
-		@epsilion = 0
 		@
 
 	intersectLine: (p1, p2) ->
@@ -31,38 +27,57 @@ class Bounds extends Component
 		null
 
 	contains: (point) ->
-		transform = @parent.transform
-		e = @epsilion
+		pos = @parent.transform.pos
 		switch @shape
-			when 'sphere'
-				return Vec2.distSq(transform.pos, point) <= @radius * @radius
+			when 'circle'
+				return Bounds.circPoint(pos, @radius, point)
 			when 'rect'
-				return (
-						transform.pos[0] < point[0] and
-						transform.pos[1] < point[1] and
-						transform.pos[0] + @size[0] > point[0] and
-						transform.pos[1] + @size[1] > point[1]
-					)
+				return Bounds.rectPoint(pos, @size, point)
 		return false
 
+	withinRect: (pos, size) ->
+		mypos = @parent.transform.pos
+		switch @shape
+			when 'circle'
+				return Bounds.rectCirc(pos, size, mypos, @radius)
+			when 'rect'
+				return Bounds.rectRect(pos, size, mypos, @size)
+		return false
 
 # http://www.openprocessing.org/user/54
-# http://seb.ly/2009/05/super-fast-trianglerectangle-intersection-test/
 
-Bounds.rectCircle = (topLeft, size, center, radius) ->
-	circleDistanceX = abs(cx - rx - rw/2)
-	circleDistanceY = abs(cy - ry - rh/2)
+Bounds.circPoint = (center, radius, point) ->
+	return Vec2.distSq(point, center) <= radius * radius
 
-	if circleDistanceX > (rw/2 + cr) or circleDistanceY > (rh/2 + cr)
+Bounds.rectPoint = (pos, size, point) ->
+	return (
+		pos[0] < point[0] and
+		pos[1] < point[1] and
+		pos[0] + size[0] > point[0] and
+		pos[1] + size[1] > point[1]
+	)
+
+Bounds.rectCirc = (topLeft, size, center, radius) ->
+	circleDistanceX = Math.abs(center[0] - topLeft[0] - size[0] / 2)
+	circleDistanceY = Math.abs(center[1] - topLeft[1] - size[1] / 2)
+
+	if circleDistanceX > (size[0] / 2 + radius) or circleDistanceY > (size[1] / 2 + radius)
 		return false
-	if circleDistanceX <= rw/2 or circleDistanceY <= rh/2
+	if circleDistanceX <= size[0] / 2 or circleDistanceY <= size[1] / 2
 		return true
 
-	cornerDistance = Math.pow(circleDistanceX - rw/2, 2) + pow(circleDistanceY - rh/2, 2)
-	return cornerDistance <= pow(cr, 2)
+	cornerDistance = Math.pow(circleDistanceX - size[0] / 2, 2) + Math.pow(circleDistanceY - size[1] / 2, 2)
+	return cornerDistance <= Math.pow(radius, 2)
 
-Bounds.rectRect = (@topLeft, @bottomRight, @topLeft2, @bottomRight2) ->
-	return (left > otherRight or right < otherLeft or top > otherBottom or bottom < otherTop)
+Bounds.rectRect = (pos, size, pos2, size2) ->
+	return not (
+		pos[0] > pos2[0] + size2[0] or
+		pos[0] + size[0] < pos2[0] or
+		pos[1] > pos2[1] + size2[1] or
+		pos[1] + size[1] < pos2[1]
+	)
+
+# http://seb.ly/2009/05/super-fast-trianglerectangle-intersection-test/
 
 Bounds.lineRect = (point1, point2, @topLeft, @size) ->
   # Calculate m and c for the equation for the line (y = mx+c)

@@ -27,19 +27,22 @@ Pool = (function() {
     var fn, keys, proto, types, _i, _j, _len, _len1,
       _this = this;
     this.cls = cls;
+    proto = cls.prototype;
+    this.type = proto.type;
+    this.isComponent = this.type && this.type !== 'composite';
+    this.light = (!this.isComponent) || proto.light || false;
+    if (this.type) {
+      Pool.types[this.type] = this;
+    }
+    proto.pool = this;
+    cls.pool = this;
     this.roster = [];
     this.subs = [];
     this.hooks = [];
     this.enabled = false;
     this.allocd = 0;
-    proto = cls.prototype;
-    this.type = proto.type;
-    this.dirty = false;
-    this.extended = this.type && this.type !== 'composite';
-    Pool.types[this.type] = this;
-    proto.pool = this;
-    cls.pool = this;
-    if (this.extended) {
+    this.layer = proto.layer || cls.layer || 0;
+    if (this.isComponent && !this.light) {
       types = Pool.typedHooks;
       keys = Object.keys(proto).concat(Object.keys(cls));
       for (_i = 0, _len = keys.length; _i < _len; _i++) {
@@ -87,7 +90,7 @@ Pool = (function() {
   };
 
   Pool.prototype.alloc = function(parent, presets) {
-    var defaults, entity, i, roster, topic, _i, _len, _ref;
+    var defaults, entity, hook, i, roster, topic, uid, _i, _j, _len, _len1, _ref, _ref1;
     roster = this.roster;
     i = roster.length;
     while (i--) {
@@ -101,25 +104,34 @@ Pool = (function() {
     }
     this.allocd++;
     this.enabled = true;
-    if (fn in Pool.order) {
-      Pool.order[fn] = true;
+    _ref = this.hooks;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      hook = _ref[_i];
+      if (hook in Pool.order) {
+        Pool.order[hook] = true;
+      }
     }
-    entity.uid = Math.uid();
+    entity.uid = uid = Math.uid();
     entity.enabled = true;
     entity.allocd = true;
-    entity.parent = parent;
-    entity.root = parent.root || parent || entity;
-    entity.layer = (parent && parent.layer || -1) + 1 + (entity.layer || 0);
-    if (this.extended) {
+    entity.parent = parent || null;
+    entity.root = parent && parent.root || parent || entity;
+    entity.layer = (parent && parent.layer || 0) + this.layer + 2 - 1 / uid;
+    if (entity.root.descendants) {
+      entity.root.descendants[uid] = entity;
+    } else {
+      entity.descendants = {};
+    }
+    if (this.isComponent) {
       if (defaults = entity.presets) {
         if (presets && !presets._merged) {
           presets.__proto__ = defaults;
           presets._merged = true;
         }
       }
-      _ref = this.subs;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        topic = _ref[_i];
+      _ref1 = this.subs;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        topic = _ref1[_j];
         parent.sub(entity, topic);
       }
     }
@@ -128,12 +140,18 @@ Pool = (function() {
   };
 
   Pool.prototype.free = function(entity) {
-    this.enabled = this.allocd-- > 1;
+    if (entity.root === entity) {
+      entity.descendants = null;
+    } else if (entity.root.descendants) {
+      delete entity.root.descendants[entity.uid];
+    }
     entity.enabled = false;
     entity.allocd = false;
     entity.uid = null;
     entity.root = null;
-    return entity.parent = null;
+    entity.parent = null;
+    this.enabled = this.allocd-- > 1;
+    return this;
   };
 
   return Pool;
@@ -145,6 +163,43 @@ for (_i = 0, _len = _ref.length; _i < _len; _i++) {
   fn = _ref[_i];
   Pool.hooks[fn] = [];
 }
+
+Pool.dump = function(free) {
+  var pool, type, _ref1;
+  _ref1 = Pool.types;
+  for (type in _ref1) {
+    pool = _ref1[type];
+    console.log("%s: %d/%d allocd", type, pool.allocd, pool.roster.length);
+  }
+  if (free) {
+    Pool.free();
+  }
+  return null;
+};
+
+if ('console' in window) {
+  console.pool = Pool.dump;
+}
+
+Pool.free = function() {
+  var freed, i, pool, roster, type, _ref1;
+  _ref1 = Pool.types;
+  for (type in _ref1) {
+    pool = _ref1[type];
+    roster = pool.roster;
+    i = roster.length;
+    freed = 0;
+    while (i--) {
+      if (!(!roster[i].allocd)) {
+        continue;
+      }
+      roster.splice(i, 1);
+      freed++;
+    }
+    console.log("%s: %d/%d freed", type, freed, pool.roster.length);
+  }
+  return this;
+};
 
 Pool.invoke = function(fn, a0, a1, a2, a3) {
   var i, stack;
@@ -163,7 +218,7 @@ Pool.invoke = function(fn, a0, a1, a2, a3) {
 };
 
 Pool.orderFn = function(a, b) {
-  return (b.layer - a.layer) || (a.uid < b.uid);
+  return b.layer - a.layer;
 };
 
 module.exports = Pool;

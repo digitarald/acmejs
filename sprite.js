@@ -34,7 +34,7 @@ SpriteAsset = (function() {
           return _this.refresh();
         };
         img.src = srcOrRepaint;
-        if (img.onload && img.complete) {
+        if (img.onload && img.width && img.height) {
           img.onload();
         }
         break;
@@ -73,7 +73,6 @@ SpriteAsset = (function() {
 
   SpriteAsset.prototype.sample = function() {
     var bufferCtx, data, i, scale, size, x, y, _i, _j, _ref, _ref1;
-    console.log('sample');
     scale = this.scale, size = this.size, bufferCtx = this.bufferCtx;
     data = bufferCtx.getImageData(0, 0, size[0], size[1]).data;
     this.buffer.width = this.bufferSize[0];

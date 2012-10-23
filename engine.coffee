@@ -20,9 +20,8 @@ class Engine extends Composite
 		@scale = 1
 		@fps = 1/60
 
-		Input = require('./input')
-
 		# Components
+		Input = require('./input')
 		Input.alloc(@)
 
 		# Tick steup
@@ -37,12 +36,19 @@ class Engine extends Composite
 		, false)
 		@
 
+	play: (scene) ->
+		@scene = scene
+		@input.root = @scene
+		if not @running
+			@start()
+
 	start: ->
+		@running = true
 		requestAnimationFrame(@tickBound)
 		@
 
 	tick: (now) ->
-		now = (if now and now > 1e4 then now else Date.now()) / 1000
+		now = (if now and now > 1e12 then now else Date.now()) / 1000
 
 		if @lastTime
 			if (dt = now - @lastTime) > 0.5
@@ -62,7 +68,8 @@ class Engine extends Composite
 
 		@lastTime = now
 
-		requestAnimationFrame(@tickBound)
+		if @running
+			requestAnimationFrame(@tickBound)
 		@
 
 	update: (dt) ->
@@ -77,17 +84,17 @@ class Engine extends Composite
 		# Update loops
 		while tail > fdt
 			tail -= fdt
-			Pool.invoke('fixedUpdate', fdt, @scene)
-			Pool.invoke('simulate', fdt, @scene)
+			Pool.invoke('fixedUpdate', fdt)
+			Pool.invoke('simulate', fdt)
 
 		@tail = tail
 
-		Pool.invoke('update', dt, @scene)
-		Pool.invoke('lateUpdate', dt, @scene)
+		Pool.invoke('update', dt)
+		Pool.invoke('lateUpdate', dt)
 		# debugger
 
 		# @pub('preRender', ctx, @scene)
-		Pool.invoke('render', ctx, @scene)
+		Pool.invoke('render', ctx, dt)
 		# @pub('postRender', ctx, @scene)
 
 		# Stats

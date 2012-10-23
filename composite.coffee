@@ -15,6 +15,8 @@ class Composite
 		return "Composite #{@name or @type}##{@uid}"
 
 	alloc: (presets) ->
+		if @parent
+			@parent.children[@uid] = @
 		if presets
 			for type of presets
 				preset = presets[type]
@@ -27,9 +29,8 @@ class Composite
 						@name = presets[type]
 						break
 					else
-						Pool.types[type].alloc(@, preset)
-		if @parent
-			@parent.children[@uid] = @
+						if (pool = Pool.types[type])
+							pool.alloc(@, preset)
 		@
 
 	free: () ->
@@ -106,6 +107,9 @@ new Pool(Composite)
 class Composite.Prefab
 
 	constructor: (@presets) ->
+		# replace null with cachable objects
+		for key of presets
+			presets[key] = @presets[key] or {}
 
 	alloc: (parent, presets) ->
 		if (defaults = @presets) and presets

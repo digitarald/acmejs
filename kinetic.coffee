@@ -1,5 +1,6 @@
 Component = require('./component')
 Pool = require('./pool')
+Force = require('./force')
 {Vec2} = require('./math')
 
 addForce = Vec2()
@@ -27,7 +28,7 @@ class Kinetic extends Component
 	constructor: () ->
 		@vel = Vec2()
 		@acc = Vec2()
-		@sleepVelSq = 1
+		@sleepVelSq = 0.2
 
 	reset: (presets) ->
 		{@mass, @drag, @friction, @fixed, @maxVel, @maxAcc} = presets
@@ -48,7 +49,7 @@ class Kinetic extends Component
 		@
 
 
-Kinetic.simulate = (dt, scene) ->
+Kinetic.simulate = (dt) ->
 	copyVel = Vec2.cache[0]
 	cache = Vec2.cache[1]
 	epsilon = Math.epsilon
@@ -58,15 +59,22 @@ Kinetic.simulate = (dt, scene) ->
 		vel = kinetic.vel
 		acc = kinetic.acc
 
+		# if not Vec2.valid(vel) or not Vec2.valid(acc)
+		#	debugger
+
 		# if not Vec2.validate(vel) or not Vec2.validate(acc)
 		#	debugger
 
 		# Apply scene gravity
-		if scene.gravity and kinetic.mass > epsilon
+		if kinetic.root.gravity and kinetic.mass > epsilon
 			Vec2.add(
 				acc,
-				Vec2.scal(scene.gravity, 1 / kinetic.mass, cache)
+				Vec2.scal(@root.gravity, 1 / kinetic.mass, cache)
 			)
+
+		# if not kinetic.dirty and not Vec2.lenSq(acc) and kinetic.sleeping
+		#	# No acc, no computation
+		#	continue
 
 		# Apply friction
 		if kinetic.friction
@@ -89,10 +97,8 @@ Kinetic.simulate = (dt, scene) ->
 		if kinetic.maxVel
 			Vec2.limit(vel, kinetic.maxVel)
 		Vec2.scal(Vec2.add(copyVel, vel), dt / 2)
-
-		if Vec2.lenSq(copyVel) > kinetic.sleepVelSq
-			Vec2.add(kinetic.pos, copyVel)
-			kinetic.transform.dirty = true
+		Vec2.add(kinetic.pos, copyVel)
+		# kinetic.dirty = false
 
 		Vec2.add(
 			vel,
@@ -105,12 +111,13 @@ Kinetic.simulate = (dt, scene) ->
 
 		# Check sleep
 		if kinetic.sleepVelSq
-			if Vec2.lenSq(vel) < kinetic.sleepVelSq
+			if Vec2.lenSq(vel) <= kinetic.sleepVelSq
 				if not kinetic.sleeping
 					Vec2.set(vel)
 					kinetic.sleeping = true
 					kinetic.parent.pubUp('onKineticSleep', kinetic)
 			else
+				# kinetic.transform.dirty = true
 				if kinetic.sleeping
 					kinetic.sleeping = false
 					kinetic.parent.pubUp('onKineticWake', kinetic)

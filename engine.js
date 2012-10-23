@@ -47,14 +47,23 @@ Engine = (function(_super) {
     return this;
   };
 
+  Engine.prototype.play = function(scene) {
+    this.scene = scene;
+    this.input.root = this.scene;
+    if (!this.running) {
+      return this.start();
+    }
+  };
+
   Engine.prototype.start = function() {
+    this.running = true;
     requestAnimationFrame(this.tickBound);
     return this;
   };
 
   Engine.prototype.tick = function(now) {
     var dt;
-    now = (now && now > 1e4 ? now : Date.now()) / 1000;
+    now = (now && now > 1e12 ? now : Date.now()) / 1000;
     if (this.lastTime) {
       if ((dt = now - this.lastTime) > 0.5) {
         dt = this.fdt;
@@ -72,7 +81,9 @@ Engine = (function(_super) {
       this.time = now;
     }
     this.lastTime = now;
-    requestAnimationFrame(this.tickBound);
+    if (this.running) {
+      requestAnimationFrame(this.tickBound);
+    }
     return this;
   };
 
@@ -83,13 +94,13 @@ Engine = (function(_super) {
     fdt = this.fdt;
     while (tail > fdt) {
       tail -= fdt;
-      Pool.invoke('fixedUpdate', fdt, this.scene);
-      Pool.invoke('simulate', fdt, this.scene);
+      Pool.invoke('fixedUpdate', fdt);
+      Pool.invoke('simulate', fdt);
     }
     this.tail = tail;
-    Pool.invoke('update', dt, this.scene);
-    Pool.invoke('lateUpdate', dt, this.scene);
-    Pool.invoke('render', ctx, this.scene);
+    Pool.invoke('update', dt);
+    Pool.invoke('lateUpdate', dt);
+    Pool.invoke('render', ctx, dt);
     ctx.fillStyle = 'black';
     ctx.strokeStyle = 'white';
     ctx.font = '11px sans-serif';

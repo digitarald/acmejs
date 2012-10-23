@@ -35,7 +35,7 @@ Collider = (function(_super) {
 })(Component);
 
 Collider.simulate = function(dt) {
-  var collider1, collider2, colliders, diff, diffSq, i, j, mass1, mass2, n, p, parent1, parent2, pos1, pos2, radius1, radius2, radiusSum, vel1, vel2, vn1, vn2, vp1, vp1After, vp2, vp2After;
+  var collider1, collider2, colliders, diff, diffSq, i, j, kinetic1, kinetic2, mass1, mass2, n, p, parent1, parent2, pos1, pos2, radius1, radius2, radiusSum, vel1, vel2, vn1, vn2, vp1, vp1After, vp2, vp2After;
   colliders = this.roster;
   i = colliders.length;
   while (i--) {
@@ -46,7 +46,9 @@ Collider.simulate = function(dt) {
     j = i;
     while (j--) {
       collider2 = colliders[j];
-      if (!collider2.enabled) {
+      kinetic1 = collider1.kinetic;
+      kinetic2 = collider2.kinetic;
+      if (!collider2.enabled || (kinetic1.sleeping && kinetic2.sleeping)) {
         continue;
       }
       parent1 = collider1.parent;
@@ -68,10 +70,10 @@ Collider.simulate = function(dt) {
         continue;
       }
       diff -= radiusSum;
-      vel1 = parent1.kinetic.vel;
-      vel2 = parent2.kinetic.vel;
-      mass1 = parent1.kinetic.mass || 1;
-      mass2 = parent2.kinetic.mass || 1;
+      vel1 = kinetic1.vel;
+      vel2 = kinetic2.vel;
+      mass1 = kinetic1.mass || 1;
+      mass2 = kinetic2.mass || 1;
       if (diff < 0) {
         Vec2.add(pos1, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]));
         Vec2.add(pos2, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]));

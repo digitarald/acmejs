@@ -115,7 +115,7 @@ Boid.fixedUpdate = function(dt) {
   return this;
 };
 
-Boid.explode = function(scene) {
+Boid.explode = function() {
   var comp, _i, _len, _ref;
   _ref = Boid.pool.roster;
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {

@@ -11,7 +11,7 @@ class Border extends Component
 		@kill = null
 		@bounciness = 1
 
-Border.simulate = (dt, scene) ->
+Border.simulate = (dt) ->
 	size = Engine.renderer.content
 	viewport = Engine.renderer.pos
 

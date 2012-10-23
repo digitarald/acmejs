@@ -28,7 +28,9 @@ Collider.simulate = (dt) ->
 		j = i
 		while j--
 			collider2 = colliders[j]
-			if not collider2.enabled
+			kinetic1 = collider1.kinetic
+			kinetic2 = collider2.kinetic
+			if not collider2.enabled or (kinetic1.sleeping and kinetic2.sleeping)
 				continue
 
 			parent1 = collider1.parent
@@ -54,10 +56,10 @@ Collider.simulate = (dt) ->
 				continue
 
 			diff -= radiusSum
-			vel1 = parent1.kinetic.vel
-			vel2 = parent2.kinetic.vel
-			mass1 = parent1.kinetic.mass or 1
-			mass2 = parent2.kinetic.mass or 1
+			vel1 = kinetic1.vel
+			vel2 = kinetic2.vel
+			mass1 = kinetic1.mass or 1
+			mass2 = kinetic2.mass or 1
 
 			if diff < 0
 				Vec2.add(pos1, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]))
@@ -83,11 +85,13 @@ Collider.simulate = (dt) ->
 				Vec2.scal(n, vn1, Vec2.cache[3]),
 				vel1
 			)
+			# kinetic1.dirty = true
 			Vec2.add(
 				Vec2.scal(p, vp2After, Vec2.cache[2]),
 				Vec2.scal(n, vn2, Vec2.cache[3]),
 				vel2
 			)
+			# kinetic2.dirty = true
 
 			parent1.pub('onCollide', parent2, n)
 			parent2.pub('onCollide', parent1, n)

@@ -16,18 +16,15 @@ Transform = (function(_super) {
   Transform.prototype.type = 'transform';
 
   Transform.prototype.presets = {
-    pos: Vec2(),
-    angle: 0
+    pos: Vec2()
   };
 
   function Transform() {
     this.pos = Vec2();
-    this.worldPos = Vec2();
   }
 
   Transform.prototype.reset = function(presets) {
     Vec2.copy(this.pos, presets.pos);
-    this.worldAngle = this.angle = presets.angle;
     return this;
   };
 
@@ -39,9 +36,6 @@ Transform = (function(_super) {
 
   Transform.prototype.transform = function(ctx) {
     ctx.translate(this.pos[0] | 0, this.pos[1] | 0);
-    if (this.angle) {
-      ctx.rotate(this.angle);
-    }
     return this;
   };
 

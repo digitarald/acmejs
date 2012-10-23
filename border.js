@@ -30,7 +30,7 @@ Border = (function(_super) {
 
 })(Component);
 
-Border.simulate = function(dt, scene) {
+Border.simulate = function(dt) {
   var border, bounciness, diff, hit, horizontal, parent, pos, radius, size, vel, vertical, viewport, _i, _len, _ref;
   size = Engine.renderer.content;
   viewport = Engine.renderer.pos;

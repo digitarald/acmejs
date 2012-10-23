@@ -1,5 +1,7 @@
+Composite = require('./composite')
 Component = require('./component')
 Pool = require('./pool')
+Engine = require('./engine')
 {Vec2} = require('./math')
 Color = require('./color')
 Transform = require('./transform')
@@ -10,83 +12,79 @@ class Particle extends Component
 
 	type: 'particle'
 
+	# light: true # TODO
+
 	presets:
+		# pos: Vec2()
+		# vel: Vec2()
+		color: Color.white
 		lifetime: 1
 		radius: 1
 		sprite: Particle.sprite
 		shrink: Math.quintIn
 		fade: Math.quintIn
 
+	constructor: ->
+		# @pos = Vec2()
+		# @vel = Vec2()
+		@color = Color()
+
 	reset: (presets) ->
 		{@lifetime, @radius, @sprite, @shrink, @fade} = presets
+		Color.copy(@color, presets.color)
+		# Vec2.copy(@pos, presets.pos)
+		# Vec2.copy(@vel, presets.vel)
 		@age = 0
 		@
 
-	update: (dt, scene) ->
-		if (@age += dt) >= @lifetime
+	update: (dt) ->
+		if (@age += dt) > @lifetime
 			@parent.free()
+
+		if @shrink
+			if not (@radius *= 1 - @shrink(@age / @lifetime)) | 0
+				@parent.free()
 		@
-
-	onKineticSleep: ->
-		@parent.free()
-		false
-
-# Particle.render = (ctx) ->
-#	ctx.save()
-#	ctx.globalCompositeOperation = 'lighter'
-
-#	crop = Vec2.set(Vec2.cache[0], 50, 50)
-#	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
-
-#	for particle in @roster when particle.enabled
-#		radius = particle.radius | 0
-#		if not radius
-#			continue
-
-#		color = particle.color
-#		pos = particle.transform.pos
-
-#		grad = ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], radius)
-#		color[3] = particle.alpha * (1 - Math.quadIn(particle.age / particle.lifetime))
-#		grad.addColorStop(0, Color.rgba(color))
-#		color[3] = 0
-#		grad.addColorStop(1, Color.rgba(color))
-#		ctx.fillStyle = grad
-#		ctx.beginPath()
-#		ctx.arc(pos[0], pos[1], radius, 0, Math.TAU, true)
-#		ctx.closePath()
-#		ctx.fill()
-
-#	ctx.restore()
-#	@
 
 Particle.defaultComposite = 'lighter'
 
 Particle.render = (ctx) ->
 	ctx.save()
-	composite = Particle.defaultComposite
-	if composite
-		ctx.globalCompositeOperation = composite
+	# composite = Particle.defaultComposite
+	# if composite
+	#	ctx.globalCompositeOperation = composite
 
 	crop = Vec2.set(Vec2.cache[0], 50, 50)
 	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
 
 	for particle in @roster when particle.enabled
-		radius = particle.radius
-		if particle.shrink
-			radius *= 1 - particle.shrink(particle.age / particle.lifetime)
-		if not (radius = radius | 0)
-			continue
+		# if Engine.renderer.cull(particle)
+		#	continue
 
-		pos = Vec2.add(particle.transform.pos, cropOffset, Vec2.cache[2])
-		offset = Vec2.set(Vec2.cache[3], 0, 50 * (radius - 1))
+		# pos = Vec2.add(particle.transform.pos, cropOffset, Vec2.cache[2])
+		pos = particle.transform.pos
+
+		# offset = Vec2.set(Vec2.cache[3], 0, 50 * (particle.radius - 1))
+		radius = particle.radius
 
 		alpha = 1
 		if particle.fade
 			alpha -= particle.fade(particle.age / particle.lifetime)
-		ctx.globalAlpha = alpha
+		# ctx.globalAlpha = alpha
+		particle.color[3] = alpha
 
-		particle.sprite.draw(ctx, pos, crop, offset)
+		ctx.fillStyle = Color.rgba(particle.color)
+		# if alpha < 0.5
+		#	debugger
+
+		ctx.fillRect(
+			pos[0] - radius / 2 | 0,
+			pos[1] - radius / 2 | 0,
+			radius | 0,
+			radius | 0
+		)
+
+		# particle.sprite.draw(ctx, pos, crop, offset)
 
 	ctx.restore()
 	@
@@ -110,6 +108,13 @@ Particle.generateSprite = (color = Color.white, alpha = 1, max = 25) ->
 	, Vec2(size, size * max))
 
 Particle.sprite = Particle.generateSprite()
+
+Particle.Prefab = new Composite.Prefab(
+	transform: null
+	kinetic:
+		mass: 0
+	particle: null
+)
 
 new Pool(Particle)
 

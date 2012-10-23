@@ -124,7 +124,7 @@ Boid.fixedUpdate = (dt) ->
 	@
 
 
-Boid.explode = (scene) ->
+Boid.explode = () ->
 	for comp in Boid.pool.roster when comp.enabled
 		comp.parent.explode()
 	@

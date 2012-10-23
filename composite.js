@@ -16,7 +16,10 @@ Composite = (function() {
   };
 
   Composite.prototype.alloc = function(presets) {
-    var child, preset, type, _i, _len;
+    var child, pool, preset, type, _i, _len;
+    if (this.parent) {
+      this.parent.children[this.uid] = this;
+    }
     if (presets) {
       for (type in presets) {
         preset = presets[type];
@@ -31,12 +34,11 @@ Composite = (function() {
             this.name = presets[type];
             break;
           default:
-            Pool.types[type].alloc(this, preset);
+            if ((pool = Pool.types[type])) {
+              pool.alloc(this, preset);
+            }
         }
       }
-    }
-    if (this.parent) {
-      this.parent.children[this.uid] = this;
     }
     return this;
   };
@@ -157,7 +159,11 @@ new Pool(Composite);
 Composite.Prefab = (function() {
 
   function Prefab(presets) {
+    var key;
     this.presets = presets;
+    for (key in presets) {
+      presets[key] = this.presets[key] || {};
+    }
   }
 
   Prefab.prototype.alloc = function(parent, presets) {

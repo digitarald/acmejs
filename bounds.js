@@ -22,8 +22,6 @@ Bounds = (function(_super) {
   };
 
   function Bounds() {
-    this.topLeft = Vec2();
-    this.bottomRight = Vec2();
     this.size = Vec2();
   }
 
@@ -31,7 +29,6 @@ Bounds = (function(_super) {
     Vec2.copy(this.size, presets.size);
     this.shape = presets.shape;
     this.radius = presets.radius;
-    this.epsilion = 0;
     return this;
   };
 
@@ -44,14 +41,25 @@ Bounds = (function(_super) {
   };
 
   Bounds.prototype.contains = function(point) {
-    var e, transform;
-    transform = this.parent.transform;
-    e = this.epsilion;
+    var pos;
+    pos = this.parent.transform.pos;
     switch (this.shape) {
-      case 'sphere':
-        return Vec2.distSq(transform.pos, point) <= this.radius * this.radius;
+      case 'circle':
+        return Bounds.circPoint(pos, this.radius, point);
       case 'rect':
-        return transform.pos[0] < point[0] && transform.pos[1] < point[1] && transform.pos[0] + this.size[0] > point[0] && transform.pos[1] + this.size[1] > point[1];
+        return Bounds.rectPoint(pos, this.size, point);
+    }
+    return false;
+  };
+
+  Bounds.prototype.withinRect = function(pos, size) {
+    var mypos;
+    mypos = this.parent.transform.pos;
+    switch (this.shape) {
+      case 'circle':
+        return Bounds.rectCirc(pos, size, mypos, this.radius);
+      case 'rect':
+        return Bounds.rectRect(pos, size, mypos, this.size);
     }
     return false;
   };
@@ -60,26 +68,30 @@ Bounds = (function(_super) {
 
 })(Component);
 
-Bounds.rectCircle = function(topLeft, size, center, radius) {
-  var circleDistanceX, circleDistanceY, cornerDistance;
-  circleDistanceX = abs(cx - rx - rw / 2);
-  circleDistanceY = abs(cy - ry - rh / 2);
-  if (circleDistanceX > (rw / 2 + cr) || circleDistanceY > (rh / 2 + cr)) {
-    return false;
-  }
-  if (circleDistanceX <= rw / 2 || circleDistanceY <= rh / 2) {
-    return true;
-  }
-  cornerDistance = Math.pow(circleDistanceX - rw / 2, 2) + pow(circleDistanceY - rh / 2, 2);
-  return cornerDistance <= pow(cr, 2);
+Bounds.circPoint = function(center, radius, point) {
+  return Vec2.distSq(point, center) <= radius * radius;
 };
 
-Bounds.rectRect = function(topLeft, bottomRight, topLeft2, bottomRight2) {
-  this.topLeft = topLeft;
-  this.bottomRight = bottomRight;
-  this.topLeft2 = topLeft2;
-  this.bottomRight2 = bottomRight2;
-  return left > otherRight || right < otherLeft || top > otherBottom || bottom < otherTop;
+Bounds.rectPoint = function(pos, size, point) {
+  return pos[0] < point[0] && pos[1] < point[1] && pos[0] + size[0] > point[0] && pos[1] + size[1] > point[1];
+};
+
+Bounds.rectCirc = function(topLeft, size, center, radius) {
+  var circleDistanceX, circleDistanceY, cornerDistance;
+  circleDistanceX = Math.abs(center[0] - topLeft[0] - size[0] / 2);
+  circleDistanceY = Math.abs(center[1] - topLeft[1] - size[1] / 2);
+  if (circleDistanceX > (size[0] / 2 + radius) || circleDistanceY > (size[1] / 2 + radius)) {
+    return false;
+  }
+  if (circleDistanceX <= size[0] / 2 || circleDistanceY <= size[1] / 2) {
+    return true;
+  }
+  cornerDistance = Math.pow(circleDistanceX - size[0] / 2, 2) + Math.pow(circleDistanceY - size[1] / 2, 2);
+  return cornerDistance <= Math.pow(radius, 2);
+};
+
+Bounds.rectRect = function(pos, size, pos2, size2) {
+  return !(pos[0] > pos2[0] + size2[0] || pos[0] + size[0] < pos2[0] || pos[1] > pos2[1] + size2[1] || pos[1] + size[1] < pos2[1]);
 };
 
 Bounds.lineRect = function(point1, point2, topLeft, size) {

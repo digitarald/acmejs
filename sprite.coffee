@@ -23,9 +23,8 @@ class SpriteAsset
 					img.onload = null
 					Vec2.set(@size, img.width, img.height)
 					@refresh()
-
 				img.src = srcOrRepaint
-				if img.onload and img.complete
+				if img.onload and img.width and img.height # no luck with .complete :(
 					img.onload()
 				break
 			when 'function'
@@ -52,7 +51,6 @@ class SpriteAsset
 		@
 
 	sample: () ->
-		console.log('sample')
 		{scale, size, bufferCtx} = @
 		data = bufferCtx.getImageData(0, 0, size[0], size[1]).data
 		@buffer.width = @bufferSize[0]
