@@ -9,7 +9,6 @@ class Composite
 	constructor: ->
 		@children = {}
 		@components = {}
-		@enabled = true
 
 	toString: ->
 		return "Composite #{@name or @type}##{@uid}"
@@ -48,12 +47,12 @@ class Composite
 		@pool.free(@)
 		@
 
-	enable: (state, recursive) ->
+	enable: (state, deep) ->
 		@enabled = state ?= not @state
 		@parent.pub('on' + (if state then 'Enable' else 'Disable'), @)
 		for key of @components
 			@components[key].enable(state)
-		if recursive
+		if deep
 			for key of @children
 				@children[key].enable(state, true)
 		@

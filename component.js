@@ -15,13 +15,13 @@ Component = (function() {
 
   Component.prototype.alloc = function(presets) {
     var component, components, type;
+    this.parent.components[this.type] = this;
+    this.parent[this.type] = this;
     components = this.parent.components;
     for (type in components) {
       this[type] = component = components[type];
       component[this.type] = this;
     }
-    this.parent[this.type] = this;
-    this.parent.components[this.type] = this;
     if (this.reset) {
       this.reset(presets);
     }
@@ -31,12 +31,12 @@ Component = (function() {
   Component.prototype.free = function() {
     var components, type;
     delete this.parent.components[this.type];
+    this.parent[this.type] = null;
     components = this.parent.components;
     for (type in components) {
-      delete this[components[type].type];
-      delete components[type][this.type];
+      this[components[type].type] = null;
+      components[type][this.type] = null;
     }
-    this.parent[this.type] = null;
     this.pool.free(this);
     return this;
   };

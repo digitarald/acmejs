@@ -10,23 +10,23 @@ class Component
 		return "Component #{@type}##{@uid} [#{@parent}]"
 
 	alloc: (presets) ->
+		@parent.components[@type] = @
+		@parent[@type] = @
 		components = @parent.components
 		for type of components
 			@[type] = component = components[type]
 			component[@type] = @
-		@parent[@type] = @
-		@parent.components[@type] = @
 		if @reset
 			@reset(presets)
 		@
 
 	free: ->
 		delete @parent.components[@type]
+		@parent[@type] = null
 		components = @parent.components
 		for type of components
-			delete @[components[type].type]
-			delete components[type][@type]
-		@parent[@type] = null
+			@[components[type].type] = null
+			components[type][@type] = null
 		@pool.free(@)
 		@
 

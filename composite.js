@@ -8,7 +8,6 @@ Composite = (function() {
   function Composite() {
     this.children = {};
     this.components = {};
-    this.enabled = true;
   }
 
   Composite.prototype.toString = function() {
@@ -65,14 +64,14 @@ Composite = (function() {
     return this;
   };
 
-  Composite.prototype.enable = function(state, recursive) {
+  Composite.prototype.enable = function(state, deep) {
     var key;
     this.enabled = state != null ? state : state = !this.state;
     this.parent.pub('on' + (state ? 'Enable' : 'Disable'), this);
     for (key in this.components) {
       this.components[key].enable(state);
     }
-    if (recursive) {
+    if (deep) {
       for (key in this.children) {
         this.children[key].enable(state, true);
       }
