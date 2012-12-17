@@ -1,0 +1,53 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f5f5f5 url("./../assets/css/square_bg.png");
+}
+body {
+  background: -webkit-radial-gradient(#000 15%, transparent 16%) 0 0, -webkit-radial-gradient(#000 15%, transparent 16%) 8px 8px, -webkit-radial-gradient(rgba(255,255,255,0.1) 15%, transparent 20%) 0 1px, -webkit-radial-gradient(rgba(255,255,255,0.1) 15%, transparent 20%) 8px 9px;
+  background-color: #282828;
+  -webkit-background-size: 16px 16px;
+}
+:-moz-full-screen-ancestor #fullscreen {
+  display: none;
+}
+.game {
+  user-select: none;
+  width: 100%;
+  height: 100%;
+}
+.game .game-canvas {
+  background-color: #fff;
+  position: relative;
+  -webkit-transform: translateZ(0);
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: #000;
+  transition: -webkit-filter 0.3s ease;
+}
+.game .game-canvas.state-interference {
+  -webkit-filter: grayscale(0.5) blur(5px);
+}
+.game .game-canvas.state-alert {
+  -webkit-filter: grayscale(0.5) contrast(2);
+}
+.game .game-canvas canvas {
+  padding: 0;
+  margin: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimize-contrast;
+}
+
+.theme-dark {
+  background: #222 url("./../assets/css/hixs_pattern_evolution.png");
+}
+.theme-dark .game-canvas {
+  background-color: #000;
+}

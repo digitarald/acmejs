@@ -1,0 +1,15 @@
+
+exports.modules =
+	Math: require('../../lib/math')
+	Engine: require('./lib/engine')
+	Composite: require('./composite')
+	Component: require('./component')
+	Pool: require('./pool')
+	Color: require('./color')
+	Sprite: require('./sprite')
+	Transform: require('./transform')
+	Bounds: require('./bounds')
+	Border: require('./border')
+	Particle: require('./particle')
+	Collider: require('./collider')
+	Kinetic: require('./kinetic')

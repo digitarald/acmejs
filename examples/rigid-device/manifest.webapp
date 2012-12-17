@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "name": "Rigid Balls Demo",
+  "description": "Let em bounce!",
+  "launch_path": "/sputflik/examples/rigid-device/index.html",
+  "icons": {
+    "256": "http://icons.iconarchive.com/icons/deleket/puck/256/Mozilla-Firefox-icon.png"
+  },
+  "developer": {
+    "name": "Harald Kirschner",
+    "url": "http://www.harald.me"
+  },
+  "orientation": "landscape-primary",
+  "fullscreen": true
+}
