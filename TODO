@@ -1,0 +1,11 @@
+
+
+☐ Controller controls
+    - https://github.com/mrdoob/three.js/tree/master/src/extras/controls
+☐ Post processing
+    - https://github.com/CreateJS/EaselJS/tree/master/src/easeljs/filters
+    - http://stackoverflow.com/questions/11595694/how-can-i-use-the-multiply-blend-mode-on-a-canvas-in-real-time
+    - https://github.com/mrdoob/three.js/blob/master/examples/webgl_postprocessing.html#L209-221
+    - http://mrdoob.github.com/three.js/examples/webgl_postprocessing.html
+    - http://jsfiddle.net/sSD65/26/ , http://jsfiddle.net/sSD65/28/
+☐

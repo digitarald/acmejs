@@ -47,8 +47,8 @@ class Pool
 						Pool.hooks[fn] = []
 					@subs.push(fn)
 				# else if typeof keys[fn] isnt 'function'
-				# 	# console.log(fn, keys[fn])
-				# 	fn
+				#	# console.log(fn, keys[fn])
+				#	fn
 
 			for fn in types
 				if fn of cls

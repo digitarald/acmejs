@@ -12,6 +12,8 @@ class Input extends Component
 		orientation: 'ondeviceorientation' of window
 
 	constructor: () ->
+		@queue = []
+		@locks = {}
 		@pos = Vec2()
 		@prevPos = Vec2()
 		@touchState = null # TODO: Better default value
@@ -20,7 +22,6 @@ class Input extends Component
 		# http://www.w3.org/TR/gamepad/#widl-Gamepad-axes
 		@axis = Vec2()
 		@mouseAxis = Vec2()
-		@queue = []
 		@orientation = Vec2()
 		@prevOrientation = Vec2()
 		@baseOrientation = Vec2()
@@ -37,29 +38,27 @@ class Input extends Component
 				@keys[key] = null
 
 		@throttled =
-			mousemove: -1
-			touchmove: -1
 			deviceorientation: -1
 
 		@events =
-		# if @support.touch
+		if @support.touch
 			touchstart: 'startTouch'
 			touchmove: 'moveTouch'
 			touchend: 'endTouch'
 			touchcancel: 'endTouch'
-		# else
-		#	mousedown: 'startTouch'
-		#	mousemove: 'moveTouch'
-		#	mouseup: 'endTouch'
-		#	keydown: 'keyStart'
-		#	keyup: 'keyEnd'
+		else
+			mousedown: 'startTouch'
+			mousemove: 'moveTouch'
+			mouseup: 'endTouch'
+			keydown: 'keyStart'
+			keyup: 'keyEnd'
 
 		for type of @events
 			document.addEventListener(type, @, false)
 
-		if @support.orientation
-			@events.deviceorientation = 'deviceOrientation'
-			window.addEventListener('deviceorientation', @, false)
+		# if @support.orientation
+		#	@events.deviceorientation = 'deviceOrientation'
+		#	window.addEventListener('deviceorientation', @, false)
 
 	handleEvent: (event) ->
 		if event.metaKey
@@ -78,32 +77,44 @@ class Input extends Component
 
 	keyStart: (event) ->
 		if (key = @map[event.keyCode]) and not @keys[key]
+			# if not @lock('key-' + key)
+			#	return false
 			@keys[key] = 'began'
 			Engine.pub('onKeyBegan', key)
 		@
 
 	keyEnd: (event) ->
 		if key = @map[event.keyCode]
+			# if not @lock('key-' + key)
+			#	return false
 			@keys[key] = 'ended'
 			Engine.pub('onKeyEnded', key)
 		@
 
 	startTouch: (event) ->
+		if not @lock('touch')
+			return false
 		@resolve(event)
 		if not @touchState and not event.metaKey
 			@touchState = 'began'
+			Engine.pub('onTouchBegan')
 		@
 
 	moveTouch: (event) ->
-		@resolve(event)
 		state = @touchState
+		if (state is 'began' or state is 'ended') and not @lock('touch')
+			return false
+		@resolve(event)
 		if state and state isnt 'ended' and state isnt 'moved'
 			@touchState = 'moved'
 		@
 
 	endTouch: (event) ->
+		if not @lock('touch')
+			return false
 		@resolve(event)
 		if @touchState and (not @support.touch or not event.targetTouches.length)
+			Engine.pub('onTouchEnded')
 			@touchState = 'ended'
 		@
 
@@ -139,10 +150,17 @@ class Input extends Component
 			)
 		@
 
+	lock: (key) ->
+		if @locks[key] is @frame
+			return false
+		@locks[key] = @frame
+		return true
+
 	lateUpdate: (dt, scene) ->
 		switch @touchState
 			when 'began'
 				@touchState = 'stationary'
+				# Engine.pub('onTouchStationary')
 				break
 			when 'ended'
 				@touchState = null
@@ -153,22 +171,25 @@ class Input extends Component
 			switch keys[key]
 				when 'began'
 					keys[key] = 'pressed'
-					Engine.pub('onKeyPressed', key)
+					# Engine.pub('onKeyPressed', key)
 					break
 				when 'ended'
 					keys[key] = null
 					break
+		@frame = Engine.frame
 
-		event = @queue.shift()
-		if event
-			if @queue.length
-				console.log(@queue.map((evt) ->
-					return event.type
-				))
-			if @throttled[event.type]?
-				@throttled[event.type] = -1
-			@[@events[event.type]](event)
-		@queued = null
+		queue = @queue
+		# if queue.length
+		#	console.log(queue.map((event) -> event.type))
+		while (event = queue[0])
+			type = event.type
+			if not @[@events[type]](event)
+				break
+			queue.shift()
+			if @throttled[type]?
+				@throttled[type] = -1
+		if queue.length
+			console.log(queue.length)
 		@
 
 pool = new Pool(Input)

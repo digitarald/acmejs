@@ -24,8 +24,8 @@ class GameController extends Component
 	type: 'gameController'
 
 	reset: ->
-		for i in [0..200]
-			@spawnExplosion()
+		# for i in [0..200]
+		#	@spawnExplosion()
 
 		AgentPrefab.alloc(@root,
 			transform:
@@ -33,14 +33,24 @@ class GameController extends Component
 		)
 		@
 
+	update: () ->
+		input = Engine.input
+		if input.keys.space
+			# console.log(Date.now() / 1000 - input.prevTime)
+			Explosion.Prefab.alloc(@root,
+				transform:
+					pos: input.pos
+				spriteTween:
+					offset: Math.rand(0, 1)
+			)
+			@
+
 	spawnExplosion: () ->
-		ExplosionPrefab.alloc(@root,
+		Explosion.Prefab.alloc(@root,
 			transform:
 				pos: Vec2(Math.rand(25, 450), Math.rand(25, 295))
 			spriteTween:
 				offset: Math.rand(0, 1)
-			kinetic:
-				vel: Vec2(Math.rand(-10, 10), Math.rand(-10, 10))
 		)
 		@
 
@@ -52,22 +62,24 @@ explisionSheet = new Sprite.Sheet(
 	speed: 0.05
 )
 
-ExplosionPrefab = new Composite.Prefab(
+
+class Explosion extends Component
+
+	type: 'explosion'
+
+	onSequenceEnd: () ->
+		@parent.free()
+
+new Pool(Explosion)
+
+Explosion.Prefab = new Composite.Prefab(
 	transform: null
 	spriteTween:
 		asset: explisionSheet
 	bounds:
 		shape: 'circle'
 		radius: 15
-	kinetic:
-		mass: 1
-		drag: 0.998
-		friction: 0.1
-		maxVel: 200
-	# collider: null
-	# boid: null
-	border:
-		bounciness: 0.2
+	explosion: null
 )
 
 agentSheet = new Sprite.Sheet(

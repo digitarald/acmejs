@@ -206,6 +206,7 @@ class SpriteTween extends Component
 			frames = sequence.frames
 			frameCount = frames.length
 			if dtime >= (frameCount) * speed
+				@parent.pub('onSequenceEnd')
 				if sequence.next
 					if sequence.next isnt @sequence
 						return @goto(sequence.next)
@@ -219,6 +220,9 @@ class SpriteTween extends Component
 			frameCount = frames.length
 			speed = @speed
 			dtime = dtime % (frameCount * speed)
+			frame = dtime / speed | 0
+			if frame < @frame
+				@parent.pub('onSequenceEnd')
 			@frame = dtime / speed | 0
 		# debugger
 		@

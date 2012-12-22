@@ -139,13 +139,21 @@ Vec2.rot = (a, theta, result) ->
 	result[1] = x * sinA + y * cosA
 	return result
 
+Vec2.rotAxis = (a, b, theta, result) ->
+	return Vec2.add(
+		Vec2.rot(
+			Vec2.sub(a, b, result or a),
+			theta
+		),
+		b
+	)
+
 Vec2.lookAt = (a, b, result) ->
-	result or= a
 	len = Vec2.len(a)
 	return Vec2.norm(Vec2.rot(
 		a,
 		Mat.atan2(b[0] - a[0], b[1] - a[1]) - Mat.atan2(a[1], a[0]),
-		result
+		result or a
 	), null, len)
 
 
@@ -167,6 +175,9 @@ Mat.clamp = (a, low, high) ->
 
 Mat.rand = (low, high, ease) ->
 	return low + (ease or Mat.linear)(random()) * (high - low + 1)
+
+Mat.randArray = (array) ->
+	return array[Math.floor(random() * array.length)]
 
 Mat.chance = (chance) ->
 	return random() <= chance
