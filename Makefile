@@ -1,6 +1,6 @@
 
 PROJECT = rigid-device
-PROJECTS = sprites spelleton putpuck
+PROJECTS = putpuck sprites spelleton
 # rigid-device sprites
 
 .PHONY: projects $(PROJECTS)

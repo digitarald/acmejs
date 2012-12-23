@@ -38,6 +38,7 @@ class Input extends Component
 				@keys[key] = null
 
 		@throttled =
+			mousemove: -1
 			deviceorientation: -1
 
 		@events =
@@ -64,14 +65,16 @@ class Input extends Component
 		if event.metaKey
 			return
 		type = event.type
-		throttled = @throttled
-		if throttled[type]?
-			if throttled[type] >= 0
-				@queue[throttled[type]] = event
-				return @
-			throttled[type] = @queue.length
-		else
-			event.preventDefault()
+		# if @throttled[type]?
+		#	throttled = @throttled
+		#	console.log(throttled[type])
+		#	if throttled[type] >= 0
+		#		@queue[throttled[type]] = event
+		#		console.log(type)
+		#		return @
+		#	throttled[type] = @queue.length
+		# else
+		#	event.preventDefault()
 		@queue.push(event)
 		@
 
@@ -186,10 +189,8 @@ class Input extends Component
 			if not @[@events[type]](event)
 				break
 			queue.shift()
-			if @throttled[type]?
-				@throttled[type] = -1
-		if queue.length
-			console.log(queue.length)
+		# if queue.length
+		#	console.log(queue.length)
 		@
 
 pool = new Pool(Input)

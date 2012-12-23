@@ -8,16 +8,16 @@ Engine.init(document.getElementById('game-1'))
 Renderer = require('../../lib/core/renderer')
 Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(320, 480))
 
-if (apps = navigator.mozApps)
-	url = 'http://testno.de/sputflik/examples/putpuck/manifest.webapp'
-	request = apps.getSelf()
-	request.onsuccess = () ->
-		if @result
-			@result.launch()
-		else
-			apps.install(url)
-	request.onerror = () ->
-		apps.install(url)
+# if (apps = navigator.mozApps)
+#	url = 'http://testno.de/sputflik/examples/putpuck/manifest.webapp'
+#	request = apps.getSelf()
+#	request.onsuccess = () ->
+#		if @result
+#			@result.launch()
+#		else
+#			apps.install(url)
+#	request.onerror = () ->
+#		apps.install(url)
 
 # Game
 

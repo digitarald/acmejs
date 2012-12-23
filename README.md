@@ -1,22 +1,21 @@
-µGame.js
-========
+# µGame.js
 
 Reusable, low-garbage JavaScript game components.
 
-Quick Start
------------
+## Installation
 
-**Dependencies**
+Dependencies:
 
  * `npm install -g coffee-script`
  * `npm install -g browserify`
+
+## Quick Start
 
 `make` combines [CoffeeScript](http://coffeescript.org/) and [browserify](https://github.com/substack/node-browserify) for `examples/` for all examples listed in `Makefile`.
 
 	$ make
 
-License
--------
+## License
 
 (The MIT License)
 
