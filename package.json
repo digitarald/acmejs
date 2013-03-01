@@ -1,0 +1,25 @@
+{
+  "name": "mgame-js",
+  "version": "0.0.1",
+  "description": "Reusable, low-garbage JavaScript game components",
+  "main": "/test/index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/digitarald/mgame-js.git"
+  },
+  "keywords": [
+    "game"
+  ],
+  "author": "Harald Kirschner <harald@digitarald.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "~1.8.1",
+    "mocha-cloud": "0.0.1"
+  }
+}

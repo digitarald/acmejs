@@ -17,6 +17,7 @@ class SpriteAsset
 
 		switch typeof srcOrRepaint
 			when 'string'
+				@src = srcOrRepaint
 				@img = img = new Image()
 				img.onload = () =>
 					if not img.onload
@@ -33,13 +34,17 @@ class SpriteAsset
 				@refresh()
 				break
 
-	draw: (ctx, align = @defaultAlign, size = @bufferSize, fromPos = @defaultOffset, scale = @defaultScale) ->
+	toString: ->
+		return "SpriteAsset #{Vec2.toString(@size)} #{Vec2.toString(@bufferSize)}x\n#{@src or @repaint}\n#{@buffer.toDataURL()}"
+
+	draw: (ctx, toPos = Vec2.zero, align = @defaultAlign, size = @bufferSize, fromPos = @defaultOffset, scale = @defaultScale) ->
 		if @ready
 			# debugger
 			ctx.drawImage(@buffer,
 				fromPos[0] | 0, fromPos[1] | 0,
 				size[0], size[1],
-				size[0] / 2 * (align[0] + 1) | 0, size[1] / 2 * (align[1] + 1) | 0
+				toPos[0] - size[0] / 2 * (align[0] + 1) | 0,
+				toPos[1] - size[1] / 2 * (align[1] + 1) | 0
 				size[0] * scale[0], size[1] * scale[1]
 			)
 		@
@@ -151,7 +156,7 @@ class SpriteSheet
 			# console.log('SpriteSheet.draw: unprepared');
 			return @
 		frame = @frames[frame or 0]
-		frame.sprite.draw(ctx, frame.align, frame.size, frame.pos)
+		frame.sprite.draw(ctx, null, frame.align, frame.size, frame.pos)
 		# debugger
 		@
 
@@ -179,69 +184,64 @@ class SpriteTween extends Component
 				@sequence = @asset.defaultSequence
 		@
 
+	lateUpdate: (dt) ->
+		if @isSheet and not @paused
+			dtime = (@dtime += dt)
+			if @sequence
+				sequence = @asset.sequences[@sequence]
+				speed = sequence.speed
+				frames = sequence.frames
+				frameCount = frames.length
+				if dtime >= (frameCount) * speed
+					@parent.pub('onSequenceEnd')
+					if sequence.next
+						if sequence.next isnt @sequence
+							return @goto(sequence.next)
+					else
+						@pause()
+						return @
+					dtime = dtime % (frameCount * speed)
+				@frame = frames[dtime / speed | 0]
+			else
+				frames = @asset.frames
+				frameCount = frames.length
+				speed = @speed
+				dtime = dtime % (frameCount * speed)
+				frame = dtime / speed | 0
+				if frame < @frame
+					@parent.pub('onSequenceEnd')
+				@frame = dtime / speed | 0
+		@
+
 	render: (ctx, dt) ->
 		# TODO: align
 		ctx.save()
-		@parent.transform.transform(ctx)
+		@transform.applyMatrix(ctx)
 		if @composite
 			ctx.globalCompositeOperation = @composite
 		# debugger
-		if @isSheet
-			if not @paused
-				dtime = (@dtime += dt)
-				@normalize()
-
-			@asset.draw(ctx, @frame)
-		else
-			@asset.draw(ctx)
+		@asset.draw(ctx, @frame)
 		ctx.restore()
-		@
-
-	normalize: () ->
-		# console.log('SpriteTween.normalize');
-		dtime = @dtime
-		if @sequence
-			sequence = @asset.sequences[@sequence]
-			speed = sequence.speed
-			frames = sequence.frames
-			frameCount = frames.length
-			if dtime >= (frameCount) * speed
-				@parent.pub('onSequenceEnd')
-				if sequence.next
-					if sequence.next isnt @sequence
-						return @goto(sequence.next)
-				else
-					@pause()
-					return @
-				dtime = dtime % (frameCount * speed)
-			@frame = frames[dtime / speed | 0]
-		else
-			frames = @asset.frames
-			frameCount = frames.length
-			speed = @speed
-			dtime = dtime % (frameCount * speed)
-			frame = dtime / speed | 0
-			if frame < @frame
-				@parent.pub('onSequenceEnd')
-			@frame = dtime / speed | 0
-		# debugger
 		@
 
 	pause: () ->
 		@paused = true
+		@
 
 	play: () ->
 		@paused = false
+		@
 
 	goto: (id) ->
 		if isNaN(id)
-			@dtime = 0
-			if sequence = @asset.sequences[@sequence]
+			if @sequence isnt id
+				@dtime = 0
+				# if sequence = @asset.sequences[@sequence]
 				@sequence = id
 		else
 			@sequence = null
 			@frameIndex = id
-		@normalize()
+		@
 
 
 new Pool(SpriteTween)

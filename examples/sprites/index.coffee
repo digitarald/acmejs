@@ -90,6 +90,7 @@ agentSheet = new Sprite.Sheet(
 	]
 	size: Vec2(64, 64)
 	speed: 0.09
+	align: Vec2.bottomCenter
 	sequences:
 		walkN: [1, 8, 'walkW', null]
 		walkW: [10, 17, 'walkS', null]
@@ -115,6 +116,6 @@ Engine.gameScene = Composite.alloc(
 	gameController: null
 )
 
-Engine.debug.fps = true
+Engine.debug.stats = true
 
 Engine.play(Engine.gameScene)

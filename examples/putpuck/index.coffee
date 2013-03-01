@@ -41,6 +41,7 @@ class Scene extends Composite
 		super()
 
 		@player = 0
+
 		# http://www.colourlovers.com/palette/1930/cheer_up_emo_kid
 		# http://www.colourlovers.com/palette/373610/mellon_ball_surprise
 		# http://www.colourlovers.com/palette/1473/Ocean_Five
@@ -50,8 +51,8 @@ class Scene extends Composite
 			1:
 				high: Color(255, 107, 107)
 		}
-		@colors[0].low = Color.lerp(@colors[0].high, Color.white, 0.15, false, Color())
-		@colors[1].low = Color.lerp(@colors[1].high, Color.white, 0.15, false, Color())
+		@colors[0].low = Color.lerp(@colors[0].high, Color.white, 0.85, false, Color())
+		@colors[1].low = Color.lerp(@colors[1].high, Color.white, 0.85, false, Color())
 
 		@inField1 = Field.Prefab.alloc(@,
 			transform:
@@ -60,6 +61,7 @@ class Scene extends Composite
 				size: Vec2(320, 160)
 			field:
 				color: @colors[0].low
+				player: 0
 		)
 		@inField2 = Field.Prefab.alloc(@,
 			transform:
@@ -68,6 +70,7 @@ class Scene extends Composite
 				size: Vec2(320, 160)
 			field:
 				color: @colors[1].low
+				player: 1
 		)
 		@outField1 = Field.Prefab.alloc(@,
 			transform:
@@ -76,6 +79,7 @@ class Scene extends Composite
 				size: Vec2(320, 80)
 			field:
 				out: true
+				player: 0
 		)
 		@outField2 = Field.Prefab.alloc(@,
 			transform:
@@ -84,6 +88,7 @@ class Scene extends Composite
 				size: Vec2(320, 80)
 			field:
 				out: true
+				player: 1
 		)
 		@setupPuck()
 		@
@@ -101,6 +106,7 @@ class Scene extends Composite
 			puck:
 				player: @player
 				color: @colors[@player].high
+				field: if @player then @outField1 else @outField2
 		)
 		puck1.player = @player
 		puck1.sub(@, 'onFlip', 'setupPuck')
@@ -115,20 +121,22 @@ class Puck extends Component
 	presets:
 		player: 0
 		color: Color()
+		field: null
 
 	constructor: ->
 		@color = Color()
 		@outlineColor = Color()
 
 	reset: (presets) ->
-		@player = presets.player
+		{@player, @field} = presets
 		Color.copy(@color, presets.color)
 
-		Color.lerp(@color, Color.black, 0.8, false, @outlineColor)
+		Color.lerp(@color, Color.black, 0.2, false, @outlineColor)
 		@outlineColor[3] = 0.3
 
 		@kinetic.enable(false)
 		@collider.enable(false)
+		# @border.enable(false)
 		@state = 'ready'
 		@treshold = 1
 		@
@@ -143,6 +151,13 @@ class Puck extends Component
 				@state = 'dragging'
 			when 'dragging'
 				if input.touchState is 'moved'
+					if @player
+						if input.pos[1] > @field.bounds.bottom
+							@state = 'draggingEnd'
+					else
+						if input.pos[1] < @field.bounds.top
+							@state = 'draggingEnd'
+
 					delta = input.time - input.prevTime
 					speed = Vec2.scal(
 						Vec2.sub(input.pos, input.prevPos, Vec2.cache[0]),
@@ -155,17 +170,20 @@ class Puck extends Component
 					Vec2.copy(@transform.pos, input.pos)
 					break
 				if input.touchState is 'ended'
-					if not @avgSpeed or Vec2.len(@avgSpeed) < @treshold
-						@state = 'ready'
-						break
-
-					@state = 'flipped'
-					@kinetic.enable(true)
-					@collider.enable(true)
-					# @border.enable(true)
-					Vec2.copy(@kinetic.vel, @avgSpeed)
-					@parent.pub('onFlip', @)
-					@avgSpeed = null
+					@state = 'draggingEnd'
+					break
+			when 'draggingEnd'
+				if not @avgSpeed or Vec2.len(@avgSpeed) < @treshold
+					@state = 'ready'
+					break
+				console.log(Vec2.len(@avgSpeed))
+				@state = 'flipped'
+				@kinetic.enable(true)
+				@collider.enable(true)
+				# @border.enable(true)
+				Vec2.copy(@kinetic.vel, @avgSpeed)
+				@parent.pub('onFlip', @)
+				@avgSpeed = null
 			when 'flipped'
 				break
 				vel = Vec2.len(@kinetic.vel)
@@ -179,12 +197,45 @@ class Puck extends Component
 						@transform.pos
 					)
 					Vec2.scal(pointer, Math.rand(0, vel / 8))
-					particle = Particle.alloc(@root, pos, pointer, Math.rand(0.01, 0.05), Math.rand(1, 3))
-					particle.sprite = Puck.particleFlipSprite
+					particle = Particle.Prefab.alloc(@root,
+						particle:
+							lifetime: Math.rand(0.1, 0.5)
+							radius: Math.rand(2, 10)
+							color: @color
+							sprite: Puck.particleSmokeSprite
+						kinetic:
+							vel: pointer
+						transform:
+							pos: pos
+					)
 				break
 		@
 
-	onKineticSleep: () ->
+	particlePos = Vec2()
+	speed = Vec2()
+
+	onCollide: ->
+		i = @bounds.radius
+		while i--
+			pos = Vec2.set(particlePos, Math.rand(-1, 1), Math.rand(-1, 1))
+			Vec2.norm(pos, null, @bounds.radius)
+			pointer = Vec2.copy(speed, pos)
+			Vec2.add(
+				Vec2.norm(pos, null, @bounds.radius),
+				@transform.pos
+			)
+			Vec2.scal(pointer, Math.rand(0, Vec2.len(@kinetic.vel) / 8))
+			particle = Particle.Prefab.alloc(@root,
+				particle:
+					lifetime: Math.rand(0.1, 0.5)
+					radius: Math.rand(1, 3)
+					color: @color
+					# sprite: Puck.particleSmokeSprite
+				kinetic:
+					vel: pointer
+				transform:
+					pos: pos
+			)
 		@
 
 	render: (ctx) ->
@@ -208,6 +259,8 @@ Particle.defaultComposite = null
 Puck.particleFlipSprite = Particle.generateSprite(Color(199, 244, 100))
 Puck.particleSmokeSprite = Particle.generateSprite(Color(128, 128, 128), 0.5)
 
+console.log(Puck.particleSmokeSprite.toString())
+
 Puck.Prefab = new Composite.Prefab(
 	transform: null
 	bounds:
@@ -215,11 +268,12 @@ Puck.Prefab = new Composite.Prefab(
 		radius: 15
 	kinetic:
 		mass: 1
-		drag: 0.994
-		maxVel: 450
+		drag: 0.995
+		maxVel: 900
 	collider: null
 	border:
-		bounciness: 0.6
+		bounce: true
+		restitution: 0.6
 	puck: null
 )
 
@@ -236,10 +290,8 @@ class Field extends Component
 		@color = Color()
 
 	reset: (presets) ->
-		@out = presets.out
-		@player = presets.player
+		{@out, @player} = presets
 		Color.copy(@color, presets.color)
-		targets = Puck.pool.roster
 		@root.sub(@, 'onKineticSleep')
 		@
 

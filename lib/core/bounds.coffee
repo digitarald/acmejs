@@ -1,5 +1,6 @@
 Component = require('./component')
 Pool = require('./pool')
+Color = require('./color')
 {Vec2} = require('./math')
 
 class Bounds extends Component
@@ -10,15 +11,40 @@ class Bounds extends Component
 		shape: 'rect'
 		radius: 0
 		size: Vec2()
+		# align: Vec2.center
 
 	constructor: () ->
 		@size = Vec2()
+		# @align = Vec2()
 
 	reset: (presets) ->
 		Vec2.copy(@size, presets.size)
+		# Vec2.copy(@align, presets.align)
 		@shape = presets.shape
 		@radius = presets.radius
 		@
+
+	getTop: ->
+		if @shape is 'circle'
+			return @transform.pos[1] - @radius
+		return @transform.pos[1]
+
+	getBottom: ->
+		if @shape is 'circle'
+			return @transform.pos[1] + @radius
+		return @transform.pos[1] + @size[1]
+
+	# calculateAABB: ->
+	#	Vec2.set(
+	#		@topLeft,
+	#		@pos[0] + @size[0] * 0.5 * (@align[0] + 1),
+	#		@pos[1] + @size[1] * 0.5 * (@align[1] + 1)
+	#	)
+	#	Vec2.set(
+	#		@bottomRight,
+	#		@pos[0] + @size[0] * 0.5 * (@align[0] + 5),
+	#		@pos[1] + @size[1] * 0.5 * (@align[1] + 5)
+	#	)
 
 	intersectLine: (p1, p2) ->
 		null
@@ -27,7 +53,7 @@ class Bounds extends Component
 		null
 
 	contains: (point) ->
-		pos = @parent.transform.pos
+		pos = @transform.pos
 		switch @shape
 			when 'circle'
 				return Bounds.circPoint(pos, @radius, point)
@@ -36,7 +62,7 @@ class Bounds extends Component
 		return false
 
 	withinRect: (pos, size) ->
-		mypos = @parent.transform.pos
+		mypos = @transform.pos
 		switch @shape
 			when 'circle'
 				return Bounds.rectCirc(pos, size, mypos, @radius)
@@ -51,7 +77,7 @@ Bounds.circPoint = (center, radius, point) ->
 
 Bounds.rectPoint = (pos, size, point) ->
 	return (
-		pos[0] < point[0] and
+		pos[0] - size[0] < point[0] and
 		pos[1] < point[1] and
 		pos[0] + size[0] > point[0] and
 		pos[1] + size[1] > point[1]
@@ -148,5 +174,60 @@ Bounds.lineCirc = (point1, point2, center, radius) ->
 	return false
 
 new Pool(Bounds)
+
+class BoundsDebug extends Component
+
+	type: 'boundsDebug'
+
+	presets:
+		color: Color.white
+		opacity: 0.5
+		fill: false
+
+	constructor: () ->
+		@color = Vec2()
+
+	reset: (presets) ->
+		Vec2.copy(@color, presets.color)
+		{@opacity, @fill} = presets
+		@
+
+	render: (ctx) ->
+		bounds = @bounds
+		ctx.save()
+		if @fill
+			ctx.fillStyle = Color.rgba(@color, @opacity * 0.5)
+		ctx.strokeStyle = Color.rgba(@color, @opacity)
+		ctx.lineWidth = 1
+		@transform.applyMatrix(ctx)
+		if bounds.shape is 'circle'
+			ctx.beginPath()
+			ctx.lineTo(0, bounds.radius)
+			ctx.moveTo(0, 0)
+			ctx.arc(0, 0, bounds.radius | 0, 0, Math.TAU)
+			if @fill
+				ctx.fill()
+			ctx.stroke()
+		else
+			size = bounds.size
+			ctx.strokeRect(
+				- size[0] / 2 | 0,
+				- size[1] / 2 | 0,
+				size[0] | 0,
+				size[1] | 0
+			)
+			if @fill
+				ctx.fillRect(
+					- size[0] / 2 | 0,
+					- size[1] / 2 | 0,
+					size[0] | 0,
+					size[1] | 0
+				)
+		ctx.restore()
+		@
+
+new Pool(BoundsDebug)
+
+Bounds.Debug = BoundsDebug
 
 module.exports = Bounds

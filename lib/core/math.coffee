@@ -1,10 +1,10 @@
 
 Mat = Math # compression win
-Mat.epsilon = 0.001
-{sqrt, pow, abs, random, epsilon} = Mat
+{sqrt, pow, abs, random} = Mat
+Mat.epsilon = epsilon = 0.001
 Mat.TypedArray = typedArray = Float64Array or Float32Array or (arr) -> arr
 
-Vec2 = (fromOrX, y) ->
+Mat.Vec2 = Vec2 = (fromOrX, y) ->
 	if y?
 		return new typedArray([fromOrX, y])
 	if fromOrX?
@@ -13,16 +13,19 @@ Vec2 = (fromOrX, y) ->
 
 Vec2.zero = Vec2.center = Vec2(0, 0)
 Vec2.cache = [Vec2(), Vec2(), Vec2(), Vec2(), Vec2()]
-Vec2.topLeft = Vec2(1, -1)
+Vec2.topLeft = Vec2(-1, -1)
 Vec2.topCenter = Vec2(0, -1)
-Vec2.topRight = Vec2(-1, -1)
-Vec2.centerLeft = Vec2(1, 0)
-Vec2.centerRight = Vec2(-1, 0)
-Vec2.bottomLeft = Vec2(1, 1)
+Vec2.topRight = Vec2(1, -1)
+Vec2.centerLeft = Vec2(-1, 0)
+Vec2.centerRight = Vec2(1, 0)
+Vec2.bottomLeft = Vec2(-1, 1)
 Vec2.bottomCenter = Vec2(0, 1)
-Vec2.bottomRight = Vec2(-1, 1)
+Vec2.bottomRight = Vec2(1, 1)
 
 radCache = [Vec2(), Vec2()]
+
+objCache = {x: 0, y: 0}
+objVecCache = Vec2()
 
 Vec2.set = (result, x, y) ->
 	result[0] = x or 0
@@ -35,7 +38,22 @@ Vec2.copy = (result, b) ->
 	return result
 
 Vec2.valid = (a) ->
-	return not (isNaN(a[0]) or isNaN(a[0]))
+	return not (isNaN(a[0]) or isNaN(a[1]))
+
+Vec2.toString = (a) ->
+	return "[#{a[0]}, #{a[1]}]"
+
+Vec2.fromObj = (obj, a) ->
+	a or= objVecCache
+	a[0] = obj.x
+	a[1] = obj.y
+	return a
+
+Vec2.toObj = (a, obj) ->
+	obj or= objCache
+	obj.x = a[0]
+	obj.y = a[1]
+	return obj
 
 Vec2.eq = (a, b) ->
 	return abs(a[0] - b[0]) < epsilon and abs(a[1] - b[1]) < epsilon
@@ -90,6 +108,11 @@ Vec2.lerp = (a, b, scalar, result) ->
 	result[0] = a[0] + scalar * (b[0] - a[0])
 	result[1] = a[1] + scalar * (b[1] - a[1])
 	return result
+
+Vec2.max = (a, b, axis) ->
+	if axis?
+		return if a[axis] > b[axis] then a else b
+	return if Vec2.lenSq(a) > Vec2.lenSq(b) then a else b
 
 # http://www.cas.kth.se/CURE/doc-cure-2.2.1/html/toolbox_2src_2Math_2Vector2D_8hh-source.html
 Vec2.perp = (a, result) ->
@@ -174,10 +197,10 @@ Mat.clamp = (a, low, high) ->
 	return if a > high then high else a
 
 Mat.rand = (low, high, ease) ->
-	return low + (ease or Mat.linear)(random()) * (high - low + 1)
+	return (ease or Mat.linear)(random()) * (high - low) + low
 
 Mat.randArray = (array) ->
-	return array[Math.floor(random() * array.length)]
+	return array[random() * array.length | 0]
 
 Mat.chance = (chance) ->
 	return random() <= chance

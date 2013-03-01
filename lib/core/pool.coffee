@@ -5,7 +5,9 @@ class Pool
 
 	@typedHooks: ['fixedUpdate', 'simulate', 'update', 'lateUpdate', 'render']
 
-	@hookRegx: /^on[A-Z]/
+	@regxHook: /^on[A-Z]/
+
+	@regxGetter: /^get[A-Z]/
 
 	@hooks: {}
 
@@ -35,27 +37,28 @@ class Pool
 		@allocd = 0
 		@layer = proto.layer or cls.layer or 0
 
-		if @isComponent and not @light
-			types = Pool.typedHooks
-			keys = Object.keys(proto).concat(Object.keys(cls))
+		if @isComponent
+			if not @light
+				types = Pool.typedHooks
+				keys = Object.keys(proto).concat(Object.keys(cls))
 
-			# Discover new event hooks
-			for fn in keys
-				if Pool.hookRegx.test(fn)
-					if not ~types.indexOf(fn)
-						types.push(fn)
-						Pool.hooks[fn] = []
-					@subs.push(fn)
-				# else if typeof keys[fn] isnt 'function'
-				#	# console.log(fn, keys[fn])
-				#	fn
+				# Discover new event hooks
+				for fn in keys
+					if Pool.regxHook.test(fn)
+						if not ~types.indexOf(fn)
+							types.push(fn)
+							Pool.hooks[fn] = []
+						@subs.push(fn)
+					else if Pool.regxGetter.test(fn)
+						key = fn.substr(3, 1).toLowerCase() + fn.substr(4)
+						Pool.defineGetter(proto, key, fn)
 
-			for fn in types
-				if fn of cls
-					@[fn] = cls[fn]
-					Pool.hooks[fn].push(@)
-				else if fn of proto
-					@hooks.push(fn)
+				for fn in types
+					if fn of cls
+						@[fn] = cls[fn]
+						Pool.hooks[fn].push(@)
+					else if fn of proto
+						@hooks.push(fn)
 
 		# Semantic sugar
 		cls.alloc = (parent, presets) =>
@@ -135,8 +138,13 @@ Pool.dump = (free) ->
 		Pool.free()
 	null
 
-if 'console' of window
-	console.pool = Pool.dump
+Pool.defineGetter = (proto, key, fn) ->
+	Object.defineProperty(proto, key,
+		get: proto[fn]
+		enumerable: true
+		configurable: true
+	)
+	proto
 
 Pool.free = () ->
 	for type, pool of Pool.types

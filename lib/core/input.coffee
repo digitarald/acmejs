@@ -29,6 +29,20 @@ class Input extends Component
 		@map =
 			32: 'space'
 			192: 'debug'
+			38: 'up'
+			# 87: 'up'
+			39: 'right'
+			# 68: 'right'
+			40: 'bottom'
+			# 83: 'bottom'
+			37: 'left'
+			# 65: 'left'
+
+		@axisMap =
+			left: Vec2(0, -1)
+			right: Vec2(0, 1)
+			up: Vec2(1, -1)
+			bottom: Vec2(1, 1)
 
 		@keyNames = []
 		@keys = {}
@@ -38,8 +52,9 @@ class Input extends Component
 				@keys[key] = null
 
 		@throttled =
-			mousemove: -1
-			deviceorientation: -1
+			mousemove: true
+			deviceorientation: true
+		@lastEvent = null
 
 		@events =
 		if @support.touch
@@ -55,7 +70,7 @@ class Input extends Component
 			keyup: 'keyEnd'
 
 		for type of @events
-			document.addEventListener(type, @, false)
+			window.addEventListener(type, @, false)
 
 		# if @support.orientation
 		#	@events.deviceorientation = 'deviceOrientation'
@@ -64,33 +79,32 @@ class Input extends Component
 	handleEvent: (event) ->
 		if event.metaKey
 			return
+		event.preventDefault()
 		type = event.type
-		# if @throttled[type]?
-		#	throttled = @throttled
-		#	console.log(throttled[type])
-		#	if throttled[type] >= 0
-		#		@queue[throttled[type]] = event
-		#		console.log(type)
-		#		return @
-		#	throttled[type] = @queue.length
-		# else
-		#	event.preventDefault()
-		@queue.push(event)
+		if @throttled[type] and @lastEvent is type
+			@queue[@queue.length - 1] = event
+		else
+			@lastEvent = type
+			@queue.push(event)
 		@
 
 	keyStart: (event) ->
 		if (key = @map[event.keyCode]) and not @keys[key]
-			# if not @lock('key-' + key)
-			#	return false
+			if not @lock('key-' + key)
+				return false
 			@keys[key] = 'began'
+			if (axis = @axisMap[key])
+				@axis[axis[0]] += axis[1]
 			Engine.pub('onKeyBegan', key)
 		@
 
 	keyEnd: (event) ->
 		if key = @map[event.keyCode]
-			# if not @lock('key-' + key)
-			#	return false
+			if not @lock('key-' + key)
+				return false
 			@keys[key] = 'ended'
+			if (axis = @axisMap[key])
+				@axis[axis[0]] -= axis[1]
 			Engine.pub('onKeyEnded', key)
 		@
 
@@ -155,6 +169,7 @@ class Input extends Component
 
 	lock: (key) ->
 		if @locks[key] is @frame
+			console.log('LOCKED: ' + key)
 			return false
 		@locks[key] = @frame
 		return true
@@ -182,15 +197,16 @@ class Input extends Component
 		@frame = Engine.frame
 
 		queue = @queue
-		# if queue.length
+		# if queue.length > 1
 		#	console.log(queue.map((event) -> event.type))
 		while (event = queue[0])
 			type = event.type
 			if not @[@events[type]](event)
 				break
 			queue.shift()
-		# if queue.length
-		#	console.log(queue.length)
+
+		if not queue.length
+			@lastEvent = null
 		@
 
 pool = new Pool(Input)

@@ -30,6 +30,8 @@ class Composite
 					else
 						if (pool = Pool.types[type])
 							pool.alloc(@, preset)
+						else
+							throw new Error("Unknown preset #{type}, expected component. #{@}")
 		@
 
 	free: () ->

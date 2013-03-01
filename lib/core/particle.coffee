@@ -14,15 +14,21 @@ class Particle extends Component
 
 	# light: true # TODO
 
+	@layer: 10
+
 	presets:
 		# pos: Vec2()
 		# vel: Vec2()
-		color: Color.white
+		color: Color.black
+		colorVariant: 0.5
 		lifetime: 1
 		radius: 1
+		alpha: 1
+		composite: null
 		sprite: Particle.sprite
 		shrink: Math.quintIn
 		fade: Math.quintIn
+		sprite: null
 
 	constructor: ->
 		# @pos = Vec2()
@@ -30,8 +36,9 @@ class Particle extends Component
 		@color = Color()
 
 	reset: (presets) ->
-		{@lifetime, @radius, @sprite, @shrink, @fade} = presets
+		{@lifetime, @radius, @alpha, @composite, @sprite, @shrink, @fade, @colorVariant, @sprite} = presets
 		Color.copy(@color, presets.color)
+		Color.variant(@color, @colorVariant)
 		# Vec2.copy(@pos, presets.pos)
 		# Vec2.copy(@vel, presets.vel)
 		@age = 0
@@ -46,45 +53,50 @@ class Particle extends Component
 				@parent.free()
 		@
 
-Particle.defaultComposite = 'lighter'
+Particle.defaultComposite = null
+
+crop = Vec2()
+cropOffset = Vec2()
+offset = Vec2()
 
 Particle.render = (ctx) ->
 	ctx.save()
-	# composite = Particle.defaultComposite
-	# if composite
-	#	ctx.globalCompositeOperation = composite
 
-	crop = Vec2.set(Vec2.cache[0], 50, 50)
-	cropOffset = Vec2.set(Vec2.cache[1], -25, -25)
+	Vec2.set(crop, 50, 50)
+	Vec2.set(cropOffset, -25, -25)
+	alphaPrev = 1
+	compositePrev = null
+	defaultComposite = Particle.defaultComposite
 
 	for particle in @roster when particle.enabled
 		# if Engine.renderer.cull(particle)
 		#	continue
 
-		# pos = Vec2.add(particle.transform.pos, cropOffset, Vec2.cache[2])
+		radius = particle.radius
 		pos = particle.transform.pos
 
-		# offset = Vec2.set(Vec2.cache[3], 0, 50 * (particle.radius - 1))
-		radius = particle.radius
-
-		alpha = 1
+		alpha = particle.alpha
 		if particle.fade
 			alpha -= particle.fade(particle.age / particle.lifetime)
-		# ctx.globalAlpha = alpha
-		particle.color[3] = alpha
 
-		ctx.fillStyle = Color.rgba(particle.color)
-		# if alpha < 0.5
-		#	debugger
+		composite = particle.composite or defaultComposite
+		if composite isnt compositePrev
+			ctx.globalCompositeOperation = compositePrev = composite
 
-		ctx.fillRect(
-			pos[0] - radius / 2 | 0,
-			pos[1] - radius / 2 | 0,
-			radius | 0,
-			radius | 0
-		)
-
-		# particle.sprite.draw(ctx, pos, crop, offset)
+		if particle.sprite
+			Vec2.set(offset, 0, 50 * (radius - 1 | 0))
+			if alpha isnt alphaPrev
+				ctx.globalAlpha = alphaPrev = alpha
+			particle.sprite.draw(ctx, pos, Vec2.center, crop, offset)
+		else
+			particle.color[3] = alpha
+			ctx.fillStyle = Color.rgba(particle.color)
+			ctx.fillRect(
+				pos[0] - radius / 2 | 0,
+				pos[1] - radius / 2 | 0,
+				radius | 0,
+				radius | 0
+			)
 
 	ctx.restore()
 	@
@@ -105,6 +117,8 @@ Particle.generateSprite = (color = Color.white, alpha = 1, max = 25) ->
 			ctx.arc(max, top, radius, 0, Math.TAU, true)
 			ctx.closePath()
 			ctx.fill()
+			# ctx.strokeStyle = 'red'
+			# ctx.strokeRect(0, size * (radius - 1), size, size)
 	, Vec2(size, size * max))
 
 Particle.sprite = Particle.generateSprite()

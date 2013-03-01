@@ -24,42 +24,50 @@ class GameController extends Component
 	type: 'gameController'
 
 	reset: ->
-		for i in [0..1]
-			@spawnExplosion()
-
-		MagicianPrefab.alloc(@root,
+		Magician.Prefab.alloc(@root,
 			transform:
 				pos: Vec2(240, 200)
 		)
 		@
 
-	spawnExplosion: () ->
-		ExplosionPrefab.alloc(@root,
-			transform:
-				pos: Vec2(Math.rand(25, 450), Math.rand(25, 295))
-			spriteTween:
-				offset: Math.rand(0, 1)
-		)
-		@
+	update: () ->
+		input = Engine.input
+		if input.keys.space is 'began'
+			Explosion.Prefab.alloc(@root,
+				transform:
+					pos: input.pos
+			)
+			@
 
 new Pool(GameController)
 
-explisionSheetBlue = new Sprite.Sheet(
+
+class Explosion extends Component
+
+	type: 'explosion'
+
+	onSequenceEnd: () ->
+		@parent.free()
+
+new Pool(Explosion)
+
+Explosion.sheetBlue = new Sprite.Sheet(
 	sprites: new Sprite.Asset('./assets/explosion-blue.jpg')
 	size: Vec2(120, 120)
 	speed: 0.12
 )
-explisionSheetFire = new Sprite.Sheet(
+Explosion.sheetFire = new Sprite.Sheet(
 	sprites: new Sprite.Asset('./assets/explosion-fire.png')
 	size: Vec2(192, 192)
 	speed: 0.05
 )
 
-ExplosionPrefab = new Composite.Prefab(
+Explosion.Prefab = new Composite.Prefab(
 	transform: null
 	spriteTween:
-		asset: explisionSheetFire
-		composite: 'lighter'
+		asset: Explosion.sheetFire
+		# composite: 'lighter'
+	explosion: null
 )
 
 defaultSequence =
@@ -76,29 +84,79 @@ defaultSequence =
 		frames: [6, 7, 8, 7]
 		next: 'walkE'
 
-magicianSheet = new Sprite.Sheet(
+
+class Magician extends Component
+
+	type: 'magician'
+
+	simulate: ->
+		axis = Engine.input.axis
+		pos = @transform.pos
+		speed = 1
+		if axis[1] < 0
+			pos[1] -= speed
+		else if axis[1] > 0
+			pos[1] += speed
+		if axis[0] < 0
+			pos[0] -= speed
+		else if axis[0] > 0
+			pos[0] += speed
+		@
+
+	lateUpdate: ->
+		axis = Engine.input.axis
+		spriteTween = @spriteTween
+		if axis[1] < 0
+			spriteTween.goto('walkN').play()
+		else if axis[1] > 0
+			spriteTween.goto('walkS').play()
+		else if axis[0] < 0
+			spriteTween.goto('walkW').play()
+		else if axis[0] > 0
+			spriteTween.goto('walkE').play()
+		else if not spriteTween.paused
+			spriteTween.pause()
+		@
+
+new Pool(Magician)
+
+Magician.sheet = new Sprite.Sheet(
 	sprites: new Sprite.Asset('./assets/magician.png')
 	size: Vec2(32, 32)
 	speed: 0.15
 	sequences: defaultSequence
 )
-grinchSheet = new Sprite.Sheet(
+
+Magician.Prefab = new Composite.Prefab(
+	transform: null
+	spriteTween:
+		asset: Magician.sheet
+		sequence: 'walkS'
+	bounds:
+		radius: 15
+		shape: 'circle'
+	border: null
+	magician: null
+)
+
+
+class Enemy extends Component
+
+	type: 'enemy'
+
+new Pool(Enemy)
+
+Enemy.sheet = new Sprite.Sheet(
 	sprites: new Sprite.Asset('./assets/grinch.png')
 	size: Vec2(32, 32)
 	speed: 0.15
 	sequences: defaultSequence
 )
 
-MagicianPrefab = new Composite.Prefab(
+Enemy.Prefab = new Composite.Prefab(
 	transform: null
 	spriteTween:
-		asset: magicianSheet
-		sequence: 'walkS'
-)
-EnemyPrefab = new Composite.Prefab(
-	transform: null
-	spriteTween:
-		asset: grinchSheet
+		asset: Enemy.sheet
 		sequence: 'walkS'
 )
 
@@ -108,7 +166,5 @@ Engine.gameScene = Composite.alloc(
 	null,
 	gameController: null
 )
-
-Engine.debug.fps = true
 
 Engine.play(Engine.gameScene)

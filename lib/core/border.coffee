@@ -7,9 +7,15 @@ class Border extends Component
 
 	type: 'border'
 
-	reset: () ->
-		@kill = null
-		@bounciness = 1
+	presets:
+		mode: 'bounce'
+		restitution: 1
+
+	reset: (presets) ->
+		{@mode, @restitution} = presets
+		@
+
+pos = Vec2()
 
 Border.simulate = (dt) ->
 	size = Engine.renderer.content
@@ -27,45 +33,68 @@ Border.simulate = (dt) ->
 	)
 
 	for border in @roster when border.enabled
-		parent = border.parent
-		bounciness = border.bounciness
-		pos = parent.transform.pos
-		vel = parent.kinetic.vel
-		radius = parent.radius or parent.bounds.radius # FIXME
-		if border.kill
+		{parent, restitution, mode, kinetic} = border
+		vel = null
+		if kinetic
+			if not kinetic.enabled or kinetic.sleeping
+				continue
+			vel = kinetic.vel
+
+		mirror = mode is 'mirror'
+		bounce = mode is 'bounce' and vel
+		Vec2.copy(pos, parent.transform.pos)
+
+		radius = parent.bounds.radius # FIXME
+		if mirror
 			radius *= -1 # kill after crossing border
 
-		hit = null
+		hit = 0
 
 		# horizontal
-		diff = pos[0] - radius - horizontal[0]
-		if diff < 0
-			pos[0] -= diff
-			vel[0] *= -bounciness
-			hit = 0
+		if (diff = pos[0] - radius - horizontal[0]) < 0
+			if mirror
+				pos[0] = horizontal[1] - radius
+			else
+				pos[0] -= diff
+				if bounce
+					vel[0] *= -restitution
+			hit = -1
 		else
 			diff = pos[0] + radius - horizontal[1]
 			if diff > 0
-				pos[0] -= diff
-				vel[0] *= -bounciness
-				hit = 0
+				if mirror
+					pos[0] = radius
+				else
+					pos[0] -= diff
+					if bounce
+						vel[0] *= -restitution
+				hit = -1
 
 		# vertical
-		diff = pos[1] - radius - vertical[0]
-		if diff < 0
-			pos[1] -= diff
-			vel[1] *= -bounciness
+		if (diff = pos[1] - radius - vertical[0]) < 0
+			if mirror
+				pos[1] = vertical[1] - radius
+			else
+				pos[1] -= diff
+				if bounce
+					vel[1] *= -restitution
 			hit = 1
 		else
 			diff = pos[1] + radius - vertical[1]
 			if diff > 0
-				pos[1] -= diff
-				vel[1] *= -bounciness
+				if mirror
+					pos[1] = radius
+				else
+					pos[1] -= diff
+					if bounce
+						vel[1] *= -restitution
 				hit = 1
 
+		# TODO: property!
 		if hit?
+			parent.transform.setTransform(pos)
 			parent.pub('onBorder', hit)
-			if border.kill
+			if border.mode is 'kill'
 				parent.free()
 	@
 

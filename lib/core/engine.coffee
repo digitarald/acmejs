@@ -3,6 +3,13 @@ Composite = require('./composite')
 Pool = require('./pool')
 {Vec2} = require('./math')
 
+# Polyfills
+requestAnimationFrame = window.requestAnimationFrame or window.webkitRequestAnimationFrame or window.mozRequestAnimationFrame or window.oRequestAnimationFrame or window.msRequestAnimationFrame or (callback) -> setTimeout(callback, 20)
+
+perf = window.performance or {}
+perf.now = perf.now or perf.webkitNow or perf.msNow or perf.mozNow or Date.now
+
+
 class Engine extends Composite
 
 	type: 'engine'
@@ -16,7 +23,11 @@ class Engine extends Composite
 			fps: false
 			fpsLength: 0
 			fpsSum: 0
-			fpsNext: 0
+			mspf: true
+			mspfLength: 0
+			mspfSum: 0
+			stats: false
+			profile: 0
 
 		# Configuration
 		@fdt = 1 / 60
@@ -24,6 +35,7 @@ class Engine extends Composite
 		@fdtCap = @fdt * 5
 		@scale = 1
 		@fps = 0
+		@mspf = 0
 
 		# Components
 		Input = require('./input')
@@ -36,6 +48,9 @@ class Engine extends Composite
 	play: (scene) ->
 		@scene = scene
 		@input.root = @scene
+		# Debug
+		if @debug.stats
+			@startStats()
 		if not @running
 			@start()
 
@@ -45,27 +60,50 @@ class Engine extends Composite
 		@
 
 	tick: (now) ->
-		now = (if now and now > 1e12 then now else Date.now()) / 1000
+		# normalize high-resolution timer to seconds
+		now = (if now and now < 1e12 then now else perf.now()) / 1000
+		debug = @debug
 
 		if @lastTime
 			if (dt = now - @lastTime) > 0.5
 				dt = @fdt
 			else if dt > 0.01 # resize fires rfa
-				if @debug.fpsSum > 0.333
-					@fps = @debug.fpsLength / @debug.fpsSum
-					@debug.fpsLength = 1
-					@debug.fpsSum = dt
-				else
-					@debug.fpsSum += dt
-					@debug.fpsLength++
+				if debug.fpsSum > 0.333
+					@fps = debug.fpsLength / debug.fpsSum
+					debug.fpsLength = 0
+					debug.fpsSum = 0
+				debug.fpsSum += dt
+				debug.fpsLength++
 			@dt = (dt *= @scale)
 			@time += dt
 			@frame++
 
+			if debug._stats
+				debug._stats.begin()
+			if debug.mspf
+				mspfStart = perf.now()
+			if debug.profile and not debug.profileFrom
+				debug.profileFrom = debug.profile
+				console.profile("Frame #{debug.profileFrom}")
+
 			@update(dt)
 
-			if @debug.step
+			if debug.profileFrom
+				if not --debug.profile
+					console.profileEnd("Frame #{debug.profileFrom}")
+					debug.profileFrom = 0
+			if debug.step
 				debugger
+			if debug.mspf
+				if debug.mspfSum > 100
+					@mspf = debug.mspfSum / debug.mspfLength
+					debug.mspfLength = 0
+					debug.mspfSum = 0
+				debug.mspfSum += (perf.now() - mspfStart)
+				debug.mspfLength++
+			if debug._stats
+				debug._stats.end()
+
 		else
 			@time = now
 
@@ -101,32 +139,44 @@ class Engine extends Composite
 		# @pub('postRender', ctx, @scene)
 
 		# Stats
-		if @debug.fps
+		if @debug.fps and @fps < 55
 			fps = Math.round(@fps)
 			ctx.fillStyle = 'black'
 			ctx.strokeStyle = 'white'
-			ctx.font = 'bold 11px sans-serif'
 			ctx.lineWidth = 2
-			ctx.strokeText(fps | 0, 1, 11)
-			ctx.fillText(fps | 0, 1, 11)
+			ctx.strokeText(fps, 2, 11)
+			ctx.fillText(fps, 2, 11)
 
-
-		# Warn
-		if @debug.warn
-			ctx.fillStyle = 'red'
+		if @debug.mspf
+			mspf = Math.round(@mspf)
+			ctx.fillStyle = 'black'
 			ctx.strokeStyle = 'white'
-			ctx.font = 'bold 11px sans-serif'
 			ctx.lineWidth = 2
-			ctx.strokeText(fps | 0, 1, 11)
-			ctx.fillText(fps | 0, 1, 11)
+			ctx.strokeText(mspf, 2, 11)
+			ctx.fillText(mspf, 2, 11)
 
 		@renderer.restore()
 
-requestAnimationFrame = (->
-	window.requestAnimationFrame or window.webkitRequestAnimationFrame or window.mozRequestAnimationFrame or window.oRequestAnimationFrame or window.msRequestAnimationFrame or (callback) -> setTimeout(callback, 20)
-)()
+	startStats: ->
+		return if @debug._stats or not window.Stats
+		@debug._stats = stats = new Stats()
+		el = stats.domElement
+		el.style.position = 'absolute'
+		el.style.left = 0
+		el.style.top = 0
+		document.body.appendChild(el)
+		@
 
-module.exports = new Engine()
+engine = new Engine()
 
-# perf = performance
-# perf.now = perf.now or perf.webkitNow or perf.msNow or perf.mozNow or Date.now.bind(Date)
+if 'console' of window
+	window.mgame = console.m =
+		pool: Pool.dump
+		profile: (frames = 1) ->
+			engine.debug.profile = frames
+			null
+		step: ->
+			engine.debug.step = not engine.debug.step
+			null
+
+module.exports = engine

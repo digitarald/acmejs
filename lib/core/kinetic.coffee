@@ -3,7 +3,8 @@ Pool = require('./pool')
 Force = require('./force')
 {Vec2} = require('./math')
 
-addForce = Vec2()
+cache = Vec2()
+copyVel = Vec2()
 
 class Kinetic extends Component
 
@@ -38,20 +39,21 @@ class Kinetic extends Component
 		@sleeping = false
 		@
 
-	applyForce: (acc, ignoreMass, constant) ->
-		if not ignoreMass and @mass
-			Vec2.scal(acc, 1 / @mass, addForce)
-		else
-			Vec2.copy(addForce, acc)
-		if constant and not @force
+	applyImpulse: (acc) ->
+		Vec2.add(
+			@acc,
+			Vec2.scal(acc, 1 / (@mass or 1), cache)
+		)
+		@
+
+	applyForce: (acc) ->
+		if not @force
 			Force.alloc(@)
-		Vec2.add((if constant then @force.force else @acc), addForce)
+		@force.add(acc)
 		@
 
 
 Kinetic.simulate = (dt) ->
-	copyVel = Vec2.cache[0]
-	cache = Vec2.cache[1]
 	epsilon = Math.epsilon
 
 	for kinetic in @roster when kinetic.enabled and not kinetic.fixed

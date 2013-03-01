@@ -2,25 +2,31 @@ Component = require('./component')
 Pool = require('./pool')
 {Vec2} = require('./math')
 
+cache = Vec2()
+
 class Force extends Component
 
 	type: 'force'
 
 	presets:
-		force: Vec2()
+		acc: Vec2()
 		torque: 0
 
 	constructor: ->
-		@force = Vec2()
+		@acc = Vec2()
 
 	reset: (presets) ->
-		Vec2.copy(@force, presets.force)
+		Vec2.copy(@acc, presets.acc)
 		{@torque} = presets
 		@age = 0
 		@
 
+	add: (acc) ->
+		Vec2.add(@acc, acc)
+		@
+
 	simulate: (dt) ->
-		Vec2.add(@kinetic.acc, @force)
+		Vec2.add(@kinetic.acc, @acc)
 		@
 
 new Pool(Force)

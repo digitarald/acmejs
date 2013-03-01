@@ -12,19 +12,22 @@ class Renderer extends Composite
 		@element.appendChild(@canvas)
 		@ctx = @canvas.getContext('2d')
 
-		# @debug = []
-
 		@browser = Vec2()
 		@margin = Vec2()
 		@pos = Vec2()
 		@scale = 0
 		@orientation = 'landscape'
 
+		@buffer = false
 		@buf = document.createElement('canvas')
 		@bufctx = @buf.getContext('2d')
 
+		@buf.width = @canvas.width = @content[0]
+		@buf.height = @canvas.height = @content[1]
+		@element.style.width = @content[0] + 'px'
+		@element.style.height = @content[1] + 'px'
+
 		window.addEventListener('resize', @, false)
-		window.addEventListener('orientationchange', @, false)
 
 		self = @
 		# TODO: Refactor into handleEvent
@@ -74,33 +77,41 @@ class Renderer extends Composite
 	reflow: ->
 		Vec2.set(@browser, window.innerWidth, window.innerHeight)
 		scale = Math.min(@browser[0] / @content[0], @browser[1] / @content[1])
-		scale = Math.clamp((scale * 2 | 0) / 2, 0.5, 3)
+		scale = Math.clamp((scale * 2 | 0) / 2, 1, 2)
 		if scale isnt @scale
 			@scale = scale
 			Vec2.scal(@content, @scale, @client)
-			@buf.width = @canvas.width = @client[0]
-			@buf.height = @canvas.height = @client[1]
+			# @buf.width = @canvas.width = @content[0]
+			# @buf.height = @canvas.height = @content[1]
+
 		@alignContainer()
 
 	alignContainer: () ->
 		Vec2.scal(Vec2.sub(@browser, @client, @margin), 0.5)
-		@element.style.left = @margin[0] + 'px'
-		@element.style.top = @margin[1] + 'px'
-		@element.style.width = @client[0] + 'px'
-		@element.style.height = @client[1] + 'px'
+		if @browser[1] < @client[1]
+			@margin[1] = 0
+		# TODO: Only works for scale >= 1
+		rule = if @scale isnt 1 then "scale(#{@scale})" else ''
+		@element.style.transform = rule
+		@element.style.webkitTransform = rule
 		@
 
 	save: ->
-		@bufctx.save()
-		@bufctx.translate(@pos[0] | 0 , @pos[1] | 0)
-		@bufctx.clearRect(0, 0, @client[0], @client[1])
-		@bufctx.scale(@scale, @scale)
-		return @bufctx
+		ctx = if @buffer then @bufctx else @ctx
+		ctx.clearRect(0, 0, @content[0], @content[1])
+		# ctx.width = @client[0] | 0
+		ctx.save()
+		ctx.translate(@pos[0] | 0 , @pos[1] | 0)
+		# ctx.scale(@scale, @scale)
+		return ctx
 
 	restore: ->
-		@bufctx.restore()
-		@ctx.clearRect(0, 0, @client[0], @client[1])
-		@ctx.drawImage(@buf, 0, 0)
+		if @buffer
+			@bufctx.restore()
+			@ctx.clearRect(0, 0, @content[0], @content[1])
+			@ctx.drawImage(@buf, 0, 0)
+		else
+			@ctx.restore()
 		@
 
 	center: (pos) ->

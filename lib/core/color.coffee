@@ -39,19 +39,24 @@ Color.copy = (result, b) ->
 
 Color.lerp = (a, b, t, alpha, result) ->
 	result or= a
-	result[0] = t * a[0] + (1 - t) * b[0]
-	result[1] = t * a[1] + (1 - t) * b[1]
-	result[2] = t * a[2] + (1 - t) * b[2]
+	result[0] = (1 - t) * a[0] + t * b[0]
+	result[1] = (1 - t) * a[1] + t * b[1]
+	result[2] = (1 - t) * a[2] + t * b[2]
 	if alpha > 0.05
-	  result[3] = t * a[3] + (1 - t) * b[3]
+	  result[3] = (1 - t) * a[3] + t * b[3]
 	else
 	  result[3] = a[3]
 	return result
 
-Color.rgba = (a) ->
-	if a[3] > 0.98
+Color.variant = (a, t, result) ->
+	t = Math.rand(-t, t)
+	return Color.lerp(a, (if t > 0 then Color.white else Color.black), t, false, result)
+
+Color.rgba = (a, alpha) ->
+	alpha or= a[3]
+	if alpha > 0.98
 			return "rgb(#{a[0] | 0}, #{a[1] | 0}, #{a[2] | 0})"
 		else
-			return "rgba(#{a[0] | 0}, #{a[1] | 0}, #{a[2] | 0}, #{a[3]})"
+			return "rgba(#{a[0] | 0}, #{a[1] | 0}, #{a[2] | 0}, #{alpha})"
 
 module.exports = Color

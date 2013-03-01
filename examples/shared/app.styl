@@ -7,41 +7,40 @@ html, body
 	overflow hidden
 
 body
-	background #f5f5f5 url('./../assets/css/square_bg.png')
-
-	// display -moz-box
-	// -moz-box-orient horizontal
-	// -moz-box-pack center
-	// -moz-box-align center
-
-	// display -webkit-box
-	// -webkit-box-orient horizontal
-	// -webkit-box-pack center
-	// -webkit-box-align center
-
-	// display box
-	// box-orient horizontal
-	// box-pack center
-	// box-align center
-
-:-moz-full-screen-ancestor #fullscreen, :-webkit-full-screen-ancestor #fullscreen
-	display none
+	background #f5f5f5 url('./css/square_bg.png')
 
 .game
-	user-select none
 	width 100%
 	height 100%
 
+	user-select none
+	-moz-user-select none
+	-webkit-user-select none
+	-webkit-touch-callout none
+	-webkit-tap-highlight-color rgb(0, 0, 0)
+
+	display box
+	box-pack center
+	box-align center
+	display -moz-box
+	-moz-box-pack center
+	-moz-box-align center
+	display -webkit-box
+	-webkit-box-pack center
+	-webkit-box-align center
+
 	.game-canvas
-		background-color #fff
-		position relative
-		// outline 5px ridge rgba(75, 75, 75, 0.3)
-		// box-shadow 7px 7px 15px 1px rgba(0, 0, 0, 0.5)
+		// display inline-block
+		transform translateZ(0)
 		-webkit-transform translateZ(0)
-		-webkit-touch-callout none
-		-webkit-tap-highlight-color rgb(0, 0, 0)
+		transform-origin center center
+		-webkit-transform-origin center center
+
+		background-color #fff
+		// box-shadow 7px 7px 15px 1px rgba(0, 0, 0, 0.5)
 
 		transition -webkit-filter .3s ease
+		-webkit-transition -webkit-filter .3s ease
 
 		&.state-interference
 			-webkit-filter grayscale(0.5) blur(5px)
@@ -50,18 +49,12 @@ body
 			-webkit-filter grayscale(0.5) contrast(2)
 
 		canvas
-			padding 0
-			margin 0
-			position absolute
-			top 0
-			left 0
+			image-rendering optimize-contrast
 			image-rendering -moz-crisp-edges
 			image-rendering -webkit-optimize-contrast
-			image-rendering optimize-contrast
-
 
 .theme-dark
-  background #222 url("./../assets/css/hixs_pattern_evolution.png")
+	background #222 url('./css/hixs_pattern_evolution.png')
 
 	.game-canvas
 		background-color #000
