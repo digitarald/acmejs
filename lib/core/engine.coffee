@@ -9,7 +9,6 @@ requestAnimationFrame = window.requestAnimationFrame or window.webkitRequestAnim
 perf = window.performance or {}
 perf.now = perf.now or perf.webkitNow or perf.msNow or perf.mozNow or Date.now
 
-
 class Engine extends Composite
 
 	type: 'engine'
@@ -20,14 +19,21 @@ class Engine extends Composite
 		@tail = 0.0
 		@debug =
 			step: false
-			fps: false
+			fps: true
 			fpsLength: 0
 			fpsSum: 0
-			mspf: true
+			mspf: false
 			mspfLength: 0
 			mspfSum: 0
 			stats: false
 			profile: 0
+		@timer =
+			dt: 0
+			lag: 0
+			frame: 0
+			update: 0
+			fixedUpdate: 0
+			render: 0
 
 		# Configuration
 		@fdt = 1 / 60
@@ -114,13 +120,15 @@ class Engine extends Composite
 		@
 
 	update: (dt) ->
-		ctx = @renderer.save()
-
 		tail = Math.min(@tail + dt, @fdtCap * @scale)
 		fdt = @fdt
 
 		# if @input.keyState is 'began' and @input.key is 'debug'
 		#	@debug = not @debug
+
+		debug = @debug
+
+		now = perf.now()
 
 		# Update loops
 		while tail > fdt
@@ -132,30 +140,28 @@ class Engine extends Composite
 
 		Pool.invoke('update', dt)
 		Pool.invoke('lateUpdate', dt)
-		# debugger
 
-		# @pub('preRender', ctx, @scene)
+		ctx = @renderer.save()
+
 		Pool.invoke('render', ctx, dt)
-		# @pub('postRender', ctx, @scene)
 
-		# Stats
-		if @debug.fps and @fps < 55
-			fps = Math.round(@fps)
-			ctx.fillStyle = 'black'
-			ctx.strokeStyle = 'white'
-			ctx.lineWidth = 2
-			ctx.strokeText(fps, 2, 11)
-			ctx.fillText(fps, 2, 11)
+		# Canvas Stats
+		# stats = ""
+		# if @debug.mspf and @mspf > 1
+		#	stats += Math.round(@mspf) + "\n"
 
-		if @debug.mspf
-			mspf = Math.round(@mspf)
-			ctx.fillStyle = 'black'
-			ctx.strokeStyle = 'white'
-			ctx.lineWidth = 2
-			ctx.strokeText(mspf, 2, 11)
-			ctx.fillText(mspf, 2, 11)
+		# if @debug.fps and @fps < 55
+		#	stats += Math.round(@fps) + "\n"
+
+		# if stats
+		#	ctx.fillStyle = 'black'
+		#	ctx.strokeStyle = 'white'
+		#	ctx.lineWidth = 2
+		#	ctx.strokeText(stats, 2, 11)
+		#	ctx.fillText(stats, 2, 11)
 
 		@renderer.restore()
+		@
 
 	startStats: ->
 		return if @debug._stats or not window.Stats
@@ -172,7 +178,7 @@ engine = new Engine()
 if 'console' of window
 	window.mgame = console.m =
 		pool: Pool.dump
-		profile: (frames = 1) ->
+		profile: (frames = 60) ->
 			engine.debug.profile = frames
 			null
 		step: ->

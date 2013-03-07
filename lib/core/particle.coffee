@@ -24,11 +24,11 @@ class Particle extends Component
 		lifetime: 1
 		radius: 1
 		alpha: 1
+		alphaVariant: 0.2
 		composite: null
-		sprite: Particle.sprite
+		sprite: null
 		shrink: Math.quintIn
 		fade: Math.quintIn
-		sprite: null
 
 	constructor: ->
 		# @pos = Vec2()
@@ -36,9 +36,12 @@ class Particle extends Component
 		@color = Color()
 
 	reset: (presets) ->
-		{@lifetime, @radius, @alpha, @composite, @sprite, @shrink, @fade, @colorVariant, @sprite} = presets
+		{@lifetime, @radius, @alpha, @alphaVariant, @composite, @sprite, @shrink, @fade, @colorVariant} = presets
 		Color.copy(@color, presets.color)
-		Color.variant(@color, @colorVariant)
+		if @colorVariant
+			Color.variant(@color, @colorVariant)
+		if @alphaVariant
+			@alpha = Math.clamp(@alpha + Math.rand(-@alphaVariant, @alphaVariant), 0, 1)
 		# Vec2.copy(@pos, presets.pos)
 		# Vec2.copy(@vel, presets.vel)
 		@age = 0
@@ -48,9 +51,8 @@ class Particle extends Component
 		if (@age += dt) > @lifetime
 			@parent.free()
 
-		if @shrink
-			if not (@radius *= 1 - @shrink(@age / @lifetime)) | 0
-				@parent.free()
+		if @shrink and (@radius *= 1 - @shrink(@age / @lifetime)) < 1
+			@parent.free()
 		@
 
 Particle.defaultComposite = null
@@ -66,6 +68,7 @@ Particle.render = (ctx) ->
 	Vec2.set(cropOffset, -25, -25)
 	alphaPrev = 1
 	compositePrev = null
+	fillPrev = null
 	defaultComposite = Particle.defaultComposite
 
 	for particle in @roster when particle.enabled
@@ -90,7 +93,9 @@ Particle.render = (ctx) ->
 			particle.sprite.draw(ctx, pos, Vec2.center, crop, offset)
 		else
 			particle.color[3] = alpha
-			ctx.fillStyle = Color.rgba(particle.color)
+			fill = Color.rgba(particle.color)
+			if fill isnt fillPrev
+				ctx.fillStyle = fillPrev = fill
 			ctx.fillRect(
 				pos[0] - radius / 2 | 0,
 				pos[1] - radius / 2 | 0,

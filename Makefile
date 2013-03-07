@@ -2,7 +2,7 @@
 MAKEFLAGS += -j 6
 
 PROJECT = rigid-device
-PROJECTS = b2 spelleton putpuck esl rigid-device
+PROJECTS = b2 spelleton putpuck bench
 
 .PHONY: projects $(PROJECTS)
 

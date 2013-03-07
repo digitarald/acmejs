@@ -23,11 +23,6 @@ class Pool
 
 	constructor: (@cls) ->
 		proto = cls.prototype
-		@type = proto.type
-		@isComponent = @type and @type isnt 'composite'
-		@light = (not @isComponent) or proto.light or false
-		if @type
-			Pool.types[@type] = @
 		proto.pool = @
 		cls.pool = @
 		@roster = []
@@ -35,6 +30,12 @@ class Pool
 		@hooks = []
 		@enabled = false
 		@allocd = 0
+
+		@type = proto.type
+		if @type
+			Pool.types[@type] = @
+		@isComponent = @type and @type isnt 'composite'
+		@light = (not @isComponent) or proto.light or false
 		@layer = proto.layer or cls.layer or 0
 
 		if @isComponent
@@ -128,6 +129,13 @@ class Pool
 		@enabled = (@allocd-- > 1)
 		@
 
+	invoke: (fn, a0, a1, a2, a3) ->
+		stack = @roster
+		i = @roster.length
+		while i-- when stack[i].enabled
+			stack[i][fn](a0, a1, a2, a3)
+		@
+
 for fn in Pool.typedHooks
 	Pool.hooks[fn] = []
 
@@ -159,7 +167,7 @@ Pool.free = () ->
 
 Pool.invoke = (fn, a0, a1, a2, a3) ->
 	if (stack = @hooks[fn]) and (i = stack.length)
-		if fn of Pool.order and Pool.order[fn]
+		if Pool.order[fn]
 			stack.sort(Pool.orderFn)
 			Pool.order[fn] = false
 		while i-- when stack[i].enabled

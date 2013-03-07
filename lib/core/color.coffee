@@ -48,6 +48,17 @@ Color.lerp = (a, b, t, alpha, result) ->
 	  result[3] = a[3]
 	return result
 
+Color.lerpList = (result, list, t) ->
+	last = list.length - 1
+	t = Math.clamp(t * last, 0, last)
+	start = t | 0
+	sub = t - start
+	if sub < 0.02
+		return Color.copy(result, list[start])
+	if sub > 0.98
+		return Color.copy(result, list[start + 1])
+	return Color.lerp(list[start], list[start + 1], sub, null, result)
+
 Color.variant = (a, t, result) ->
 	t = Math.rand(-t, t)
 	return Color.lerp(a, (if t > 0 then Color.white else Color.black), t, false, result)

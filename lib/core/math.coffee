@@ -82,11 +82,11 @@ Vec2.scal = (a, scalar, result) ->
 	result[1] = a[1] * scalar
 	return result
 
-Vec2.norm = (a, result, scalar = 1) ->
+Vec2.norm = (a, result, scalar) ->
 	result or= a
 	x = a[0]
 	y = a[1]
-	len = scalar / (sqrt(x * x + y * y) or 1)
+	len = (scalar or 1) / (sqrt(x * x + y * y) or 1)
 	result[0] = x * len
 	result[1] = y * len
 	return result
@@ -179,6 +179,11 @@ Vec2.lookAt = (a, b, result) ->
 		result or a
 	), null, len)
 
+Vec2.variant = (a, delta, result) ->
+	result or= a
+	result[0] = a[0] + Math.rand(-delta, delta)
+	result[1] = a[1] + Math.rand(-delta, delta)
+	return result
 
 # Math
 

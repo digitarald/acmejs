@@ -7,7 +7,7 @@ class Component
 	type: 'component'
 
 	toString: ->
-		return "Component #{@type}##{@uid} [#{@parent}]"
+		return "Component #{@type}##{@uid} [^ #{@parent}]"
 
 	alloc: (presets) ->
 		@parent.components[@type] = @

@@ -11,7 +11,8 @@ class Composite
 		@components = {}
 
 	toString: ->
-		return "Composite #{@name or @type}##{@uid}"
+		comps = Object.keys(@components).join(', ')
+		return "Composite #{@name or ''}##{@uid} (#{comps}) [^ #{@parent}]"
 
 	alloc: (presets) ->
 		if @parent
@@ -31,7 +32,7 @@ class Composite
 						if (pool = Pool.types[type])
 							pool.alloc(@, preset)
 						else
-							throw new Error("Unknown preset #{type}, expected component. #{@}")
+							throw new Error("Unknown preset key '#{type}', expected component. #{@}")
 		@
 
 	free: () ->

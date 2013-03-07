@@ -9,30 +9,29 @@ class Boid extends Component
 
 	presets:
 		perception: 100
+		aura: 25
 
 	constructor: ->
 		@mod = 1
-		@cohesionMod = 0.5
+		@cohesionMod = 1
 		@avoidanceMod = 2
 		@imitationMod = 1
 
 	reset: (presets) ->
-		@perception = presets.perception
-
-		@aura = presets.auroa or @bounds.radius * 1.5 # FIXME: Bounds
+		{@perception, @aura} = presets
+		if not @aura and @bounds
+			@aura = @bounds.radius * 1.5
 		@perceptionSq = @perception * @perception
 		@auraSq = @aura * @aura
 		@
 
+cohesion = Vec2()
+avoidance = Vec2()
+imitation = Vec2()
+stretch = Vec2()
+acc = Vec2()
+
 Boid.fixedUpdate = (dt) ->
-	cohesion = Vec2.cache[0]
-	avoidance = Vec2.cache[1]
-	imitation = Vec2.cache[2]
-	stretch = Vec2.cache[3]
-	acc = Vec2.cache[4]
-
-	limit = Kinetic.maxAcc / 3
-
 	boids = @roster
 	i = len = boids.length
 	while i--
@@ -57,7 +56,7 @@ Boid.fixedUpdate = (dt) ->
 
 			diffSq = Vec2.distSq(pos1, pos2)
 
-			if diffSq < boid1.perceptionSq
+			if diffSq < boid1.perceptionSq and diffSq
 				Vec2.sub(pos2, pos1, stretch)
 				Vec2.scal(stretch, Math.sqrt(parent1.kinetic.mass / parent2.kinetic.mass))
 
@@ -89,13 +88,13 @@ Boid.fixedUpdate = (dt) ->
 		if cohesionCount and boid1.cohesionMod
 			if cohesionCount > 1
 				Vec2.scal(cohesion, 1 / cohesionCount)
-			Vec2.add(parent1.kinetic.acc,
+			Vec2.add(
+				parent1.kinetic.acc,
 				Vec2.scal(
 					cohesion,
 					boid1.cohesionMod * mod
 				)
 			)
-			# engine.renderer.debug.push(Vec2(pos1), Vec2(cohesion))
 
 		if imitationCount and boid1.imitationMod
 			if imitationCount > 1

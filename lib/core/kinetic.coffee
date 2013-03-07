@@ -25,6 +25,7 @@ class Kinetic extends Component
 		maxAcc: 2000
 		acc: Vec2()
 		vel: Vec2()
+		fast: false
 
 	constructor: () ->
 		@vel = Vec2()
@@ -32,7 +33,7 @@ class Kinetic extends Component
 		@sleepVelSq = 0.2
 
 	reset: (presets) ->
-		{@mass, @drag, @friction, @fixed, @maxVel, @maxAcc} = presets
+		{@mass, @drag, @friction, @fixed, @maxVel, @maxAcc, @fast} = presets
 		Vec2.copy(@vel, presets.vel)
 		Vec2.copy(@acc, presets.acc)
 		@pos = @transform.pos
@@ -60,6 +61,17 @@ Kinetic.simulate = (dt) ->
 		# Integrate
 		vel = kinetic.vel
 		acc = kinetic.acc
+
+		# Particle
+		if kinetic.fast
+			if kinetic.maxAcc
+				Vec2.limit(acc, kinetic.maxAcc)
+			Vec2.add(vel, Vec2.scal(acc, dt))
+			Vec2.set(acc)
+			if kinetic.maxVel
+				Vec2.limit(vel, kinetic.maxVel)
+			Vec2.add(kinetic.pos, Vec2.scal(vel, dt, cache))
+			continue
 
 		# if not Vec2.valid(vel) or not Vec2.valid(acc)
 		#	debugger
@@ -95,7 +107,7 @@ Kinetic.simulate = (dt) ->
 			Vec2.limit(acc, kinetic.maxAcc)
 
 		Vec2.copy(copyVel, vel)
-		Vec2.add(vel, Vec2.scal(acc, dt, cache))
+		Vec2.add(vel, Vec2.scal(acc, dt))
 		if kinetic.maxVel
 			Vec2.limit(vel, kinetic.maxVel)
 		Vec2.scal(Vec2.add(copyVel, vel), dt / 2)
@@ -104,7 +116,7 @@ Kinetic.simulate = (dt) ->
 
 		Vec2.add(
 			vel,
-			Vec2.scal(acc, dt)
+			acc
 		)
 
 		# Apply drag

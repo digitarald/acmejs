@@ -1,6 +1,7 @@
 Composite = require('./composite')
 Bounds = require('./bounds')
 {Vec2} = require('./math')
+Color = require('./math')
 
 class Renderer extends Composite
 
@@ -73,37 +74,35 @@ class Renderer extends Composite
 
 	handleEvent: ->
 		@reflow()
+		@
 
 	reflow: ->
-		Vec2.set(@browser, window.innerWidth, window.innerHeight)
+		browser = Vec2.set(@browser, window.innerWidth, window.innerHeight)
 		scale = Math.min(@browser[0] / @content[0], @browser[1] / @content[1])
-		scale = Math.clamp((scale * 2 | 0) / 2, 1, 2)
+		# scale = Math.clamp((scale * 2 | 0) / 2, 0.5, 2)
 		if scale isnt @scale
 			@scale = scale
 			Vec2.scal(@content, @scale, @client)
 			# @buf.width = @canvas.width = @content[0]
 			# @buf.height = @canvas.height = @content[1]
 
-		@alignContainer()
-
-	alignContainer: () ->
-		Vec2.scal(Vec2.sub(@browser, @client, @margin), 0.5)
-		if @browser[1] < @client[1]
-			@margin[1] = 0
+		Vec2.scal(Vec2.sub(browser, @client, @margin), 0.5)
 		# TODO: Only works for scale >= 1
-		rule = if @scale isnt 1 then "scale(#{@scale})" else ''
+		rule = "translate(#{@margin[0]}px, #{@margin[1]}px) scale(#{@scale})"
 		@element.style.transform = rule
 		@element.style.webkitTransform = rule
 		@
 
 	save: ->
 		ctx = if @buffer then @bufctx else @ctx
+		# ctx.fillStyle = Color.rgba(Color.black)
+		# ctx.fillRect(0, 0, @content[0], @content[1])
 		ctx.clearRect(0, 0, @content[0], @content[1])
 		# ctx.width = @client[0] | 0
 		ctx.save()
 		ctx.translate(@pos[0] | 0 , @pos[1] | 0)
 		# ctx.scale(@scale, @scale)
-		return ctx
+		ctx
 
 	restore: ->
 		if @buffer
