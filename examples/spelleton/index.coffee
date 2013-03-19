@@ -10,7 +10,7 @@ Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canva
 
 # Game
 
-Composite = require('../../lib/core/composite')
+Entity = require('../../lib/core/entity')
 Component = require('../../lib/core/component')
 Pool = require('../../lib/core/pool')
 Sprite = require('../../lib/core/sprite')
@@ -21,9 +21,9 @@ Kinetic = require('../../lib/core/kinetic')
 
 class GameController extends Component
 
-	type: 'gameController'
+	tag: 'gameController'
 
-	reset: ->
+	instantiate: ->
 		Magician.Prefab.alloc(@root,
 			transform:
 				pos: Vec2(240, 200)
@@ -44,10 +44,10 @@ new Pool(GameController)
 
 class Explosion extends Component
 
-	type: 'explosion'
+	tag: 'explosion'
 
 	onSequenceEnd: () ->
-		@parent.free()
+		@entity.destroy()
 
 new Pool(Explosion)
 
@@ -62,11 +62,11 @@ Explosion.sheetFire = new Sprite.Sheet(
 	speed: 0.05
 )
 
-Explosion.Prefab = new Composite.Prefab(
+Explosion.Prefab = new Entity.Prefab(
 	transform: null
 	spriteTween:
 		asset: Explosion.sheetFire
-		# composite: 'lighter'
+		# entity: 'lighter'
 	explosion: null
 )
 
@@ -87,7 +87,7 @@ defaultSequence =
 
 class Magician extends Component
 
-	type: 'magician'
+	tag: 'magician'
 
 	simulate: ->
 		axis = Engine.input.axis
@@ -103,7 +103,7 @@ class Magician extends Component
 			pos[0] += speed
 		@
 
-	lateUpdate: ->
+	postUpdate: ->
 		axis = Engine.input.axis
 		spriteTween = @spriteTween
 		if axis[1] < 0
@@ -127,7 +127,7 @@ Magician.sheet = new Sprite.Sheet(
 	sequences: defaultSequence
 )
 
-Magician.Prefab = new Composite.Prefab(
+Magician.Prefab = new Entity.Prefab(
 	transform: null
 	spriteTween:
 		asset: Magician.sheet
@@ -142,7 +142,7 @@ Magician.Prefab = new Composite.Prefab(
 
 class Enemy extends Component
 
-	type: 'enemy'
+	tag: 'enemy'
 
 new Pool(Enemy)
 
@@ -153,7 +153,7 @@ Enemy.sheet = new Sprite.Sheet(
 	sequences: defaultSequence
 )
 
-Enemy.Prefab = new Composite.Prefab(
+Enemy.Prefab = new Entity.Prefab(
 	transform: null
 	spriteTween:
 		asset: Enemy.sheet
@@ -162,7 +162,7 @@ Enemy.Prefab = new Composite.Prefab(
 
 # Init
 
-Engine.gameScene = Composite.alloc(
+Engine.gameScene = Entity.alloc(
 	null,
 	gameController: null
 )

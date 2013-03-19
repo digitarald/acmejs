@@ -39,7 +39,6 @@ class SpriteAsset
 
 	draw: (ctx, toPos = Vec2.zero, align = @defaultAlign, size = @bufferSize, fromPos = @defaultOffset, scale = @defaultScale) ->
 		if @ready
-			# debugger
 			ctx.drawImage(@buffer,
 				fromPos[0] | 0, fromPos[1] | 0,
 				size[0], size[1],
@@ -87,23 +86,23 @@ class SpriteAsset
 
 class SpriteSheet
 
-	constructor: (presets) ->
-		sprites = presets.sprites or []
+	constructor: (attributes) ->
+		sprites = attributes.sprites or []
 		@sprites = if Array.isArray(sprites) then sprites else [sprites]
 
 		@frames = []
-		if Array.isArray(presets.frames)
-			for frame in presets.frames
+		if Array.isArray(attributes.frames)
+			for frame in attributes.frames
 				# TODO: Convert pos, size, align to Float32Array
 				@frames.push(frame)
 
 		@defaults = {}
-		@defaults.speed ?= presets.speed or 0.2
-		@defaults.size ?= presets.size or Vec2(1, 1)
-		@defaults.align ?= presets.align or Vec2.center
+		@defaults.speed ?= attributes.speed or 0.2
+		@defaults.size ?= attributes.size or Vec2(1, 1)
+		@defaults.align ?= attributes.align or Vec2.center
 
 		@sequences = {}
-		sequences = presets.sequences or {}
+		sequences = attributes.sequences or {}
 		for id of sequences
 			@addSequence(id, sequences[id])
 		# console.log('SpriteSheet: ', @);
@@ -163,28 +162,28 @@ class SpriteSheet
 
 class SpriteTween extends Component
 
-	type: 'spriteTween'
+	tag: 'spriteTween'
 
-	presets:
+	attributes:
 		asset: null
 		speed: null
 		sequence: null
 		offset: 0
 		composite: null
 
-	reset: (presets) ->
-		{@asset, @composite} = presets
+	instantiate: (attributes) ->
+		# console.log(@)
+		{@asset, @composite, @sequence, @speed} = attributes
 		@isSheet = @asset instanceof SpriteSheet
 		if @isSheet
 			@frame = 0
-			{@sequence, @speed} = presets
 			@speed ?= @asset.defaults.speed
-			@dtime = presets.offset
+			@dtime = attributes.offset
 			if not @sequence
 				@sequence = @asset.defaultSequence
 		@
 
-	lateUpdate: (dt) ->
+	preRender: (dt) ->
 		if @isSheet and not @paused
 			dtime = (@dtime += dt)
 			if @sequence
@@ -193,7 +192,7 @@ class SpriteTween extends Component
 				frames = sequence.frames
 				frameCount = frames.length
 				if dtime >= (frameCount) * speed
-					@parent.pub('onSequenceEnd')
+					@entity.pub('onSequenceEnd')
 					if sequence.next
 						if sequence.next isnt @sequence
 							return @goto(sequence.next)
@@ -209,17 +208,16 @@ class SpriteTween extends Component
 				dtime = dtime % (frameCount * speed)
 				frame = dtime / speed | 0
 				if frame < @frame
-					@parent.pub('onSequenceEnd')
+					@entity.pub('onSequenceEnd')
 				@frame = dtime / speed | 0
 		@
 
-	render: (ctx, dt) ->
+	render: (ctx) ->
 		# TODO: align
 		ctx.save()
 		@transform.applyMatrix(ctx)
 		if @composite
 			ctx.globalCompositeOperation = @composite
-		# debugger
 		@asset.draw(ctx, @frame)
 		ctx.restore()
 		@
@@ -238,6 +236,10 @@ class SpriteTween extends Component
 				@dtime = 0
 				# if sequence = @asset.sequences[@sequence]
 				@sequence = id
+				if @paused
+					@paused = false
+					@preRender(0)
+					@paused = true
 		else
 			@sequence = null
 			@frameIndex = id

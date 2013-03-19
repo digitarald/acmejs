@@ -8,20 +8,20 @@ Engine = require('./../../core/engine')
 
 class EslContainer extends Component
 
-	type: 'eslContainer'
+	tag: 'eslContainer'
 
 	constructor: ->
 
-	reset: (presets) ->
+	instantiate: (attributes) ->
 		if not (stage = @root.eslStage)
 			stage = new Esl.Stage(Engine.renderer.buf)
 			stage.autoClear = false
 			EslContainer.eslStage = stage
 			@root.eslStage = stage
 
-		child = presets.child
+		child = attributes.child
 		if typeof child is 'function'
-			child = child.call(@, presets)
+			child = child.call(@, attributes)
 
 		stage.addChild(child)
 		@child = child
@@ -45,7 +45,7 @@ class EslContainer extends Component
 		super()
 
 EslContainer.render = (dt) ->
-	for container in @roster when container.enabled
+	for container in @register when container.enabled
 		{child, transform} = container
 		Vec2.toObj(transform.pos, child)
 		child.rotation = transform.angle

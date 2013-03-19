@@ -10,7 +10,7 @@ Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canva
 
 # Game
 
-Composite = require('../../lib/core/composite')
+Entity = require('../../lib/core/entity')
 Component = require('../../lib/core/component')
 Pool = require('../../lib/core/pool')
 Color = require('../../lib/core/color')
@@ -21,9 +21,9 @@ Esl = require('../../lib/vendor/esl/esl')
 
 class GameController extends Component
 
-	type: 'gameController'
+	tag: 'gameController'
 
-	reset: ->
+	instantiate: ->
 		@root.gravity = Vec2(0, 0)
 
 		for i in [0..1]
@@ -31,7 +31,7 @@ class GameController extends Component
 		@
 
 	spawnBox: () ->
-		Composite.alloc(@root,
+		Entity.alloc(@root,
 			transform:
 				pos: Vec2(Math.rand(25, 450), Math.rand(25, 265))
 			eslContainer:
@@ -57,7 +57,7 @@ new Pool(GameController)
 
 # Init
 
-Engine.gameScene = Composite.alloc(
+Engine.gameScene = Entity.alloc(
 	null,
 	gameController: null
 )

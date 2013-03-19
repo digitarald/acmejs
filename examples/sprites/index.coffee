@@ -10,7 +10,7 @@ Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canva
 
 # Game
 
-Composite = require('../../lib/core/composite')
+Entity = require('../../lib/core/entity')
 Component = require('../../lib/core/component')
 Pool = require('../../lib/core/pool')
 Sprite = require('../../lib/core/sprite')
@@ -21,9 +21,9 @@ Kinetic = require('../../lib/core/kinetic')
 
 class GameController extends Component
 
-	type: 'gameController'
+	tag: 'gameController'
 
-	reset: ->
+	instantiate: ->
 		# for i in [0..200]
 		#	@spawnExplosion()
 
@@ -65,14 +65,14 @@ explisionSheet = new Sprite.Sheet(
 
 class Explosion extends Component
 
-	type: 'explosion'
+	tag: 'explosion'
 
 	onSequenceEnd: () ->
-		@parent.free()
+		@entity.destroy()
 
 new Pool(Explosion)
 
-Explosion.Prefab = new Composite.Prefab(
+Explosion.Prefab = new Entity.Prefab(
 	transform: null
 	spriteTween:
 		asset: explisionSheet
@@ -102,7 +102,7 @@ agentSheet = new Sprite.Sheet(
 		hurt: [45, 50, null, 0.15]
 )
 
-AgentPrefab = new Composite.Prefab(
+AgentPrefab = new Entity.Prefab(
 	transform: null
 	spriteTween:
 		asset: agentSheet
@@ -111,7 +111,7 @@ AgentPrefab = new Composite.Prefab(
 
 # Init
 
-Engine.gameScene = Composite.alloc(
+Engine.gameScene = Entity.alloc(
 	null,
 	gameController: null
 )

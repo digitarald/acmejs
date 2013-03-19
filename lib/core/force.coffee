@@ -6,18 +6,18 @@ cache = Vec2()
 
 class Force extends Component
 
-	type: 'force'
+	tag: 'force'
 
-	presets:
+	attributes:
 		acc: Vec2()
 		torque: 0
 
 	constructor: ->
 		@acc = Vec2()
 
-	reset: (presets) ->
-		Vec2.copy(@acc, presets.acc)
-		{@torque} = presets
+	instantiate: (attributes) ->
+		Vec2.copy(@acc, attributes.acc)
+		{@torque} = attributes
 		@age = 0
 		@
 

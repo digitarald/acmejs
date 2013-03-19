@@ -4,14 +4,14 @@ Pool = require('./pool')
 
 class Jitter extends Component
 
-	type: 'jitter'
+	tag: 'jitter'
 
-	presets:
+	attributes:
 		factor: 0.8
 		force: 1000
 
-	reset: (presets) ->
-		{@factor, @force} = presets
+	instantiate: (attributes) ->
+		{@factor, @force} = attributes
 		@
 
 	fixedUpdate: (dt) ->
@@ -21,7 +21,7 @@ class Jitter extends Component
 				Math.rand(-@force, @force),
 				Math.rand(-@force, @force)
 			)
-			Vec2.add(@parent.kinetic.acc, rand)
+			Vec2.add(@entity.kinetic.acc, rand)
 
 new Pool(Jitter)
 

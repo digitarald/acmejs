@@ -6,9 +6,9 @@ B2 = require('./b2')
 
 class Body extends Component
 
-	type: 'b2Body'
+	tag: 'b2Body'
 
-	presets:
+	attributes:
 		fixed: false
 		vel: Vec2()
 		allowSleep: true
@@ -28,7 +28,7 @@ class Body extends Component
 		@definition = new B2.BodyDef()
 		@fixture = new B2.FixtureDef()
 
-	reset: (presets) ->
+	instantiate: (attributes) ->
 		if not (world = @root.b2World)
 			gravity = new B2.Vec2(@root.gravity[0], @root.gravity[1])
 			world = new B2.World(gravity)
@@ -39,19 +39,19 @@ class Body extends Component
 		{definition, fixture} = @
 
 		for key in Body.definitionPresets
-			definition[key] = presets[key]
+			definition[key] = attributes[key]
 
 		definition.userData = @
 		Vec2.toObj(@transform.pos, definition.position)
 		definition.angle = @transform.angle
-		Vec2.toObj(presets.vel, definition.linearVelocity)
-		@fixed = fixed = presets.fixed
+		Vec2.toObj(attributes.vel, definition.linearVelocity)
+		@fixed = fixed = attributes.fixed
 		definition.type = if fixed then B2.Body.b2_staticBody else B2.Body.b2_dynamicBody
 
 		@b2body = world.CreateBody(definition)
 
 		for key in Body.fixturePresets
-			fixture[key] = presets[key]
+			fixture[key] = attributes[key]
 
 		bounds = @bounds
 		switch bounds.shape
@@ -102,8 +102,8 @@ Body.PostSolve = (contact, impulse) ->
 	contact.GetWorldManifold(manifoldCache)
 	Vec2.fromObj(manifoldCache.m_points[0], pointCache)
 
-	bodyA.parent.pub('onCollide', bodyB.parent, impulseCache)
-	bodyB.parent.pub('onCollide', bodyA.parent, impulseCache)
+	bodyA.entity.pub('onCollide', bodyB.entity, impulseCache)
+	bodyB.entity.pub('onCollide', bodyA.entity, impulseCache)
 	null
 
 empty = (contact) -> null
@@ -114,7 +114,7 @@ Body.PreSolve = empty
 Body.fixedUpdate = (dt) ->
 	Body.b2World.Step(dt * 2, 4, 2)
 
-	for body in @roster when body.enabled and not body.fixed
+	for body in @register when body.enabled and not body.fixed
 		b2body = body.b2body
 		if b2body.IsAwake()
 			Vec2.fromObj(b2body.GetPosition(), body.transform.pos)

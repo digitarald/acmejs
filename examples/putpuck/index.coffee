@@ -21,7 +21,7 @@ Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canva
 
 # Game
 
-Composite = require('../../lib/core/composite')
+Entity = require('../../lib/core/entity')
 Component = require('../../lib/core/component')
 Pool = require('../../lib/core/pool')
 Color = require('../../lib/core/color')
@@ -33,9 +33,9 @@ Particle = require('../../lib/core/particle')
 Collider = require('../../lib/core/collider')
 Kinetic = require('../../lib/core/kinetic')
 
-class Scene extends Composite
+class Scene extends Entity
 
-	type: 'scene'
+	tag: 'scene'
 
 	constructor: ->
 		super()
@@ -114,11 +114,11 @@ class Scene extends Composite
 
 class Puck extends Component
 
-	type: 'puck'
+	tag: 'puck'
 
 	layer: 1
 
-	presets:
+	attributes:
 		player: 0
 		color: Color()
 		field: null
@@ -127,9 +127,9 @@ class Puck extends Component
 		@color = Color()
 		@outlineColor = Color()
 
-	reset: (presets) ->
-		{@player, @field} = presets
-		Color.copy(@color, presets.color)
+	instantiate: (attributes) ->
+		{@player, @field} = attributes
+		Color.copy(@color, attributes.color)
 
 		Color.lerp(@color, Color.black, 0.2, false, @outlineColor)
 		@outlineColor[3] = 0.3
@@ -182,7 +182,7 @@ class Puck extends Component
 				@collider.enable(true)
 				# @border.enable(true)
 				Vec2.copy(@kinetic.vel, @avgSpeed)
-				@parent.pub('onFlip', @)
+				@entity.pub('onFlip', @)
 				@avgSpeed = null
 			when 'flipped'
 				break
@@ -255,13 +255,13 @@ class Puck extends Component
 
 new Pool(Puck)
 
-Particle.defaultComposite = null
+Particle.defaultEntity = null
 Puck.particleFlipSprite = Particle.generateSprite(Color(199, 244, 100))
 Puck.particleSmokeSprite = Particle.generateSprite(Color(128, 128, 128), 0.5)
 
 console.log(Puck.particleSmokeSprite.toString())
 
-Puck.Prefab = new Composite.Prefab(
+Puck.Prefab = new Entity.Prefab(
 	transform: null
 	bounds:
 		shape: 'circle'
@@ -279,9 +279,9 @@ Puck.Prefab = new Composite.Prefab(
 
 class Field extends Component
 
-	type: 'field'
+	tag: 'field'
 
-	presets:
+	attributes:
 		color: Color.white
 		out: false
 		player: 0
@@ -289,15 +289,15 @@ class Field extends Component
 	constructor: ->
 		@color = Color()
 
-	reset: (presets) ->
-		{@out, @player} = presets
-		Color.copy(@color, presets.color)
+	instantiate: (attributes) ->
+		{@out, @player} = attributes
+		Color.copy(@color, attributes.color)
 		@root.sub(@, 'onKineticSleep')
 		@
 
 	onKineticSleep: (kinetic) ->
 		if @bounds.contains(kinetic.pos) and @out
-			kinetic.parent.free()
+			kinetic.entity.destroy()
 		@
 
 	render: (ctx) ->
@@ -314,7 +314,7 @@ class Field extends Component
 
 new Pool(Field)
 
-Field.Prefab = new Composite.Prefab(
+Field.Prefab = new Entity.Prefab(
 	transform: null
 	bounds:
 		shape: 'rect'

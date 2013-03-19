@@ -8,17 +8,19 @@ Engine = require('./engine')
 # https://sites.google.com/site/t3hprogrammer/research/circle-circle-collision-tutorial#TOC-Dynamic-Circle-Circle-Collision
 class Collider extends Component
 
-	type: 'collider'
+	tag: 'collider'
 
-	presets:
+	attributes:
 		trigger: false
+		include: null
+		exclude: null
 
-	reset: (presets) ->
-		@trigger = presets.trigger
+	instantiate: (attributes) ->
+		{@trigger, @include, @exclude} = attributes
 		@
 
 Collider.simulate = (dt) ->
-	colliders = @roster
+	colliders = @register
 	i = colliders.length
 	while i--
 		collider1 = colliders[i]
@@ -26,19 +28,19 @@ Collider.simulate = (dt) ->
 			continue
 
 		j = i
-		while j--
+		while j-- and collider1.enabled
 			collider2 = colliders[j]
 			kinetic1 = collider1.kinetic
 			kinetic2 = collider2.kinetic
-			if not collider2.enabled or (kinetic1.sleeping and kinetic2.sleeping)
+			entity1 = collider1.entity
+			entity2 = collider2.entity
+			if not collider2.enabled or (kinetic1.sleeping and kinetic2.sleeping) or (collider1.include and not collider2[collider1.include]) or (collider2.include and not collider1[collider2.include]) or (collider1.exclude and collider2[collider1.exclude]) or (collider2.exclude and collider1[collider2.exclude])
 				continue
 
-			parent1 = collider1.parent
-			parent2 = collider2.parent
-			radius1 = parent1.radius or parent1.bounds.radius
-			radius2 = parent2.radius or parent2.bounds.radius
-			pos1 = parent1.transform.pos
-			pos2 = parent2.transform.pos
+			radius1 = entity1.bounds.radius
+			radius2 = entity2.bounds.radius
+			pos1 = entity1.transform.pos
+			pos2 = entity2.transform.pos
 
 			radiusSum = radius1 + radius2
 			diffSq = Vec2.distSq(pos1, pos2)
@@ -51,8 +53,8 @@ Collider.simulate = (dt) ->
 
 			if collider1.trigger or collider2.trigger
 				# debugger
-				parent1.pub('onTrigger', parent2, p, diff)
-				parent2.pub('onTrigger', parent1, p, diff)
+				entity1.pub('onTrigger', entity2, p, diff)
+				entity2.pub('onTrigger', entity1, p, diff)
 				continue
 
 			diff -= radiusSum
@@ -65,7 +67,7 @@ Collider.simulate = (dt) ->
 				Vec2.add(pos1, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]))
 				Vec2.add(pos2, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]))
 			# TODO: should be added for corrected normal:
-			# p = Vec2.norm(Vec2.sub(parent1.pos, parent2.pos, Vec2.cache[0]))
+			# p = Vec2.norm(Vec2.sub(entity1.pos, entity2.pos, Vec2.cache[0]))
 
 			# normal vector to collision direction
 			# n = Vec2.set(Vec2.cache[1], p[1], -p[0])
@@ -93,8 +95,8 @@ Collider.simulate = (dt) ->
 			)
 			# kinetic2.dirty = true
 
-			parent1.pub('onCollide', parent2, n)
-			parent2.pub('onCollide', parent1, n)
+			entity1.pub('onCollide', entity2, n)
+			entity2.pub('onCollide', entity1, n)
 	@
 
 new Pool(Collider)

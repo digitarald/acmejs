@@ -5,7 +5,7 @@ Engine = require('./engine')
 
 class Input extends Component
 
-	type: 'input'
+	tag: 'input'
 
 	support:
 		touch: 'ontouchstart' of window
@@ -30,13 +30,15 @@ class Input extends Component
 			32: 'space'
 			192: 'debug'
 			38: 'up'
-			# 87: 'up'
+			87: 'up'
 			39: 'right'
-			# 68: 'right'
+			68: 'right'
 			40: 'bottom'
-			# 83: 'bottom'
+			83: 'bottom'
 			37: 'left'
-			# 65: 'left'
+			65: 'left'
+			219: 'squareLeft'
+			221: 'squareRight'
 
 		@axisMap =
 			left: Vec2(0, -1)
@@ -69,6 +71,8 @@ class Input extends Component
 			keydown: 'keyStart'
 			keyup: 'keyEnd'
 
+		@events.blur = 'blur'
+
 		for type of @events
 			window.addEventListener(type, @, false)
 
@@ -93,8 +97,7 @@ class Input extends Component
 			if not @lock('key-' + key)
 				return false
 			@keys[key] = 'began'
-			if (axis = @axisMap[key])
-				@axis[axis[0]] += axis[1]
+			@updateAxis(key)
 			Engine.pub('onKeyBegan', key)
 		@
 
@@ -103,8 +106,7 @@ class Input extends Component
 			if not @lock('key-' + key)
 				return false
 			@keys[key] = 'ended'
-			if (axis = @axisMap[key])
-				@axis[axis[0]] -= axis[1]
+			@updateAxis(key, true)
 			Engine.pub('onKeyEnded', key)
 		@
 
@@ -133,6 +135,26 @@ class Input extends Component
 		if @touchState and (not @support.touch or not event.targetTouches.length)
 			Engine.pub('onTouchEnded')
 			@touchState = 'ended'
+		@
+
+	updateAxis: (key, ended) ->
+		# Fix: let up override down when pressed later
+		if (axis = @axisMap[key])
+			if ended
+				@axis[axis[0]] -= axis[1]
+			else
+				@axis[axis[0]] += axis[1]
+		@
+
+	blur: ->
+		if @touchState and @touchState isnt 'ended'
+			@touchState = 'ended'
+
+		keys = @keys
+		for key in @keyNames
+			if keys[key] and keys[key] isnt 'ended'
+				keys[key] = 'ended'
+				@updateAxis(key, true)
 		@
 
 	calibrateOrientation: () ->
@@ -169,12 +191,12 @@ class Input extends Component
 
 	lock: (key) ->
 		if @locks[key] is @frame
-			console.log('LOCKED: ' + key)
+			# console.log('LOCKED: ' + key)
 			return false
 		@locks[key] = @frame
 		return true
 
-	lateUpdate: (dt, scene) ->
+	postUpdate: ->
 		switch @touchState
 			when 'began'
 				@touchState = 'stationary'
@@ -201,7 +223,7 @@ class Input extends Component
 		#	console.log(queue.map((event) -> event.type))
 		while (event = queue[0])
 			type = event.type
-			if not @[@events[type]](event)
+			if not @[@events[type] or type](event)
 				break
 			queue.shift()
 
@@ -209,6 +231,6 @@ class Input extends Component
 			@lastEvent = null
 		@
 
-pool = new Pool(Input)
+new Pool(Input)
 
 module.exports = Input

@@ -5,15 +5,15 @@ Pool = require('./pool')
 # http://rocketmandevelopment.com/2010/06/11/steering-behaviors-seeking/
 class Avoid extends Component
 
-	type: 'avoid'
+	tag: 'avoid'
 
-	presets:
+	attributes:
 		targets: null
 		sight: 100
 
-	reset: (presets) ->
-		{@targets, @sight} = presets
-		@roster = Pool.types[@targets]
+	instantiate: (attributes) ->
+		{@targets, @sight} = attributes
+		@register = Pool.byTag[@targets]
 		@
 
 	forward = Vec2()
@@ -25,7 +25,7 @@ class Avoid extends Component
 	# http://rocketmandevelopment.com/2010/07/13/steering-behaviors-obstacle-avoidance/
 	# http://my.safaribooksonline.com/book/programming/game-programming/0596005555/flocking/ch04_sect1_003
 	fixedUpdate: (dt) ->
-		for target in @roster when target.enabled
+		for target in @register when target.enabled
 			Vec2.norm(@kinetic.vel, u)
 
 

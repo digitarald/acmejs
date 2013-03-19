@@ -1,5 +1,5 @@
 Component = require('./component')
-Composite = require('./composite')
+Entity = require('./entity')
 Pool = require('./pool')
 Engine = require('./engine')
 {Vec2} = require('./math')
@@ -7,9 +7,9 @@ Catapult = require('./catapult')
 Sprite = require('./sprite').Asset
 Particle = require('./particle')
 
-class Scene extends Composite
+class Scene extends Entity
 
-	type: 'scene'
+	tag: 'scene'
 
 	constructor: () ->
 		@gravity = null # Vec2(0, 500)
@@ -26,11 +26,11 @@ module.exports = Scene
 
 class Earth extends Component
 
-	type: 'earth'
+	tag: 'earth'
 
 	onTrigger: (entity) ->
 		pos = entity.transform.pos
-		entity.free()
+		entity.destroy()
 		require('./explosion').alloc(@, pos)
 		@
 
@@ -46,12 +46,12 @@ new Pool(Earth)
 
 class Sky extends Component
 
-	type: 'sky'
+	tag: 'sky'
 
 	constructor: () ->
 		@stars = []
 
-	reset: () ->
+	instantiate: () ->
 		size = Engine.renderer.client
 
 		for i in [0..100]

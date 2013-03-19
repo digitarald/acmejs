@@ -5,9 +5,9 @@ Kinetic = require('./kinetic')
 
 class Boid extends Component
 
-	type: 'boid'
+	tag: 'boid'
 
-	presets:
+	attributes:
 		perception: 100
 		aura: 25
 
@@ -17,8 +17,8 @@ class Boid extends Component
 		@avoidanceMod = 2
 		@imitationMod = 1
 
-	reset: (presets) ->
-		{@perception, @aura} = presets
+	instantiate: (attributes) ->
+		{@perception, @aura} = attributes
 		if not @aura and @bounds
 			@aura = @bounds.radius * 1.5
 		@perceptionSq = @perception * @perception
@@ -32,7 +32,7 @@ stretch = Vec2()
 acc = Vec2()
 
 Boid.fixedUpdate = (dt) ->
-	boids = @roster
+	boids = @register
 	i = len = boids.length
 	while i--
 		boid1 = boids[i]
@@ -40,9 +40,9 @@ Boid.fixedUpdate = (dt) ->
 			continue
 
 		avoidanceCount = imitationCount  = cohesionCount = 0
-		parent1 = boid1.parent
-		pos1 = parent1.transform.pos
-		vel = parent1.kinetic.vel
+		entity1 = boid1.entity
+		pos1 = entity1.transform.pos
+		vel = entity1.kinetic.vel
 		Vec2.set(acc)
 
 		j = len
@@ -51,14 +51,14 @@ Boid.fixedUpdate = (dt) ->
 			if not boid2.enabled or boid1 is boid2
 				continue
 
-			parent2 = boid2.parent
-			pos2 = parent2.transform.pos
+			entity2 = boid2.entity
+			pos2 = entity2.transform.pos
 
 			diffSq = Vec2.distSq(pos1, pos2)
 
 			if diffSq < boid1.perceptionSq and diffSq
 				Vec2.sub(pos2, pos1, stretch)
-				Vec2.scal(stretch, Math.sqrt(parent1.kinetic.mass / parent2.kinetic.mass))
+				Vec2.scal(stretch, Math.sqrt(entity1.kinetic.mass / entity2.kinetic.mass))
 
 				# diff = Math.sqrt(diffSq)
 				# Vec2.scal(stretch, Math.quadInOut(diff / boid1.perception), cache)
@@ -70,11 +70,11 @@ Boid.fixedUpdate = (dt) ->
 					Vec2.add(cohesion, stretch)
 
 				# Imitation : try to move in the same way than other boids
-				# fit = Vec2.scal(parent2.vel, Math.quadOut(diff / boid1.perceptionSq), cache)
+				# fit = Vec2.scal(entity2.vel, Math.quadOut(diff / boid1.perceptionSq), cache)
 				if not imitationCount++
-					Vec2.copy(imitation, parent2.kinetic.vel)
+					Vec2.copy(imitation, entity2.kinetic.vel)
 				else
-					Vec2.add(imitation, parent2.kinetic.vel)
+					Vec2.add(imitation, entity2.kinetic.vel)
 
 				# Avoidance : try to keep a minimum distance between others.
 				if diffSq < boid1.auraSq
@@ -89,7 +89,7 @@ Boid.fixedUpdate = (dt) ->
 			if cohesionCount > 1
 				Vec2.scal(cohesion, 1 / cohesionCount)
 			Vec2.add(
-				parent1.kinetic.acc,
+				entity1.kinetic.acc,
 				Vec2.scal(
 					cohesion,
 					boid1.cohesionMod * mod
@@ -106,14 +106,14 @@ Boid.fixedUpdate = (dt) ->
 				)
 			)
 			Vec2.add(
-				parent1.kinetic.acc,
+				entity1.kinetic.acc,
 				Vec2.sub(acc, vel)
 			)
 
 		if avoidanceCount and boid1.avoidanceMod
 			if avoidanceCount > 1
 				Vec2.scal(avoidance, 1 / avoidanceCount)
-			Vec2.sub(parent1.kinetic.acc,
+			Vec2.sub(entity1.kinetic.acc,
 				Vec2.scal(
 					avoidance,
 					boid1.avoidanceMod * mod
@@ -124,8 +124,8 @@ Boid.fixedUpdate = (dt) ->
 
 
 Boid.explode = () ->
-	for comp in Boid.pool.roster when comp.enabled
-		comp.parent.explode()
+	for comp in Boid.pool.register when comp.enabled
+		comp.entity.explode()
 	@
 
 new Pool(Boid)

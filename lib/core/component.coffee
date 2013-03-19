@@ -1,42 +1,49 @@
 
 require('./math')
 
-# Base class for everything attached to a composite
+# Base class for everything attached to a entity
 class Component
 
-	type: 'component'
+	tag: 'component'
 
 	toString: ->
-		return "Component #{@type}##{@uid} [^ #{@parent}]"
+		return "Component #{@tag}##{@uid} [^ #{@entity}]"
 
-	alloc: (presets) ->
-		@parent.components[@type] = @
-		@parent[@type] = @
-		components = @parent.components
-		for type of components when type isnt @type
-			@[type] = component = components[type]
-			component[@type] = @
-		if @reset
-			@reset(presets)
+	alloc: (attributes) ->
+		@entity = entity = @parent
+		entity.components[@tag] = @
+		entity[@tag] = @
+		components = entity.components
+		for tag of components when tag isnt @tag
+			@[tag] = component = components[tag]
+			component[@tag] = @
+		if @instantiate
+			@instantiate(attributes)
+		@
+
+	destroy: ->
+		@pool.destroy(@)
 		@
 
 	free: ->
-		delete @parent.components[@type]
-		@parent[@type] = null
-		components = @parent.components
-		for type of components when type isnt @type
-			@[components[type].type] = null
-			components[type][@type] = null
+		delete @entity.components[@tag]
+		@entity[@tag] = null
+		components = @entity.components
+		for tag of components when tag isnt @tag
+			@[components[tag].tag] = null
+			components[tag][@tag] = null
+		@entity = null
 		@pool.free(@)
 		@
 
-	enable: (state) ->
-		@enabled = state ?= not @state
-		@parent.pub('onComponent' + (if state then 'Enable' else 'Disable'), @)
+	enable: (state, silent) ->
+		@enabled = (state ?= not @state)
+		if silent
+			@entity.pub('onComponent' + (if state then 'Enable' else 'Disable'), @)
 		@
 
 	sub: (scope = @, topic, method) ->
-		@parent.sub(scope, topic, method)
+		@entity.sub(scope, topic, method)
 		@
 
 module.exports = Component

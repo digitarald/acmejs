@@ -1,4 +1,4 @@
-Composite = require('./composite')
+Entity = require('./entity')
 Component = require('./component')
 Pool = require('./pool')
 Engine = require('./engine')
@@ -10,21 +10,22 @@ Sprite = require('./sprite').Asset
 
 class Particle extends Component
 
-	type: 'particle'
+	tag: 'particle'
 
 	# light: true # TODO
 
 	@layer: 10
 
-	presets:
+	attributes:
 		# pos: Vec2()
 		# vel: Vec2()
 		color: Color.black
-		colorVariant: 0.5
+		colorVariant: 0
 		lifetime: 1
 		radius: 1
+		radiusVariant: 0
 		alpha: 1
-		alphaVariant: 0.2
+		alphaVariant: 0
 		composite: null
 		sprite: null
 		shrink: Math.quintIn
@@ -35,27 +36,30 @@ class Particle extends Component
 		# @vel = Vec2()
 		@color = Color()
 
-	reset: (presets) ->
-		{@lifetime, @radius, @alpha, @alphaVariant, @composite, @sprite, @shrink, @fade, @colorVariant} = presets
-		Color.copy(@color, presets.color)
-		if @colorVariant
-			Color.variant(@color, @colorVariant)
-		if @alphaVariant
-			@alpha = Math.clamp(@alpha + Math.rand(-@alphaVariant, @alphaVariant), 0, 1)
-		# Vec2.copy(@pos, presets.pos)
-		# Vec2.copy(@vel, presets.vel)
+	instantiate: (attributes) ->
+		{@lifetime, @radius, @alpha, @composite, @sprite, @shrink, @fade} = attributes
+		Color.copy(@color, attributes.color)
+		if (variant = attributes.colorVariant)
+			Color.variant(@color, variant)
+		if (variant = attributes.radiusVariant)
+			@radius += Math.rand(-variant, variant)
+		if (variant = attributes.alphaVariant)
+			@alpha = Math.clamp(@alpha + Math.rand(-variant, variant), 0, 1)
+		# Vec2.copy(@pos, attributes.pos)
+		# Vec2.copy(@vel, attributes.vel)
 		@age = 0
 		@
 
 	update: (dt) ->
 		if (@age += dt) > @lifetime
-			@parent.free()
-
-		if @shrink and (@radius *= 1 - @shrink(@age / @lifetime)) < 1
-			@parent.free()
+			@entity.destroy()
+		else if @shrink and (@radius *= 1 - @shrink(@age / @lifetime)) < 1
+			@entity.destroy()
+		else if @fade and (@alpha *= 1 - @fade(@age / @lifetime)) <= 0.02
+			@entity.destroy()
 		@
 
-Particle.defaultComposite = null
+Particle.defaultEntity = null
 
 crop = Vec2()
 cropOffset = Vec2()
@@ -67,11 +71,11 @@ Particle.render = (ctx) ->
 	Vec2.set(crop, 50, 50)
 	Vec2.set(cropOffset, -25, -25)
 	alphaPrev = 1
-	compositePrev = null
+	entityPrev = null
 	fillPrev = null
 	defaultComposite = Particle.defaultComposite
 
-	for particle in @roster when particle.enabled
+	for particle in @register when particle.enabled
 		# if Engine.renderer.cull(particle)
 		#	continue
 
@@ -79,10 +83,8 @@ Particle.render = (ctx) ->
 		pos = particle.transform.pos
 
 		alpha = particle.alpha
-		if particle.fade
-			alpha -= particle.fade(particle.age / particle.lifetime)
-
 		composite = particle.composite or defaultComposite
+
 		if composite isnt compositePrev
 			ctx.globalCompositeOperation = compositePrev = composite
 
@@ -128,7 +130,7 @@ Particle.generateSprite = (color = Color.white, alpha = 1, max = 25) ->
 
 Particle.sprite = Particle.generateSprite()
 
-Particle.Prefab = new Composite.Prefab(
+Particle.Prefab = new Entity.Prefab(
 	transform: null
 	kinetic:
 		mass: 0

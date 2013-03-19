@@ -10,23 +10,23 @@ Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canva
 
 # Game
 
-Composite = require('../../lib/core/composite')
+Entity = require('../../lib/core/entity')
 Component = require('../../lib/core/component')
 Pool = require('../../lib/core/pool')
 Color = require('../../lib/core/color')
 require('../../lib/core/transform')
 require('../../lib/core/border')
-Body = require('../../lib/vendor/b2m/body')
+Body = require('../../lib/vendor/b2/body')
 
 class GameController extends Component
 
-	type: 'gameController'
+	tag: 'gameController'
 
-	reset: ->
+	instantiate: ->
 		@root.gravity = Vec2(0, 10)
 
 		# Border
-		Composite.alloc(@root,
+		Entity.alloc(@root,
 			transform:
 				pos: Vec2(240, 283)
 			bounds:
@@ -36,7 +36,7 @@ class GameController extends Component
 				fixed: true
 			boundsDebug: null
 		)
-		Composite.alloc(@root,
+		Entity.alloc(@root,
 			transform:
 				pos: Vec2(240, 7)
 			bounds:
@@ -46,7 +46,7 @@ class GameController extends Component
 				fixed: true
 			boundsDebug: null
 		)
-		Composite.alloc(@root,
+		Entity.alloc(@root,
 			transform:
 				pos: Vec2(7, 160)
 			bounds:
@@ -56,7 +56,7 @@ class GameController extends Component
 				fixed: true
 			boundsDebug: null
 		)
-		Composite.alloc(@root,
+		Entity.alloc(@root,
 			transform:
 				pos: Vec2(473, 160)
 			bounds:
@@ -67,12 +67,11 @@ class GameController extends Component
 			boundsDebug: null
 		)
 
-		for i in [0..10]
-			@spawnBox()
+		@spawnBoxes()
 		@
 
 	spawnBox: () ->
-		size = Math.rand(5, 20)
+		size = Math.rand(5, 25)
 		sphere = Math.chance(0.5)
 		Box.Prefab.alloc(@root,
 			transform:
@@ -86,6 +85,11 @@ class GameController extends Component
 		)
 		@
 
+	spawnBoxes: ->
+		for i in [0..10]
+			@spawnBox()
+		@
+
 	update: ->
 		input = Engine.input
 		if input.touchState is 'began'
@@ -93,6 +97,8 @@ class GameController extends Component
 				transform:
 					pos: input.pos
 			)
+		if input.keys.space is 'began'
+			@spawnBoxes()
 			@
 
 
@@ -101,7 +107,7 @@ new Pool(GameController)
 
 class Box extends Component
 
-	type: 'box'
+	tag: 'box'
 
 	onCollide: (other, impulse) ->
 		# console.log(Vec2.toString(impulse), Vec2.len(impulse))
@@ -109,7 +115,7 @@ class Box extends Component
 
 new Pool(Box)
 
-Box.Prefab = new Composite.Prefab(
+Box.Prefab = new Entity.Prefab(
 	transform: null
 	bounds:
 		shape: 'circle'
@@ -126,9 +132,9 @@ Box.Prefab = new Composite.Prefab(
 
 class Explosion extends Component
 
-	type: 'explosion'
+	tag: 'explosion'
 
-	presets:
+	attributes:
 		lifetime: 0.25
 		maxSize: 100
 		color: Color.white
@@ -136,10 +142,10 @@ class Explosion extends Component
 	constructor: ->
 		@color = Color()
 
-	reset: (presets) ->
-		Color.copy(@color, presets.color)
-		@lifetime = presets.lifetime
-		@maxSize = presets.maxSize
+	instantiate: (attributes) ->
+		Color.copy(@color, attributes.color)
+		@lifetime = attributes.lifetime
+		@maxSize = attributes.maxSize
 
 		@impulse = 50000
 		@pos = @transform.pos
@@ -152,7 +158,7 @@ class Explosion extends Component
 
 		age = (@age += dt)
 		if age >= @lifetime
-			@parent.free()
+			@entity.destroy()
 		else
 			@factor = Math.quadOut(age / @lifetime)
 			@size = @factor * @maxSize
@@ -162,7 +168,7 @@ class Explosion extends Component
 		{maxSize, impulse} = @
 		pos = @transform.pos
 		maxSizeSq = maxSize * maxSize
-		for body in Body.pool.roster when body.enabled and not body.fixed
+		for body in Body.pool.register when body.enabled and not body.fixed
 			pos2 = body.transform.pos
 			distSq = Vec2.distSq(pos, pos2)
 			if distSq < maxSizeSq
@@ -208,7 +214,7 @@ class Explosion extends Component
 
 new Pool(Explosion)
 
-Explosion.Prefab = new Composite.Prefab(
+Explosion.Prefab = new Entity.Prefab(
 	transform: null
 	explosion: null
 )
@@ -216,12 +222,12 @@ Explosion.Prefab = new Composite.Prefab(
 
 class Spark extends Component
 
-	type: 'spark'
+	tag: 'spark'
 
 	constructor: ->
 		@lastPos = Vec2()
 
-	reset: ->
+	instantiate: ->
 		Vec2.copy(@lastPos, @transform.pos)
 		@lifetime = 2.5
 		@age = 0
@@ -230,7 +236,7 @@ class Spark extends Component
 	update: (dt) ->
 		age = (@age += dt)
 		if age >= @lifetime
-			@parent.free()
+			@entity.destroy()
 		@
 
 	render: (ctx) ->
@@ -247,7 +253,7 @@ class Spark extends Component
 
 new Pool(Spark)
 
-Spark.Prefab = new Composite.Prefab(
+Spark.Prefab = new Entity.Prefab(
 	transform: null
 	bounds:
 		shape: 'circle'
@@ -263,7 +269,7 @@ Spark.Prefab = new Composite.Prefab(
 
 # Init
 
-Engine.gameScene = Composite.alloc(
+Engine.gameScene = Entity.alloc(
 	null,
 	gameController: null
 )

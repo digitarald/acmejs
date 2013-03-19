@@ -18,7 +18,7 @@ if (apps = navigator.mozApps)
 
 # Game
 
-Composite = require('../../lib/core/composite')
+Entity = require('../../lib/core/entity')
 Component = require('../../lib/core/component')
 Pool = require('../../lib/core/pool')
 Color = require('../../lib/core/color')
@@ -33,9 +33,9 @@ Kinetic = require('../../lib/core/kinetic')
 
 class GameController extends Component
 
-	type: 'gameController'
+	tag: 'gameController'
 
-	reset: ->
+	instantiate: ->
 		# http://www.colourlovers.com/palette/1930/cheer_up_emo_kid
 		# http://www.colourlovers.com/palette/373610/mellon_ball_surprise
 		# http://www.colourlovers.com/palette/1473/Ocean_Five
@@ -84,20 +84,20 @@ new Pool(GameController)
 
 class Body extends Component
 
-	type: 'body'
+	tag: 'body'
 
 	layer: 1
 
-	presets:
+	attributes:
 		color: Color()
 
 	constructor: ->
 		@color = Color()
 		@stroke = Color(Color.white)
 
-	reset: (presets) ->
-		@player = presets.player
-		Color.copy(@color, presets.color)
+	instantiate: (attributes) ->
+		@player = attributes.player
+		Color.copy(@color, attributes.color)
 		@
 
 	render: (ctx) ->
@@ -115,7 +115,7 @@ class Body extends Component
 
 new Pool(Body)
 
-Body.Prefab = new Composite.Prefab(
+Body.Prefab = new Entity.Prefab(
 	transform: null
 	bounds:
 		shape: 'circle'
@@ -134,7 +134,7 @@ Body.Prefab = new Composite.Prefab(
 
 # Init
 
-Engine.gameScene = Composite.alloc(
+Engine.gameScene = Entity.alloc(
 	null,
 	gameController: null
 )

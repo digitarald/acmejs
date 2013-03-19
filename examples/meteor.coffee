@@ -1,4 +1,4 @@
-Composite = require('./lib/composite')
+Entity = require('./lib/entity')
 Pool = require('./lib/pool')
 {Vec2} = require('./lib/math')
 Kinetic = require('./lib/kinetic')
@@ -6,9 +6,9 @@ Color = require('./lib/color')
 Transform = require('./lib/transform')
 Collider = require('./lib/collider')
 
-class Meteor extends Composite
+class Meteor extends Entity
 
-	type: 'meteor'
+	tag: 'meteor'
 
 	constructor: () ->
 		super()
@@ -16,8 +16,7 @@ class Meteor extends Composite
 		@shadow = Color(64, 64, 64)
 		@surface = []
 
-	alloc: (parent, pos, @radius = 50, mass = @radius) ->
-		super(parent)
+	alloc: (pos, @radius = 50, mass = @radius) ->
 		Transform.alloc(@, pos)
 		Kinetic.alloc(@, mass)
 		Collider.alloc(@)
@@ -36,7 +35,7 @@ class Meteor extends Composite
 
 	# update: (dt) ->
 	#	if (@age += dt) >= @lifetime
-	#		@free()
+	#		@destroy()
 	#	@
 
 	render: (ctx) ->

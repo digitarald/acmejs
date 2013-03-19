@@ -1,9 +1,9 @@
-Composite = require('./composite')
+Entity = require('./entity')
 Bounds = require('./bounds')
 {Vec2} = require('./math')
-Color = require('./math')
+Color = require('./color')
 
-class Renderer extends Composite
+class Renderer extends Entity
 
 	constructor: (@element, client) ->
 		@client = Vec2(client)
@@ -20,11 +20,13 @@ class Renderer extends Composite
 		@orientation = 'landscape'
 
 		@buffer = false
-		@buf = document.createElement('canvas')
-		@bufctx = @buf.getContext('2d')
-
-		@buf.width = @canvas.width = @content[0]
-		@buf.height = @canvas.height = @content[1]
+		if @buffer
+			@buf = document.createElement('canvas')
+			@bufctx = @buf.getContext('2d')
+			@buf.width = @content[0]
+			@buf.height = @content[1]
+		@canvas.width = @content[0]
+		@canvas.height = @content[1]
 		@element.style.width = @content[0] + 'px'
 		@element.style.height = @content[1] + 'px'
 
@@ -83,8 +85,6 @@ class Renderer extends Composite
 		if scale isnt @scale
 			@scale = scale
 			Vec2.scal(@content, @scale, @client)
-			# @buf.width = @canvas.width = @content[0]
-			# @buf.height = @canvas.height = @content[1]
 
 		Vec2.scal(Vec2.sub(browser, @client, @margin), 0.5)
 		# TODO: Only works for scale >= 1
@@ -95,22 +95,25 @@ class Renderer extends Composite
 
 	save: ->
 		ctx = if @buffer then @bufctx else @ctx
-		# ctx.fillStyle = Color.rgba(Color.black)
-		# ctx.fillRect(0, 0, @content[0], @content[1])
-		ctx.clearRect(0, 0, @content[0], @content[1])
+		if @color
+			ctx.fillStyle = Color.rgba(@color)
+			ctx.fillRect(0, 0, @content[0], @content[1])
+		else
+			ctx.clearRect(0, 0, @content[0], @content[1])
 		# ctx.width = @client[0] | 0
-		ctx.save()
-		ctx.translate(@pos[0] | 0 , @pos[1] | 0)
+		# ctx.save()
+		# ctx.translate(@pos[0] | 0 , @pos[1] | 0)
 		# ctx.scale(@scale, @scale)
 		ctx
 
 	restore: ->
 		if @buffer
-			@bufctx.restore()
+			# @bufctx.restore()
 			@ctx.clearRect(0, 0, @content[0], @content[1])
 			@ctx.drawImage(@buf, 0, 0)
-		else
-			@ctx.restore()
+		# else
+		#	@ctx.restore()
+		# @canvas.offsetTop # force draw
 		@
 
 	center: (pos) ->

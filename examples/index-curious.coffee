@@ -10,7 +10,7 @@ Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canva
 
 # Game
 
-Composite = require('./lib/composite')
+Entity = require('./lib/entity')
 Component = require('./lib/component')
 Pool = require('./lib/pool')
 Color = require('./lib/color')
@@ -23,11 +23,11 @@ Particle = require('./lib/particle')
 
 class MenuController extends Component
 
-	type: 'menuController'
+	tag: 'menuController'
 
 new Pool(MenuController)
 
-Engine.menuScene = Composite.alloc(
+Engine.menuScene = Entity.alloc(
 	null,
 	menuController: null
 )
@@ -37,9 +37,9 @@ Engine.menuScene = Composite.alloc(
 
 class GameController extends Component
 
-	type: 'gameController'
+	tag: 'gameController'
 
-	reset: ->
+	instantiate: ->
 		@baseCharge = 1
 		@charge = 1
 		@nextCharge = @baseCharge
@@ -59,7 +59,7 @@ class GameController extends Component
 
 		pos = Vec2(Math.rand(-150, 0), Math.rand(-150, 0))
 		radius = Math.rand(3, 7)
-		comet = Comet.Prefab.alloc(@parent,
+		comet = Comet.Prefab.alloc(@entity,
 			transform:
 				pos: pos
 			bounds:
@@ -80,12 +80,12 @@ new Pool(GameController)
 
 class Earth extends Component
 
-	type: 'earth'
+	tag: 'earth'
 
 	constructor: () ->
 		@normal = Vec2()
 
-	reset: () ->
+	instantiate: () ->
 		@gravityRadius = 200
 		@state = @hovered = null
 		@
@@ -94,8 +94,8 @@ class Earth extends Component
 		pos = @transform.pos
 		gravityRadiusSq = @gravityRadius * @gravityRadius
 
-		for kinetic in Kinetic.pool.roster when kinetic.enabled and not kinetic.fixed and kinetic.mass
-			pos2 = kinetic.parent.transform.pos
+		for kinetic in Kinetic.pool.register when kinetic.enabled and not kinetic.fixed and kinetic.mass
+			pos2 = kinetic.entity.transform.pos
 			distSq = Vec2.distSq(pos, pos2)
 			if distSq < gravityRadiusSq
 				factor = 1 - Math.sqrt(distSq) / @gravityRadius
@@ -174,7 +174,7 @@ Earth.sprite = new Sprite.Asset('assets/globe.gif', Vec2(11, 11), 5)
 
 new Pool(Earth)
 
-Earth.Prefab = new Composite.Prefab(
+Earth.Prefab = new Entity.Prefab(
 	transform: null
 	bounds:
 		radius: 25
@@ -189,17 +189,17 @@ Earth.Prefab = new Composite.Prefab(
 
 class Comet extends Component
 
-	type: 'comet'
+	tag: 'comet'
 
 	constructor: () ->
 		@normal = Vec2()
 		@lifetime = 10
 
-	reset: (presets) ->
+	instantiate: (attributes) ->
 		@kinetic.maxVel = 100
 		@age = 0
 
-		@target = Earth.pool.roster[0].transform
+		@target = Earth.pool.register[0].transform
 
 		@color = Color(156, 156, 156)
 
@@ -211,7 +211,7 @@ class Comet extends Component
 		#	ctx.fillStyle = Color.rgba(Color(156, 156, 156))
 		#	ctx.fill()
 		# , Vec2(center * 2, center * 2))
-		# Sprite.Tween.alloc(@parent,
+		# Sprite.Tween.alloc(@entity,
 		#	asset: asset
 		# )
 		@
@@ -235,7 +235,7 @@ class Comet extends Component
 				Vec2.norm(pos, null, @bounds.radius),
 				@transform.pos
 			)
-			particle = Composite.alloc(@root,
+			particle = Entity.alloc(@root,
 					transform:
 						pos: pos
 					kinetic:
@@ -257,14 +257,14 @@ class Comet extends Component
 		ctx.fill()
 		@
 
-	onTrigger: (parent2, p, diff) ->
-		if parent2.earth
+	onTrigger: (entity2, p, diff) ->
+		if entity2.earth
 			@explode()
 		@
 
 	explode: () ->
 		if @bounds.culled
-			@parent.free()
+			@entity.destroy()
 			return
 		i = @bounds.radius * 4 | 0
 		while i--
@@ -286,7 +286,7 @@ class Comet extends Component
 						lifetime: Math.rand(0.01, 0.04)
 						sprite: Comet.particleTrail
 				)
-		@parent.free()
+		@entity.destroy()
 		@
 
 Comet.particleTrail = Particle.generateSprite(Color(192, 192, 192), 0.2)
@@ -295,7 +295,7 @@ Comet.particleFire2 = Particle.generateSprite(Color(243, 18, 14), 0.9)
 
 new Pool(Comet)
 
-Comet.Prefab = new Composite.Prefab(
+Comet.Prefab = new Entity.Prefab(
 	transform: null
 	collider:
 		trigger: true
@@ -308,13 +308,13 @@ Comet.Prefab = new Composite.Prefab(
 
 class Weapon extends Component
 
-	type: 'weapon'
+	tag: 'weapon'
 
 	constructor: () ->
 		@normal = Vec2()
 		@lockedNorm = Vec2()
 
-	reset: (presets) ->
+	instantiate: (attributes) ->
 		@state = null
 		@arc = Math.TAU / 8
 		@targets = Comet
@@ -331,7 +331,7 @@ class Weapon extends Component
 		if @transform.angle isnt @angle
 			Vec2.rot(Vec2.set(pos, @orbit, 0), @angle)
 			Vec2.copy(@normal, pos)
-			Vec2.add(pos, @parent.transform.pos)
+			Vec2.add(pos, @entity.transform.pos)
 			@transform.angle = @angle
 
 		rangeSq = @range * @range
@@ -351,7 +351,7 @@ class Weapon extends Component
 				@lockedRad = Vec2.rad(@lockedNorm, @normal)
 				if Vec2.lenSq(@lockedNorm) > @rangeSq or @lockedRad > @arc / 2
 					@state = @locked = null
-				particle = Composite.alloc(@root,
+				particle = Entity.alloc(@root,
 					transform:
 						pos: pos
 					particle:
@@ -401,14 +401,14 @@ class Weapon extends Component
 
 new Pool(Weapon)
 
-Weapon.Prefab = new Composite.Prefab(
+Weapon.Prefab = new Entity.Prefab(
 	transform: null
 	bounds:
 		shape: 'circle'
 	weapon: null
 )
 
-Engine.gameScene = Composite.alloc(
+Engine.gameScene = Entity.alloc(
 	null,
 	gameController: null
 )

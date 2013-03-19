@@ -5,17 +5,17 @@ Pool = require('./pool')
 
 class Effector extends Component
 
-	type: 'effector'
+	tag: 'effector'
 
-	alloc: (parent, @radius = 100, @mass = @parent.mass) ->
-		super(parent)
+	alloc: (entity, @radius = 100, @mass = @entity.mass) ->
+		super(entity)
 		@radiusSq = @radius * @radius
 		@ease = Math.quadIn
 		@
 
 Effector.simulate = (dt) ->
 
-	effectors = @roster
+	effectors = @register
 	i = effectors.length
 	while i--
 		effector1 = effectors[i]
@@ -28,11 +28,11 @@ Effector.simulate = (dt) ->
 			effector2 = effectors[j]
 			continue if not effector2.enabled or effector1 is effector2
 
-			parent1 = effector1.parent
-			parent2 = effector2.parent
-			acc = parent1.acc
+			entity1 = effector1.entity
+			entity2 = effector2.entity
+			acc = entity1.acc
 
-			diffSq = Vec2.distSq(parent1.pos, parent2.pos)
+			diffSq = Vec2.distSq(entity1.pos, entity2.pos)
 
 			# Avoidance : try to keep a minimum distance between others.
 			if diffSq < effector1.radiusSq
@@ -40,7 +40,7 @@ Effector.simulate = (dt) ->
 				Vec2.add(
 					acc,
 					Vec2.scal(
-						Vec2.sub(parent1.pos, parent2.pos, avoidance),
+						Vec2.sub(entity1.pos, entity2.pos, avoidance),
 						2
 					)
 				)
@@ -49,7 +49,7 @@ Effector.simulate = (dt) ->
 			if cohesionCount > 1
 				Vec2.scal(cohesion, 1 / cohesionCount)
 			Vec2.limit(
-				Vec2.sub(cohesion, parent1.pos),
+				Vec2.sub(cohesion, entity1.pos),
 				limit
 			)
 			Vec2.add(acc, Vec2.scal(cohesion, effector1.cohesionMod))

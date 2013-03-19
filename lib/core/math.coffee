@@ -1,10 +1,61 @@
+# Math
+#
+# http://docs.unity3d.com/Documentation/ScriptReference/Mathf.html
+# https://github.com/secretrobotron/gladius.math/
+# https://github.com/toji/gl-matrix/tree/master/src/gl-matrix
 
-Mat = Math # compression win
-{sqrt, pow, abs, random} = Mat
-Mat.epsilon = epsilon = 0.001
-Mat.TypedArray = typedArray = Float64Array or Float32Array or (arr) -> arr
 
-Mat.Vec2 = Vec2 = (fromOrX, y) ->
+Mth = Math # compression win
+{sqrt, pow, abs, random, random, pow} = Mth
+
+Mth.EPSILON = EPSILON = 0.001
+Mth.TAU = Mth.PI * 2
+Mth.PIRAD = 0.0174532925
+
+Mth.UID = 1
+Mth.uid = ->
+	return Mth.UID++
+
+Mth.clamp = (a, low, high) ->
+	if a < low
+		return low
+	return if a > high then high else a
+
+Mth.rand = (low, high, ease) ->
+	return (ease or Mth.linear)(random()) * (high - low) + low
+
+Mth.randArray = (array) ->
+	return array[random() * array.length | 0]
+
+Mth.chance = (chance) ->
+	return random() <= chance
+
+# Tweens
+
+powIn = (strength = 2) ->
+	# (t) -> return pow(1, strength - 1) * pow(t, strength)
+	(t) -> return pow(t, strength)
+
+toOut = (fn) ->
+	(t) -> return 1 - fn(1 - t)
+
+toInOut = (fn) ->
+	(t) ->
+		return (if t < 0.5 then fn(t * 2) else (2 - fn(2 * (1 - t)))) / 2
+
+Mth.linear = (t) ->
+	return t
+
+for transition, i in ['quad', 'cubic', 'quart', 'quint']
+	Mth[transition + 'In'] = fn = powIn(i + 2)
+	Mth[transition + 'Out'] = toOut(fn)
+	Mth[transition + 'InOut'] = toInOut(fn)
+
+Mth.TypedArray = typedArray = Float64Array or Float32Array or (arr) -> arr
+
+# Vec2
+
+Mth.Vec2 = Vec2 = (fromOrX, y) ->
 	if y?
 		return new typedArray([fromOrX, y])
 	if fromOrX?
@@ -56,7 +107,7 @@ Vec2.toObj = (a, obj) ->
 	return obj
 
 Vec2.eq = (a, b) ->
-	return abs(a[0] - b[0]) < epsilon and abs(a[1] - b[1]) < epsilon
+	return abs(a[0] - b[0]) < EPSILON and abs(a[1] - b[1]) < EPSILON
 
 Vec2.add = (a, b, result) ->
 	result or= a
@@ -146,16 +197,16 @@ Vec2.limit = (a, max, result) ->
 
 Vec2.rad = (a, b) ->
 	if not b
-		return Mat.atan2(a[1], a[0])
-	return Mat.acos(Vec2.dot(
+		return Mth.atan2(a[1], a[0])
+	return Mth.acos(Vec2.dot(
 		Vec2.norm(a, radCache[0]),
 		Vec2.norm(b, radCache[1])
 	))
 
 Vec2.rot = (a, theta, result) ->
 	result or= a
-	sinA = Mat.sin(theta)
-	cosA = Mat.cos(theta)
+	sinA = Mth.sin(theta)
+	cosA = Mth.cos(theta)
 	x = a[0]
 	y = a[1]
 	result[0] = x * cosA - y * sinA
@@ -175,7 +226,7 @@ Vec2.lookAt = (a, b, result) ->
 	len = Vec2.len(a)
 	return Vec2.norm(Vec2.rot(
 		a,
-		Mat.atan2(b[0] - a[0], b[1] - a[1]) - Mat.atan2(a[1], a[0]),
+		Mth.atan2(b[0] - a[0], b[1] - a[1]) - Mth.atan2(a[1], a[0]),
 		result or a
 	), null, len)
 
@@ -185,50 +236,103 @@ Vec2.variant = (a, delta, result) ->
 	result[1] = a[1] + Math.rand(-delta, delta)
 	return result
 
-# Math
-
-{random, pow} = Mat
-
-Mat.TAU = Mat.PI * 2
-# Mat.PIRAD = 0.0174532925
-
-Mat.UID = 1
-Mat.uid = ->
-	return Mat.UID++
-
-Mat.clamp = (a, low, high) ->
-	if a < low
-		return low
-	return if a > high then high else a
-
-Mat.rand = (low, high, ease) ->
-	return (ease or Mat.linear)(random()) * (high - low) + low
-
-Mat.randArray = (array) ->
-	return array[random() * array.length | 0]
-
-Mat.chance = (chance) ->
-	return random() <= chance
-
-# Tweens
-
-powIn = (strength = 2) ->
-	# (t) -> return pow(1, strength - 1) * pow(t, strength)
-	(t) -> return pow(t, strength)
-
-toOut = (fn) ->
-	(t) -> return 1 - fn(1 - t)
-
-toInOut = (fn) ->
-	(t) ->
-		return (if t < 0.5 then fn(t * 2) else (2 - fn(2 * (1 - t)))) / 2
-
-Mat.linear = (t) ->
-	return t
-
-for transition, i in ['quad', 'cubic', 'quart', 'quint']
-	Mat[transition + 'In'] = fn = powIn(i + 2)
-	Mat[transition + 'Out'] = toOut(fn)
-	Mat[transition + 'InOut'] = toInOut(fn)
-
 module.exports.Vec2 = Vec2
+
+# https://github.com/toji/gl-matrix/blob/master/src/gl-matrix/mat2d.js
+
+Mth.Mat2 = Mat2 = (fromOrA, b, c, d, tx, ty) ->
+	if b?
+		return new typedArray([fromOrA, b, c, d, tx, ty])
+	if fromOrA?
+		return new typedArray(fromOrA)
+	return new typedArray(Mat2.identity)
+
+Mat2.identity = Mat2(1, 0, 0, 1, 0, 0)
+
+Mat2.set = (result, a, b, c, d, tx, ty) ->
+	result[0] = a or 0
+	result[1] = b or 0
+	result[2] = c or 0
+	result[3] = d or 0
+	result[4] = tx or 0
+	result[5] = ty or 0
+	return result
+
+Mat2.copy = (result, b) ->
+	result[0] = b[0]
+	result[1] = b[1]
+	result[2] = b[2]
+	result[3] = b[3]
+	result[4] = b[4]
+	result[5] = b[5]
+	return result
+
+Mat2.valid = (a) ->
+	return not (isNaN(a[0]) or isNaN(a[1]) or isNaN(a[2]) or isNaN(a[3]) or isNaN(a[4]) or isNaN(a[5]))
+
+Mat2.toString = (a) ->
+	return "[#{a[0]}, #{a[1]} | #{a[2]}, #{a[3]} | #{a[4]}, #{a[5]}]"
+
+Mat2.mul = (a, b, result) ->
+	result or= a
+	aa = a[0]
+	ab = a[1]
+	ac = a[2]
+	ad = a[3]
+	atx = a[4]
+	aty = a[5]
+	ba = b[0]
+	bb = b[1]
+	bc = b[2]
+	bd = b[3]
+	btx = b[4]
+	bty = b[5]
+	result[0] = aa * ba + ab * bc
+	result[1] = aa * bb + ab * bd
+	result[2] = ac * ba + ad * bc
+	result[3] = ac * bb + ad * bd
+	result[4] = ba * atx + bc * aty + btx
+	result[5] = bb * atx + bd * aty + bty
+	return result
+
+Mat2.rot = (a, rad, result) ->
+	result or= a
+	aa = a[0]
+	ab = a[1]
+	ac = a[2]
+	ad = a[3]
+	atx = a[4]
+	aty = a[5]
+	st = Mth.sin(rad)
+	ct = Mth.cos(rad)
+	result[0] = aa * ct + ab * st
+	result[1] = -aa * st + ab * ct
+	result[2] = ac * ct + ad * st
+	result[3] = -ac * st + ct * ad
+	result[4] = ct * atx + st * aty
+	result[5] = ct * aty - st * atx
+	return result
+
+Mat2.scal = (a, v, result) ->
+	result or= a
+	vx = v[0]
+	vy = v[1]
+	result[0] = a[0] * vx
+	result[1] = a[1] * vy
+	result[2] = a[2] * vx
+	result[3] = a[3] * vy
+	result[4] = a[4] * vx
+	result[5] = a[5] * vy
+	return result
+
+Mat2.trans = (a, v, result) ->
+	result or= a
+	result[0] = a[0]
+	result[1] = a[1]
+	result[2] = a[2]
+	result[3] = a[3]
+	result[4] = a[4] + v[0]
+	result[5] = a[5] + v[1]
+	return result
+
+module.exports.Mat2 = Mat2

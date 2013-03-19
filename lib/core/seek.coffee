@@ -5,14 +5,14 @@ Pool = require('./pool')
 # http://rocketmandevelopment.com/2010/06/11/steering-behaviors-seeking/
 class Seek extends Component
 
-	type: 'seek'
+	tag: 'seek'
 
-	presets:
+	attributes:
 		targets: null
 
-	reset: (presets) ->
-		{@targets} = presets
-		@roster = Pool.types[@targets]
+	instantiate: (attributes) ->
+		{@targets} = attributes
+		@register = Pool.byTag[@targets]
 		@
 
 	fixedUpdate: (dt) ->

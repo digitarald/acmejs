@@ -8,9 +8,9 @@ vec2Cache = new B2.Vec2(0, 0)
 
 class Body extends Component
 
-	type: 'b2Body'
+	tag: 'b2Body'
 
-	presets:
+	attributes:
 		fixed: false
 		vel: Vec2()
 		allowSleep: true
@@ -29,7 +29,7 @@ class Body extends Component
 		@definition = new B2.BodyDef()
 		@fixture = new B2.FixtureDef()
 
-	reset: (presets) ->
+	instantiate: (attributes) ->
 		if not (world = @root.b2World)
 			gravity = new B2.Vec2(@root.gravity[0], @root.gravity[1])
 			world = new B2.World(gravity)
@@ -40,16 +40,16 @@ class Body extends Component
 		{definition, fixture} = @
 
 		for key in Body.definitionPresets
-			definition['set_' + key](presets[key])
+			definition['set_' + key](attributes[key])
 
-		@fixed = fixed = presets.fixed
+		@fixed = fixed = attributes.fixed
 		definition.set_type(if fixed then B2.staticBody else B2.dynamicBody)
 
 		@b2body = body = world.CreateBody(definition)
 		body.SetUserData(@uid)
 
 		for key in Body.fixturePresets
-			fixture['set_' + key](presets[key])
+			fixture['set_' + key](attributes[key])
 
 		bounds = @bounds
 		switch bounds.shape
@@ -72,7 +72,7 @@ class Body extends Component
 		vec2Cache.Set(@transform.pos[0], @transform.pos[1])
 		body.SetTransform(vec2Cache, @transform.angle)
 
-		vec2Cache.Set(presets.vel[0], presets.vel[1])
+		vec2Cache.Set(attributes.vel[0], attributes.vel[1])
 		body.SetLinearVelocity(vec2Cache)
 
 		body.SetActive(1)
@@ -118,8 +118,8 @@ B2.customizeVTable(listener, [
 			# contact.GetWorldManifold(manifoldCache)
 			# Vec2.fromObj(manifoldCache.m_points[0], pointCache)
 
-			bodyA.parent.pub('onCollide', bodyB.parent)
-			bodyB.parent.pub('onCollide', bodyA.parent)
+			bodyA.entity.pub('onCollide', bodyB.entity)
+			bodyB.entity.pub('onCollide', bodyA.entity)
 			null
 ])
 
@@ -137,7 +137,7 @@ B2.customizeVTable(listener, [
 Body.fixedUpdate = (dt) ->
 	Body.b2World.Step(dt * 2, 3, 3)
 
-	for body in @roster when body.enabled and not body.fixed
+	for body in @register when body.enabled and not body.fixed
 		b2body = body.b2body
 		if b2body.IsAwake()
 			pos = b2body.GetPosition()

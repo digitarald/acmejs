@@ -5,9 +5,9 @@ Color = require('./color')
 
 class Bounds extends Component
 
-	type: 'bounds'
+	tag: 'bounds'
 
-	presets:
+	attributes:
 		shape: 'rect'
 		radius: 0
 		size: Vec2()
@@ -17,11 +17,11 @@ class Bounds extends Component
 		@size = Vec2()
 		# @align = Vec2()
 
-	reset: (presets) ->
-		Vec2.copy(@size, presets.size)
-		# Vec2.copy(@align, presets.align)
-		@shape = presets.shape
-		@radius = presets.radius
+	instantiate: (attributes) ->
+		Vec2.copy(@size, attributes.size)
+		# Vec2.copy(@align, attributes.align)
+		@shape = attributes.shape
+		@radius = attributes.radius
 		@
 
 	getTop: ->
@@ -177,19 +177,19 @@ new Pool(Bounds)
 
 class BoundsDebug extends Component
 
-	type: 'boundsDebug'
+	tag: 'boundsDebug'
 
-	presets:
-		color: Color.white
+	attributes:
+		color: Color.gray
 		opacity: 0.5
 		fill: false
 
 	constructor: () ->
 		@color = Vec2()
 
-	reset: (presets) ->
-		Vec2.copy(@color, presets.color)
-		{@opacity, @fill} = presets
+	instantiate: (attributes) ->
+		{@opacity, @fill} = attributes
+		Vec2.copy(@color, attributes.color)
 		@
 
 	render: (ctx) ->

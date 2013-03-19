@@ -1,4 +1,4 @@
-Composite = require('./composite')
+Entity = require('./entity')
 Pool = require('./pool')
 {Vec2} = require('./math')
 Color = require('./color')
@@ -8,11 +8,11 @@ Kinetic = require('./kinetic')
 Border = require('./border')
 Boid = require('./boid')
 
-class Catapult extends Composite
+class Catapult extends Entity
 
-	type: 'catapult'
+	tag: 'catapult'
 
-	presets:
+	attributes:
 		pos: Vec2()
 		color: Color.white
 
@@ -24,9 +24,9 @@ class Catapult extends Composite
 		@acc = Vec2()
 		@accNorm = Vec2()
 
-	reset: (presets) ->
-		Vec2.copy(@pos, presets.pos)
-		Color.copy(@color, presets.color)
+	instantiate: (attributes) ->
+		Vec2.copy(@pos, attributes.pos)
+		Color.copy(@color, attributes.color)
 
 		@state = null
 		@radius = 90

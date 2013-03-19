@@ -8,7 +8,7 @@ copyVel = Vec2()
 
 class Kinetic extends Component
 
-	type: 'kinetic'
+	tag: 'kinetic'
 
 	@gravity: null # Vec2(0, 500)
 
@@ -16,7 +16,7 @@ class Kinetic extends Component
 
 	@drag: 0.999
 
-	presets:
+	attributes:
 		mass: 0
 		drag: Kinetic.drag
 		friction: Kinetic.friction
@@ -32,10 +32,10 @@ class Kinetic extends Component
 		@acc = Vec2()
 		@sleepVelSq = 0.2
 
-	reset: (presets) ->
-		{@mass, @drag, @friction, @fixed, @maxVel, @maxAcc, @fast} = presets
-		Vec2.copy(@vel, presets.vel)
-		Vec2.copy(@acc, presets.acc)
+	instantiate: (attributes) ->
+		{@mass, @drag, @friction, @fixed, @maxVel, @maxAcc, @fast} = attributes
+		Vec2.copy(@vel, attributes.vel)
+		Vec2.copy(@acc, attributes.acc)
 		@pos = @transform.pos
 		@sleeping = false
 		@
@@ -57,7 +57,7 @@ class Kinetic extends Component
 Kinetic.simulate = (dt) ->
 	epsilon = Math.epsilon
 
-	for kinetic in @roster when kinetic.enabled and not kinetic.fixed
+	for kinetic in @register when kinetic.enabled and not kinetic.fixed
 		# Integrate
 		vel = kinetic.vel
 		acc = kinetic.acc
@@ -129,12 +129,12 @@ Kinetic.simulate = (dt) ->
 				if not kinetic.sleeping
 					Vec2.set(vel)
 					kinetic.sleeping = true
-					kinetic.parent.pubUp('onKineticSleep', kinetic)
+					kinetic.entity.pubUp('onKineticSleep', kinetic)
 			else
 				# kinetic.transform.dirty = true
 				if kinetic.sleeping
 					kinetic.sleeping = false
-					kinetic.parent.pubUp('onKineticWake', kinetic)
+					kinetic.entity.pubUp('onKineticWake', kinetic)
 
 		# Reset forces
 		Vec2.set(acc)

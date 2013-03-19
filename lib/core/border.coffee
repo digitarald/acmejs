@@ -5,14 +5,14 @@ Engine = require('./engine')
 
 class Border extends Component
 
-	type: 'border'
+	tag: 'border'
 
-	presets:
+	attributes:
 		mode: 'bounce'
 		restitution: 1
 
-	reset: (presets) ->
-		{@mode, @restitution} = presets
+	instantiate: (attributes) ->
+		{@mode, @restitution} = attributes
 		@
 
 pos = Vec2()
@@ -32,8 +32,8 @@ Border.simulate = (dt) ->
 		viewport[1] + size[1]
 	)
 
-	for border in @roster when border.enabled
-		{parent, restitution, mode, kinetic} = border
+	for border in @register when border.enabled
+		{entity, restitution, mode, kinetic} = border
 		vel = null
 		if kinetic
 			if not kinetic.enabled or kinetic.sleeping
@@ -42,9 +42,9 @@ Border.simulate = (dt) ->
 
 		mirror = mode is 'mirror'
 		bounce = mode is 'bounce' and vel
-		Vec2.copy(pos, parent.transform.pos)
+		Vec2.copy(pos, entity.transform.pos)
 
-		radius = parent.bounds.radius # FIXME
+		radius = entity.bounds.radius # FIXME
 		if mirror
 			radius *= -1 # kill after crossing border
 
@@ -91,11 +91,11 @@ Border.simulate = (dt) ->
 				hit = 1
 
 		# TODO: property!
-		if hit?
-			parent.transform.setTransform(pos)
-			parent.pub('onBorder', hit)
+		if hit
+			entity.transform.setTransform(pos)
+			entity.pub('onBorder', hit)
 			if border.mode is 'kill'
-				parent.free()
+				entity.destroy()
 	@
 
 new Pool(Border)

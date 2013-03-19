@@ -7,16 +7,16 @@ Pool = require('./pool')
 # http://rocketmandevelopment.com/2010/06/16/steering-behaviors-wander/
 class Wander extends Component
 
-	type: 'wander'
+	tag: 'wander'
 
-	presets:
+	attributes:
 		distance: 50
 		radius: 25
 		change: 1
 		angle: 0
 
-	reset: (presets) ->
-		{@distance, @radius, @change, @angle} = presets
+	instantiate: (attributes) ->
+		{@distance, @radius, @change, @angle} = attributes
 		@
 
 	center = Vec2()

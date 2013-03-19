@@ -8,9 +8,9 @@ Engine = require('./engine')
 
 class Explosion extends Component
 
-	type: 'explosion'
+	tag: 'explosion'
 
-	presets:
+	attributes:
 		lifetime: 0.4
 		maxSize: 100
 		color: Color.white
@@ -18,10 +18,10 @@ class Explosion extends Component
 	constructor: ->
 		@color = Color()
 
-	reset: (presets) ->
-		Color.copy(@color, presets.color)
-		@lifetime = presets.lifetime
-		@maxSize = presets.maxSize
+	instantiate: (attributes) ->
+		Color.copy(@color, attributes.color)
+		@lifetime = attributes.lifetime
+		@maxSize = attributes.maxSize
 
 		@pos = @transform.pos
 		@age = 0
@@ -34,7 +34,7 @@ class Explosion extends Component
 
 			radius = @maxSize
 			radiusSq = @maxSize * @maxSize
-			for kinetic in Kinetic.pool.roster when kinetic.mass and (dist = Vec2.distSq(@pos, kinetic.pos)) < radiusSq
+			for kinetic in Kinetic.pool.register when kinetic.mass and (dist = Vec2.distSq(@pos, kinetic.pos)) < radiusSq
 				factor = Math.quadOut(1 - Math.sqrt(dist) / radius)
 				Vec2.add(
 					kinetic.acc,
@@ -60,7 +60,7 @@ class Explosion extends Component
 		age = (@age += dt)
 
 		if age >= @lifetime
-			@parent.free()
+			@entity.destroy()
 		else
 			@factor = Math.quadOut(age / @lifetime)
 			@size = @factor * @maxSize
