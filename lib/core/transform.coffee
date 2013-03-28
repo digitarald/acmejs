@@ -36,8 +36,8 @@ class Transform extends Component
 	applyMatrix: (ctx) ->
 		# mat = Mat2.trans(Mat2.identity, @pos, @matrix)
 		# ctx.transform(mat[0], mat[1], mat[2], mat[3], mat[4], mat[5])
-		if Vec2.lenSq(@pos)
-			ctx.translate(@pos[0] | 0, @pos[1] | 0)
+		# if Vec2.lenSq(@pos)
+		ctx.translate(@pos[0] | 0, @pos[1] | 0)
 		# if (x = @scale[0]) isnt 1 or (y = @scale[1]) isnt 1
 		#	ctx.scale(x, y)
 		if @angle

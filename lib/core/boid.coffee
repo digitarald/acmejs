@@ -12,7 +12,7 @@ class Boid extends Component
 		aura: 25
 
 	constructor: ->
-		@mod = 1
+		@mod = 2
 		@cohesionMod = 1
 		@avoidanceMod = 2
 		@imitationMod = 1
@@ -29,7 +29,7 @@ cohesion = Vec2()
 avoidance = Vec2()
 imitation = Vec2()
 stretch = Vec2()
-acc = Vec2()
+impulse = Vec2()
 
 Boid.fixedUpdate = (dt) ->
 	boids = @register
@@ -42,8 +42,8 @@ Boid.fixedUpdate = (dt) ->
 		avoidanceCount = imitationCount  = cohesionCount = 0
 		entity1 = boid1.entity
 		pos1 = entity1.transform.pos
-		vel = entity1.kinetic.vel
-		Vec2.set(acc)
+		vel = entity1.kinetic.velocity
+		Vec2.set(impulse)
 
 		j = len
 		while j--
@@ -70,11 +70,11 @@ Boid.fixedUpdate = (dt) ->
 					Vec2.add(cohesion, stretch)
 
 				# Imitation : try to move in the same way than other boids
-				# fit = Vec2.scal(entity2.vel, Math.quadOut(diff / boid1.perceptionSq), cache)
+				# fit = Vec2.scal(entity2.velocity, Math.quadOut(diff / boid1.perceptionSq), cache)
 				if not imitationCount++
-					Vec2.copy(imitation, entity2.kinetic.vel)
+					Vec2.copy(imitation, entity2.kinetic.velocity)
 				else
-					Vec2.add(imitation, entity2.kinetic.vel)
+					Vec2.add(imitation, entity2.kinetic.velocity)
 
 				# Avoidance : try to keep a minimum distance between others.
 				if diffSq < boid1.auraSq
@@ -89,7 +89,7 @@ Boid.fixedUpdate = (dt) ->
 			if cohesionCount > 1
 				Vec2.scal(cohesion, 1 / cohesionCount)
 			Vec2.add(
-				entity1.kinetic.acc,
+				entity1.kinetic.force,
 				Vec2.scal(
 					cohesion,
 					boid1.cohesionMod * mod
@@ -99,21 +99,21 @@ Boid.fixedUpdate = (dt) ->
 		if imitationCount and boid1.imitationMod
 			if imitationCount > 1
 				Vec2.scal(imitation, 1 / imitationCount)
-			Vec2.add(acc,
+			Vec2.add(impulse,
 				Vec2.scal(
 					imitation,
 					boid1.imitationMod * mod
 				)
 			)
 			Vec2.add(
-				entity1.kinetic.acc,
-				Vec2.sub(acc, vel)
+				entity1.kinetic.force,
+				Vec2.sub(impulse, vel)
 			)
 
 		if avoidanceCount and boid1.avoidanceMod
 			if avoidanceCount > 1
 				Vec2.scal(avoidance, 1 / avoidanceCount)
-			Vec2.sub(entity1.kinetic.acc,
+			Vec2.sub(entity1.kinetic.force,
 				Vec2.scal(
 					avoidance,
 					boid1.avoidanceMod * mod

@@ -12,7 +12,7 @@ class Body extends Component
 
 	attributes:
 		fixed: false
-		vel: Vec2()
+		velocity: Vec2()
 		allowSleep: true
 		angularVelocity: 0
 		bullet: false
@@ -72,7 +72,7 @@ class Body extends Component
 		vec2Cache.Set(@transform.pos[0], @transform.pos[1])
 		body.SetTransform(vec2Cache, @transform.angle)
 
-		vec2Cache.Set(attributes.vel[0], attributes.vel[1])
+		vec2Cache.Set(attributes.velocity[0], attributes.velocity[1])
 		body.SetLinearVelocity(vec2Cache)
 
 		body.SetActive(1)
@@ -96,8 +96,8 @@ class Body extends Component
 		@b2body = null
 		super()
 
-	applyForce: (acc) ->
-		vec2Cache.Set(acc[0], acc[1])
+	applyForce: (impulse) ->
+		vec2Cache.Set(impulse[0], impulse[1])
 		# @b2body.ApplyForceToCenter(vec2Cache)
 		@b2body.ApplyLinearImpulse(vec2Cache, @b2body.GetWorldCenter())
 		@

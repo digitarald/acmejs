@@ -18,7 +18,7 @@ class Particle extends Component
 
 	attributes:
 		# pos: Vec2()
-		# vel: Vec2()
+		# velocity: Vec2()
 		color: Color.black
 		colorVariant: 0
 		lifetime: 1
@@ -33,7 +33,7 @@ class Particle extends Component
 
 	constructor: ->
 		# @pos = Vec2()
-		# @vel = Vec2()
+		# @velocity = Vec2()
 		@color = Color()
 
 	instantiate: (attributes) ->
@@ -46,7 +46,7 @@ class Particle extends Component
 		if (variant = attributes.alphaVariant)
 			@alpha = Math.clamp(@alpha + Math.rand(-variant, variant), 0, 1)
 		# Vec2.copy(@pos, attributes.pos)
-		# Vec2.copy(@vel, attributes.vel)
+		# Vec2.copy(@velocity, attributes.velocity)
 		@age = 0
 		@
 
@@ -126,6 +126,7 @@ Particle.generateSprite = (color = Color.white, alpha = 1, max = 25) ->
 			ctx.fill()
 			# ctx.strokeStyle = 'red'
 			# ctx.strokeRect(0, size * (radius - 1), size, size)
+		@
 	, Vec2(size, size * max))
 
 Particle.sprite = Particle.generateSprite()

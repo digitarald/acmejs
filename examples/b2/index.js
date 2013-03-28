@@ -249,7 +249,7 @@ Explosion = (function(_super) {
           pos: pos
         },
         b2Body: {
-          vel: Vec2(Math.rand(-100, 100), Math.rand(-100, 100))
+          velocity: Vec2(Math.rand(-100, 100), Math.rand(-100, 100))
         }
       });
     }

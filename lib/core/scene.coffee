@@ -52,7 +52,7 @@ class Sky extends Component
 		@stars = []
 
 	instantiate: () ->
-		size = Engine.renderer.client
+		size = Engine.renderer.size
 
 		for i in [0..100]
 			@stars.push(

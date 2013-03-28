@@ -98,7 +98,7 @@ GameController = (function(_super) {
         friction: 0
       }
     });
-    vel = comet.kinetic.vel;
+    vel = comet.kinetic.velocity;
     Vec2.add(vel, Vec2(Math.rand(0.8, 1.2), Math.rand(0.9, 1.1)));
     return Vec2.scal(vel, Math.rand(30, 40));
   };
@@ -250,7 +250,7 @@ Comet = (function(_super) {
 
   Comet.prototype.instantiate = function(attributes) {
     var center;
-    this.kinetic.maxVel = 100;
+    this.kinetic.maxVelocity = 100;
     this.age = 0;
     this.target = Earth.pool.register[0].transform;
     this.color = Color(156, 156, 156);
@@ -280,7 +280,7 @@ Comet = (function(_super) {
           pos: pos
         },
         kinetic: {
-          vel: Vec2.scal(pointer, Math.rand(-0.5, -4))
+          velocity: Vec2.scal(pointer, Math.rand(-0.5, -4))
         },
         particle: {
           radius: Math.rand(2.5, 5),
@@ -329,7 +329,7 @@ Comet = (function(_super) {
           pos: pos
         },
         kinetic: {
-          vel: Vec2.scal(pointer, Math.rand(1, 5))
+          velocity: Vec2.scal(pointer, Math.rand(1, 5))
         },
         particle: {
           radius: radius,
@@ -422,7 +422,7 @@ Weapon = (function(_super) {
             radius: 1
           },
           kinetic: {
-            vel: this.lockedNorm
+            velocity: this.lockedNorm
           }
         });
         break;
@@ -455,7 +455,7 @@ Weapon = (function(_super) {
   Weapon.prototype.intercept = function(target, targetVel) {
     var a, b, c, d, interception, pos, tmp, vel;
     pos = this.transform.pos;
-    vel = this.transform.maxVel;
+    vel = this.transform.maxVelocity;
     tmp = Vec2.sub(target, pos, Vec2.cache[0]);
     a = vel * vel - Vec2.dot(targetVel, targetVel);
     b = -2 * Vec2.dot(targetVel, tmp);

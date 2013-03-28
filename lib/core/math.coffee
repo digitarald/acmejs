@@ -239,6 +239,7 @@ Vec2.variant = (a, delta, result) ->
 module.exports.Vec2 = Vec2
 
 # https://github.com/toji/gl-matrix/blob/master/src/gl-matrix/mat2d.js
+# Untested
 
 Mth.Mat2 = Mat2 = (fromOrA, b, c, d, tx, ty) ->
 	if b?

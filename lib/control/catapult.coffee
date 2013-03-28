@@ -21,8 +21,8 @@ class Catapult extends Entity
 		@color = Color()
 		@start = Vec2()
 		@end = Vec2()
-		@acc = Vec2()
-		@accNorm = Vec2()
+		@impulse = Vec2()
+		@impulseNorm = Vec2()
 
 	instantiate: (attributes) ->
 		Vec2.copy(@pos, attributes.pos)
@@ -33,27 +33,27 @@ class Catapult extends Entity
 		@listenRadius = @radius * 0.15
 		@fireRadius = @radius * 0.1
 		@listenRadiusSq = @listenRadius * @listenRadius
-		Vec2.set(@acc)
+		Vec2.set(@impulse)
 		@
 
 	update: (dt) ->
 		if @state is 'fired'
-			acc = Vec2.scal(@accNorm, -Kinetic.maxAcc, Vec2.cache[0])
+			impulse = Vec2.scal(@impulseNorm, -Kinetic.maxForce, Vec2.cache[0])
 			rand = Vec2.cache[1]
-			perAcc = Vec2.cache[2]
+			perImpulse = Vec2.cache[2]
 			perPos = Vec2.cache[3]
 
-			randAcc = Kinetic.maxAcc * 0.2
+			randImpulse = Kinetic.maxForce * 0.2
 
 			for i in [0..Math.rand(50, 75)] by 1
 				Vec2.add(
-					acc,
+					impulse,
 					Vec2.set(
 						rand,
-						Math.rand(-randAcc, randAcc),
-						Math.rand(-randAcc, randAcc)
+						Math.rand(-randImpulse, randImpulse),
+						Math.rand(-randImpulse, randImpulse)
 					),
-					perAcc
+					perImpulse
 				)
 
 				Vec2.add(
@@ -69,7 +69,7 @@ class Catapult extends Entity
 				particle = Particle.alloc(
 					@root,
 					perPos,
-					perAcc,
+					perImpulse,
 					Math.rand(15, 25, Math.cubicOut),
 					Math.rand(1, 15, Math.quadIn)
 				)
@@ -86,20 +86,20 @@ class Catapult extends Entity
 				if input.touchState is 'began' and Vec2.distSq(input.pos, @pos) <= @listenRadiusSq
 					@state = 'active'
 					Vec2.copy(@start, input.pos)
-					Vec2.set(@acc)
-					Vec2.set(@accNorm)
+					Vec2.set(@impulse)
+					Vec2.set(@impulseNorm)
 				break
 			when 'active'
 				switch input.touchState
 					when 'moved'
 						end = Vec2.copy(Vec2.cache[0], input.pos)
 						Vec2.limit(
-							Vec2.sub(end, @start, @acc),
+							Vec2.sub(end, @start, @impulse),
 							@radius
 						)
-						if Vec2.len(@acc) < @fireRadius
-							Vec2.set(@acc)
-						Vec2.scal(@acc, 1 / @radius, @accNorm)
+						if Vec2.len(@impulse) < @fireRadius
+							Vec2.set(@impulse)
+						Vec2.scal(@impulse, 1 / @radius, @impulseNorm)
 						@
 					when 'ended'
 						if Vec2.dist(@start, input.pos) < @fireRadius
@@ -127,7 +127,7 @@ class Catapult extends Entity
 
 		if active
 
-			target = Vec2.add(pos, @acc, Vec2.cache[0])
+			target = Vec2.add(pos, @impulse, Vec2.cache[0])
 
 			ctx.lineWidth = 1
 			@color[3] = 0.5

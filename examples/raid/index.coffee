@@ -40,7 +40,6 @@ class GameController extends Component
 			transform:
 				pos: Vec2(550, Math.rand(50, 270))
 		)
-		enemy.kinetic.applyImpulse(Vec2(-500, 0))
 		@
 
 new Pool(GameController)
@@ -105,7 +104,7 @@ class Hero extends Component
 				transform:
 					pos: @transform.pos
 				kinetic:
-					vel: vel
+					velocity: vel
 			)
 			# console.log(projectile.toString())
 			@cooldown = 0.1
@@ -168,7 +167,7 @@ class Enemy extends Component
 		@
 
 	onDamage: ->
-		@kinetic.applyImpulse(Vec2(-10, 0))
+		@kinetic.applyImpulse(Vec2(-500, 0))
 		@
 
 	onDead: ->
@@ -195,6 +194,7 @@ Enemy.Prefab = new Entity.Prefab(
 		mass: 1
 		drag: 1
 		friction: 0
+		force: Vec2(-100, 0)
 	boundsDebug: null
 	damageable: null
 	spriteTween:
@@ -202,11 +202,11 @@ Enemy.Prefab = new Entity.Prefab(
 		sequence: 'walkW'
 )
 
+# Component: Projectile
 
 class Projectile extends Component
 
 	tag: 'projectile'
-
 
 	constructor: ->
 		@lastPos = Vec2()
@@ -232,8 +232,9 @@ class Projectile extends Component
 		@entity.destroy()
 		@
 
-
 new Pool(Projectile)
+
+# Prefab: Projectile
 
 Projectile.Prefab = new Entity.Prefab(
 	transform: null
@@ -244,8 +245,8 @@ Projectile.Prefab = new Entity.Prefab(
 		mass: 0.1
 		drag: 1
 		friction: 0
-		maxVel: 0
-		maxAcc: 0
+		maxVelocity: 0
+		maxForce: 0
 	collider:
 		include: 'damageable'
 		trigger: true

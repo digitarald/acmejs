@@ -124,7 +124,7 @@ Body.Prefab = new Entity.Prefab(
 		mass: 1
 		drag: 0.998
 		friction: 0.1
-		maxVel: 200
+		maxVelocity: 200
 	# collider: null
 	# boid: null
 	border:

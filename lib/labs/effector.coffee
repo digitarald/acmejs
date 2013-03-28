@@ -30,7 +30,7 @@ Effector.simulate = (dt) ->
 
 			entity1 = effector1.entity
 			entity2 = effector2.entity
-			acc = entity1.acc
+			impulse = entity1.force
 
 			diffSq = Vec2.distSq(entity1.pos, entity2.pos)
 
@@ -38,7 +38,7 @@ Effector.simulate = (dt) ->
 			if diffSq < effector1.radiusSq
 				diff = Math.sqrt(diffSq)
 				Vec2.add(
-					acc,
+					impulse,
 					Vec2.scal(
 						Vec2.sub(entity1.pos, entity2.pos, avoidance),
 						2
@@ -52,13 +52,13 @@ Effector.simulate = (dt) ->
 				Vec2.sub(cohesion, entity1.pos),
 				limit
 			)
-			Vec2.add(acc, Vec2.scal(cohesion, effector1.cohesionMod))
+			Vec2.add(impulse, Vec2.scal(cohesion, effector1.cohesionMod))
 
 		if imitationCount
 			if imitationCount > 1
 				Vec2.scal(imitation, 1 / imitationCount)
 			Vec2.limit(imitation, limit)
-			Vec2.add(acc, Vec2.scal(imitation, effector1.imitationMod))
+			Vec2.add(impulse, Vec2.scal(imitation, effector1.imitationMod))
 	@
 
 new Pool(Effector)

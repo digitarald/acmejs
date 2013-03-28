@@ -69,7 +69,7 @@ class GameController extends Component
 				drag: 1
 				friction: 0
 		)
-		vel = comet.kinetic.vel
+		vel = comet.kinetic.velocity
 		Vec2.add(vel, Vec2(Math.rand(0.8, 1.2), Math.rand(0.9, 1.1)))
 		Vec2.scal(vel, Math.rand(30, 40))
 
@@ -196,7 +196,7 @@ class Comet extends Component
 		@lifetime = 10
 
 	instantiate: (attributes) ->
-		@kinetic.maxVel = 100
+		@kinetic.maxVelocity = 100
 		@age = 0
 
 		@target = Earth.pool.register[0].transform
@@ -239,7 +239,7 @@ class Comet extends Component
 					transform:
 						pos: pos
 					kinetic:
-						vel: Vec2.scal(pointer, Math.rand(-0.5, -4))
+						velocity: Vec2.scal(pointer, Math.rand(-0.5, -4))
 					particle:
 						radius: Math.rand(2.5, 5)
 						lifetime: Math.rand(0.02, 0.1)
@@ -280,7 +280,7 @@ class Comet extends Component
 					transform:
 						pos: pos
 					kinetic:
-						vel: Vec2.scal(pointer, Math.rand(1, 5))
+						velocity: Vec2.scal(pointer, Math.rand(1, 5))
 					particle:
 						radius: radius
 						lifetime: Math.rand(0.01, 0.04)
@@ -357,9 +357,9 @@ class Weapon extends Component
 					particle:
 						radius: 1
 					kinetic:
-						vel: @lockedNorm
+						velocity: @lockedNorm
 				)
-				# Vec2.scal(particle.vel, 100)
+				# Vec2.scal(particle.velocity, 100)
 				break
 		@
 
@@ -386,7 +386,7 @@ class Weapon extends Component
 
 	intercept: (target, targetVel) ->
 		pos = @transform.pos
-		vel = @transform.maxVel
+		vel = @transform.maxVelocity
 		tmp = Vec2.sub(target, pos, Vec2.cache[0])
 		a = vel * vel - Vec2.dot(targetVel, targetVel)
 		b = -2 * Vec2.dot(targetVel, tmp)

@@ -2,13 +2,15 @@ Component = require('./component')
 Pool = require('./pool')
 {Vec2} = require('./math')
 
+cache = Vec2()
+
 class Jitter extends Component
 
 	tag: 'jitter'
 
 	attributes:
-		factor: 0.8
-		force: 1000
+		factor: 0.2
+		force: 300
 
 	instantiate: (attributes) ->
 		{@factor, @force} = attributes
@@ -16,12 +18,12 @@ class Jitter extends Component
 
 	fixedUpdate: (dt) ->
 		if Math.chance(@factor)
-			rand = Vec2.set(
-				Vec2.cache[0],
+			@entity.kinetic.applyImpulse(Vec2.set(
+				cache,
 				Math.rand(-@force, @force),
 				Math.rand(-@force, @force)
-			)
-			Vec2.add(@entity.kinetic.acc, rand)
+			))
+		@
 
 new Pool(Jitter)
 

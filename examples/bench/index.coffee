@@ -36,13 +36,13 @@ class GameController extends Component
 		if input.touchState or input.keys.space
 			factor = (@started += dt) + 1
 			i = 100 * dt * factor | 0
-			speed = SparkPrefab.attributes
+			speed = 10
 			while i--
 				# not using attribute object for GC/speed
 				spark = SparkPrefab.alloc(@root)
 				Vec2.scal(
 					Vec2.set(
-						spark.kinetic.vel,
+						spark.kinetic.velocity,
 						Math.rand(-speed, speed),
 						Math.rand(-speed, speed)
 					),
@@ -52,26 +52,25 @@ class GameController extends Component
 				spark.particle.radius = Math.rand(5, 25)
 		else if @started
 			@started = 0
-
 		@
 
 new Pool(GameController)
 
-smokeSprite = Particle.generateSprite(Color(48, 48, 48), 1)
+# Spark
 
 SparkPrefab = new Entity.Prefab(
 	transform: null
 	kinetic:
 		mass: 0.1
 		fast: true
-		maxVel: 200
-		maxAcc: 0
+		maxVelocity: 200
+		maxForce: 0
 	particle:
 		lifetime: 5
-		# composite: 'lighter'
+		composite: 'lighter'
 		fade: Math.quadIn
 		shrink: null
-		sprite: smokeSprite
+		sprite: Particle.generateSprite(Color(48, 48, 48), 1)
 	# boid: null
 	jitter: null
 )

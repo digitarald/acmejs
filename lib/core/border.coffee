@@ -38,7 +38,7 @@ Border.simulate = (dt) ->
 		if kinetic
 			if not kinetic.enabled or kinetic.sleeping
 				continue
-			vel = kinetic.vel
+			vel = kinetic.velocity
 
 		mirror = mode is 'mirror'
 		bounce = mode is 'bounce' and vel

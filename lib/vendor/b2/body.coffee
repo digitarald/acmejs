@@ -10,7 +10,7 @@ class Body extends Component
 
 	attributes:
 		fixed: false
-		vel: Vec2()
+		velocity: Vec2()
 		allowSleep: true
 		angularVelocity: 0
 		awake: true
@@ -44,7 +44,7 @@ class Body extends Component
 		definition.userData = @
 		Vec2.toObj(@transform.pos, definition.position)
 		definition.angle = @transform.angle
-		Vec2.toObj(attributes.vel, definition.linearVelocity)
+		Vec2.toObj(attributes.velocity, definition.linearVelocity)
 		@fixed = fixed = attributes.fixed
 		definition.type = if fixed then B2.Body.b2_staticBody else B2.Body.b2_dynamicBody
 
@@ -87,8 +87,8 @@ class Body extends Component
 		@b2body = null
 		super()
 
-	applyForce: (acc) ->
-		@b2body.ApplyImpulse(Vec2.toObj(acc), @b2body.GetWorldCenter())
+	applyForce: (impulse) ->
+		@b2body.ApplyImpulse(Vec2.toObj(impulse), @b2body.GetWorldCenter())
 		@
 
 manifoldCache = new B2.WorldManifold()

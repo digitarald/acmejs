@@ -58,8 +58,8 @@ Collider.simulate = (dt) ->
 				continue
 
 			diff -= radiusSum
-			vel1 = kinetic1.vel
-			vel2 = kinetic2.vel
+			vel1 = kinetic1.velocity
+			vel2 = kinetic2.velocity
 			mass1 = kinetic1.mass or 1
 			mass2 = kinetic2.mass or 1
 

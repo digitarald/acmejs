@@ -30,14 +30,14 @@ class Explosion extends Component
 
 	update: (dt, scene) ->
 		if @state is 'began'
-			max = Kinetic.maxAcc
+			max = Kinetic.maxForce
 
 			radius = @maxSize
 			radiusSq = @maxSize * @maxSize
 			for kinetic in Kinetic.pool.register when kinetic.mass and (dist = Vec2.distSq(@pos, kinetic.pos)) < radiusSq
 				factor = Math.quadOut(1 - Math.sqrt(dist) / radius)
 				Vec2.add(
-					kinetic.acc,
+					kinetic.force,
 					Vec2.scal(
 						Vec2.norm(
 							Vec2.sub(kinetic.pos, @pos, Vec2.cache[0])
@@ -46,14 +46,14 @@ class Explosion extends Component
 					)
 				)
 
-			acc = Vec2.cache[0]
+			impulse = Vec2.cache[0]
 			for i in [0..100] by 1
 				Vec2.norm(
-					Vec2.set(acc, Math.rand(-1, 1), Math.rand(-1, 1)),
+					Vec2.set(impulse, Math.rand(-1, 1), Math.rand(-1, 1)),
 					null,
 					Math.rand(0, max)
 				)
-				particle = Particle.alloc(@root, @pos, acc, Math.rand(@lifetime / 2, @lifetime * 2), Math.rand(1, 4), 0)
+				particle = Particle.alloc(@root, @pos, impulse, Math.rand(@lifetime / 2, @lifetime * 2), Math.rand(1, 4), 0)
 				# Jitter.alloc(particle, 0.1, 1000)
 			@state = 'exploding'
 

@@ -26,7 +26,7 @@ class Avoid extends Component
 	# http://my.safaribooksonline.com/book/programming/game-programming/0596005555/flocking/ch04_sect1_003
 	fixedUpdate: (dt) ->
 		for target in @register when target.enabled
-			Vec2.norm(@kinetic.vel, u)
+			Vec2.norm(@kinetic.velocity, u)
 
 
 			Vec2.scal(u, @sight, v)
@@ -35,7 +35,7 @@ class Avoid extends Component
 			Vec2.sub(p, a, b)
 			if (Vec2.len(b) < target.bounds.radius) and (Vec2.len(p) < Vec2.len(v))
 				# Impending collision...steer away
-				w = Vec2.rot(a, Vec2.rad(@kinetic.vel), w)
+				w = Vec2.rot(a, Vec2.rad(@kinetic.velocity), w)
 				Vec2.norm(w)
 				if w[0] < 0
 					m = 1
@@ -44,7 +44,7 @@ class Avoid extends Component
 				Fs.x += m * _STEERINGFORCE * (_COLLISION_VISIBILITY_FACTOR * Units[i].fLength) / a.Magnitude()
 
 			# # get the forward vector
-			# Vec2.norm(@kinetic.vel, forward)
+			# Vec2.norm(@kinetic.velocity, forward)
 			# # get the difference between the circle and the vehicle
 			# Vec2.sub(target.transform.pos, @transform.pos, diff)
 			# # get the dot product
@@ -76,7 +76,7 @@ class Avoid extends Component
 			#		velocity.multiply(projection.length / ray.length);# and scale again
 
 		# then update
-		@kinetic.applyImpulse(acc)
+		@kinetic.applyImpulse(impulse)
 		@
 
 new Pool(Avoid)

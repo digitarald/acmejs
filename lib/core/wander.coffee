@@ -21,11 +21,11 @@ class Wander extends Component
 
 	center = Vec2()
 	force = Vec2()
-	acc = Vec2()
+	impulse = Vec2()
 
 	fixedUpdate: (dt) ->
 		# circle middle is the the velocity pushed out to the radius.
-		Vec2.norm(@kinetic.vel, center, @distance)
+		Vec2.norm(@kinetic.velocity, center, @distance)
 
 		# force length, can be changed to get a different motion
 		Vec2.rot(Vec2.set(force, @radius, 0), @angle)
@@ -33,10 +33,10 @@ class Wander extends Component
 		@angle += Math.random() * @change - @change * 0.5
 
 		# apply the force
-		Vec2.add(center, force, acc)
+		Vec2.add(center, force, impulse)
 
 		# then update
-		@kinetic.applyImpulse(acc)
+		@kinetic.applyImpulse(impulse)
 		@
 
 new Pool(Wander)

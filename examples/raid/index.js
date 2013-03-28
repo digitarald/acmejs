@@ -63,7 +63,6 @@ GameController = (function(_super) {
         pos: Vec2(550, Math.rand(50, 270))
       }
     });
-    enemy.kinetic.applyImpulse(Vec2(-500, 0));
     return this;
   };
 
@@ -144,7 +143,7 @@ Hero = (function(_super) {
           pos: this.transform.pos
         },
         kinetic: {
-          vel: vel
+          velocity: vel
         }
       });
       this.cooldown = 0.1;
@@ -236,7 +235,7 @@ Enemy = (function(_super) {
   };
 
   Enemy.prototype.onDamage = function() {
-    this.kinetic.applyImpulse(Vec2(-10, 0));
+    this.kinetic.applyImpulse(Vec2(-500, 0));
     return this;
   };
 
@@ -270,7 +269,8 @@ Enemy.Prefab = new Entity.Prefab({
   kinetic: {
     mass: 1,
     drag: 1,
-    friction: 0
+    friction: 0,
+    force: Vec2(-100, 0)
   },
   boundsDebug: null,
   damageable: null,
@@ -331,8 +331,8 @@ Projectile.Prefab = new Entity.Prefab({
     mass: 0.1,
     drag: 1,
     friction: 0,
-    maxVel: 0,
-    maxAcc: 0
+    maxVelocity: 0,
+    maxForce: 0
   },
   collider: {
     include: 'damageable',

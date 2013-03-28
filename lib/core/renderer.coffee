@@ -5,9 +5,9 @@ Color = require('./color')
 
 class Renderer extends Entity
 
-	constructor: (@element, client) ->
-		@client = Vec2(client)
-		@content = Vec2(client)
+	constructor: (@element, size) ->
+		@size = Vec2(size)
+		@content = Vec2(size)
 
 		@canvas = document.createElement('canvas')
 		@element.appendChild(@canvas)
@@ -32,21 +32,76 @@ class Renderer extends Entity
 
 		window.addEventListener('resize', @, false)
 
-		self = @
-		# TODO: Refactor into handleEvent
-		# @canvas.addEventListener('dblclick', =>
-		#	self.requestFullscreen();
-		# , false)
-		# @lockOrientation()
-
-		fullscreenChange = () ->
-			self.fullscreenChange()
-		document.addEventListener('fullscreenchange', fullscreenChange false)
-		document.addEventListener('mozfullscreenchange', fullscreenChange, false)
-		document.addEventListener('webkitfullscreenchange', fullscreenChange, false)
+		document.addEventListener('fullscreenchange', @, false)
+		document.addEventListener('mozfullscreenchange', @, false)
+		document.addEventListener('webkitfullscreenchange', @, false)
 
 		@reflow()
 		@
+
+	handleEvent: (evt) ->
+		if ~evt.type.indexOf('fullscreenchange')
+			@fullscreenChange()
+		else
+			@reflow()
+		@
+
+	reflow: ->
+		browser = Vec2.set(@browser, window.innerWidth, window.innerHeight)
+		scale = Math.min(@browser[0] / @content[0], @browser[1] / @content[1])
+		# scale = Math.clamp((scale * 2 | 0) / 2, 0.5, 2)
+		if scale isnt @scale
+			@scale = scale
+			Vec2.scal(@content, @scale, @size)
+
+		Vec2.scal(Vec2.sub(browser, @size, @margin), 0.5)
+		# TODO: Only works for scale >= 1
+		rule = "translate(#{@margin[0]}px, #{@margin[1]}px) scale(#{@scale})"
+		@element.style.transform = rule
+		@element.style.webkitTransform = rule
+		@
+
+	save: ->
+		ctx = if @buffer then @bufctx else @ctx
+		if @color
+			ctx.fillStyle = Color.rgba(@color)
+			ctx.fillRect(0, 0, @content[0], @content[1])
+		else
+			ctx.clearRect(0, 0, @content[0], @content[1])
+		# ctx.width = @size[0] | 0
+		# ctx.save()
+		# ctx.translate(@pos[0] | 0 , @pos[1] | 0)
+		# ctx.scale(@scale, @scale)
+		ctx
+
+	restore: ->
+		if @buffer
+			# @bufctx.restore()
+			@ctx.clearRect(0, 0, @content[0], @content[1])
+			@ctx.drawImage(@buf, 0, 0)
+		# else
+		#	@ctx.restore()
+		# @canvas.offsetTop # force draw
+		@
+
+	center: (pos) ->
+		Vec2.set(
+			@pos,
+			pos[0] - @size[0] / 2,
+			pos[0] - @size[1] / 2
+		)
+		@
+
+	cull: (entity) ->
+		if not (bounds = entity.bounds)
+			return false # check point?
+		if bounds.withinRect(@pos, @content)
+			if bounds.culled
+				bounds.culled = false
+			return false
+		if not bounds.culled
+			bounds.culled = true
+		return true
 
 	isFullscreen: () ->
 		doc = document
@@ -73,66 +128,5 @@ class Renderer extends Entity
 		else if 'mozLockOrientation' of target
 			screen.mozLockOrientation(format)
 		@
-
-	handleEvent: ->
-		@reflow()
-		@
-
-	reflow: ->
-		browser = Vec2.set(@browser, window.innerWidth, window.innerHeight)
-		scale = Math.min(@browser[0] / @content[0], @browser[1] / @content[1])
-		# scale = Math.clamp((scale * 2 | 0) / 2, 0.5, 2)
-		if scale isnt @scale
-			@scale = scale
-			Vec2.scal(@content, @scale, @client)
-
-		Vec2.scal(Vec2.sub(browser, @client, @margin), 0.5)
-		# TODO: Only works for scale >= 1
-		rule = "translate(#{@margin[0]}px, #{@margin[1]}px) scale(#{@scale})"
-		@element.style.transform = rule
-		@element.style.webkitTransform = rule
-		@
-
-	save: ->
-		ctx = if @buffer then @bufctx else @ctx
-		if @color
-			ctx.fillStyle = Color.rgba(@color)
-			ctx.fillRect(0, 0, @content[0], @content[1])
-		else
-			ctx.clearRect(0, 0, @content[0], @content[1])
-		# ctx.width = @client[0] | 0
-		# ctx.save()
-		# ctx.translate(@pos[0] | 0 , @pos[1] | 0)
-		# ctx.scale(@scale, @scale)
-		ctx
-
-	restore: ->
-		if @buffer
-			# @bufctx.restore()
-			@ctx.clearRect(0, 0, @content[0], @content[1])
-			@ctx.drawImage(@buf, 0, 0)
-		# else
-		#	@ctx.restore()
-		# @canvas.offsetTop # force draw
-		@
-
-	center: (pos) ->
-		Vec2.set(
-			@pos,
-			pos[0] - @client[0] / 2,
-			pos[0] - @client[1] / 2
-		)
-		@
-
-	cull: (entity) ->
-		if not (bounds = entity.bounds)
-			return false # check point?
-		if bounds.withinRect(@pos, @content)
-			if bounds.culled
-				bounds.culled = false
-			return false
-		if not bounds.culled
-			bounds.culled = true
-		return true
 
 module.exports = Renderer

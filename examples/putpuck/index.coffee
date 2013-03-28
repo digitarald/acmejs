@@ -33,13 +33,12 @@ Particle = require('../../lib/core/particle')
 Collider = require('../../lib/core/collider')
 Kinetic = require('../../lib/core/kinetic')
 
-class Scene extends Entity
 
-	tag: 'scene'
+class GameController extends Component
 
-	constructor: ->
-		super()
+	tag: 'gameController'
 
+	instantiate: ->
 		@player = 0
 
 		# http://www.colourlovers.com/palette/1930/cheer_up_emo_kid
@@ -54,7 +53,7 @@ class Scene extends Entity
 		@colors[0].low = Color.lerp(@colors[0].high, Color.white, 0.85, false, Color())
 		@colors[1].low = Color.lerp(@colors[1].high, Color.white, 0.85, false, Color())
 
-		@inField1 = Field.Prefab.alloc(@,
+		@inField1 = Field.Prefab.alloc(@entity,
 			transform:
 				pos: Vec2(0, 80)
 			bounds:
@@ -63,7 +62,7 @@ class Scene extends Entity
 				color: @colors[0].low
 				player: 0
 		)
-		@inField2 = Field.Prefab.alloc(@,
+		@inField2 = Field.Prefab.alloc(@entity,
 			transform:
 				pos: Vec2(0, 240)
 			bounds:
@@ -72,7 +71,7 @@ class Scene extends Entity
 				color: @colors[1].low
 				player: 1
 		)
-		@outField1 = Field.Prefab.alloc(@,
+		@outField1 = Field.Prefab.alloc(@entity,
 			transform:
 				pos: Vec2(0, 0)
 			bounds:
@@ -81,7 +80,7 @@ class Scene extends Entity
 				out: true
 				player: 0
 		)
-		@outField2 = Field.Prefab.alloc(@,
+		@outField2 = Field.Prefab.alloc(@entity,
 			transform:
 				pos: Vec2(0, 400)
 			bounds:
@@ -96,7 +95,7 @@ class Scene extends Entity
 	setupPuck: ->
 		@player = if @player then 0 else 1
 		radius = Math.rand(12, 25) | 0
-		puck1 = Puck.Prefab.alloc(@,
+		puck1 = Puck.Prefab.alloc(@entity,
 			transform:
 				pos: Vec2(160, if @player then 40 else 440)
 			bounds:
@@ -111,6 +110,9 @@ class Scene extends Entity
 		puck1.player = @player
 		puck1.sub(@, 'onFlip', 'setupPuck')
 		@
+
+new Pool(GameController)
+
 
 class Puck extends Component
 
@@ -181,12 +183,12 @@ class Puck extends Component
 				@kinetic.enable(true)
 				@collider.enable(true)
 				# @border.enable(true)
-				Vec2.copy(@kinetic.vel, @avgSpeed)
+				Vec2.copy(@kinetic.velocity, @avgSpeed)
 				@entity.pub('onFlip', @)
 				@avgSpeed = null
 			when 'flipped'
 				break
-				vel = Vec2.len(@kinetic.vel)
+				vel = Vec2.len(@kinetic.velocity)
 				i = vel / 40 | 0
 				while i--
 					pos = Vec2.set(Vec2.cache[0], Math.rand(-1, 1), Math.rand(-1, 1))
@@ -204,7 +206,7 @@ class Puck extends Component
 							color: @color
 							sprite: Puck.particleSmokeSprite
 						kinetic:
-							vel: pointer
+							velocity: pointer
 						transform:
 							pos: pos
 					)
@@ -224,7 +226,7 @@ class Puck extends Component
 				Vec2.norm(pos, null, @bounds.radius),
 				@transform.pos
 			)
-			Vec2.scal(pointer, Math.rand(0, Vec2.len(@kinetic.vel) / 8))
+			Vec2.scal(pointer, Math.rand(0, Vec2.len(@kinetic.velocity) / 8))
 			particle = Particle.Prefab.alloc(@root,
 				particle:
 					lifetime: Math.rand(0.1, 0.5)
@@ -232,7 +234,7 @@ class Puck extends Component
 					color: @color
 					# sprite: Puck.particleSmokeSprite
 				kinetic:
-					vel: pointer
+					velocity: pointer
 				transform:
 					pos: pos
 			)
@@ -269,7 +271,7 @@ Puck.Prefab = new Entity.Prefab(
 	kinetic:
 		mass: 1
 		drag: 0.995
-		maxVel: 900
+		maxVelocity: 900
 	collider: null
 	border:
 		bounce: true
@@ -324,4 +326,9 @@ Field.Prefab = new Entity.Prefab(
 
 # Init
 
-Engine.play(new Scene())
+Engine.gameScene = Entity.alloc(
+	null,
+	gameController: null
+)
+
+Engine.play(Engine.gameScene)
