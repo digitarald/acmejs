@@ -1,259 +1,3313 @@
-(function(){var require = function (file, cwd) {
-    var resolved = require.resolve(file, cwd || '/');
-    var mod = require.modules[resolved];
-    if (!mod) throw new Error(
-        'Failed to resolve module ' + file + ', tried ' + resolved
-    );
-    var cached = require.cache[resolved];
-    var res = cached? cached.exports : mod();
-    return res;
+;(function(e,t,n,r){function i(r){if(!n[r]){if(!t[r]){if(e)return e(r);throw new Error("Cannot find module '"+r+"'")}var s=n[r]={exports:{}};t[r][0](function(e){var n=t[r][1][e];return i(n?n:e)},s,s.exports)}return n[r].exports}for(var s=0;s<r.length;s++)i(r[s]);return i})(typeof require!=="undefined"&&require,{1:[function(require,module,exports){'use strict';
+
+var Engine = require('../../lib/core/engine');
+
+Engine.init(document.getElementById('game-1'));
+
+var Renderer = require('../../lib/core/renderer');
+var Vec2 = require('../../lib/core/math').Vec2;
+
+Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
+
+var Entity = require('../../lib/core/entity');
+var Component = require('../../lib/core/component');
+var Pool = require('../../lib/core/pool');
+var Color = require('../../lib/core/color');
+var Sprite = require('../../lib/core/sprite');
+var Transform = require('../../lib/core/transform');
+var Bounds = require('../../lib/core/bounds');
+var Border = require('../../lib/core/border');
+var Collider = require('../../lib/core/collider');
+var Kinetic = require('../../lib/core/kinetic');
+
+/**
+ * Game
+ */
+
+function GameController() {}
+
+GameController.prototype.create = function() {
+  this.colors = [
+    Color(0, 160, 176),
+    Color(106, 74, 60),
+    Color(204, 51, 63),
+    Color(235, 104, 65),
+    Color(237, 201, 81)
+  ];
+  this.root.gravity = Vec2(0, 500);
+  this.spawnBodies(25);
+  if (!Engine.input.support.orientation) {
+    Engine.debug.warn = 'No devicemotion';
+  }
 };
 
-require.paths = [];
-require.modules = {};
-require.cache = {};
-require.extensions = [".js",".coffee",".json"];
-
-require._core = {
-    'assert': true,
-    'events': true,
-    'fs': true,
-    'path': true,
-    'vm': true
+GameController.prototype.spawnBodies = function(count) {
+  while (count--) {
+    var color = Math.floor(Math.rand(0, this.colors.length - 1));
+    var radius = Math.rand(5, 15);
+    this.root.addChild('body', {
+      transform: {
+        pos: Vec2(Math.rand(25, 295), Math.rand(25, 295))
+      },
+      bounds: {
+        radius: radius
+      },
+      kinetic: {
+        mass: radius
+      },
+      body: {
+        color: this.colors[color]
+      }
+    });
+  }
 };
 
-require.resolve = (function () {
-    return function (x, cwd) {
-        if (!cwd) cwd = '/';
-        
-        if (require._core[x]) return x;
-        var path = require.modules.path();
-        cwd = path.resolve('/', cwd);
-        var y = cwd || '/';
-        
-        if (x.match(/^(?:\.\.?\/|\/)/)) {
-            var m = loadAsFileSync(path.resolve(y, x))
-                || loadAsDirectorySync(path.resolve(y, x));
-            if (m) return m;
-        }
-        
-        var n = loadNodeModulesSync(x, y);
-        if (n) return n;
-        
-        throw new Error("Cannot find module '" + x + "'");
-        
-        function loadAsFileSync (x) {
-            x = path.normalize(x);
-            if (require.modules[x]) {
-                return x;
-            }
-            
-            for (var i = 0; i < require.extensions.length; i++) {
-                var ext = require.extensions[i];
-                if (require.modules[x + ext]) return x + ext;
-            }
-        }
-        
-        function loadAsDirectorySync (x) {
-            x = x.replace(/\/+$/, '');
-            var pkgfile = path.normalize(x + '/package.json');
-            if (require.modules[pkgfile]) {
-                var pkg = require.modules[pkgfile]();
-                var b = pkg.browserify;
-                if (typeof b === 'object' && b.main) {
-                    var m = loadAsFileSync(path.resolve(x, b.main));
-                    if (m) return m;
-                }
-                else if (typeof b === 'string') {
-                    var m = loadAsFileSync(path.resolve(x, b));
-                    if (m) return m;
-                }
-                else if (pkg.main) {
-                    var m = loadAsFileSync(path.resolve(x, pkg.main));
-                    if (m) return m;
-                }
-            }
-            
-            return loadAsFileSync(x + '/index');
-        }
-        
-        function loadNodeModulesSync (x, start) {
-            var dirs = nodeModulesPathsSync(start);
-            for (var i = 0; i < dirs.length; i++) {
-                var dir = dirs[i];
-                var m = loadAsFileSync(dir + '/' + x);
-                if (m) return m;
-                var n = loadAsDirectorySync(dir + '/' + x);
-                if (n) return n;
-            }
-            
-            var m = loadAsFileSync(x);
-            if (m) return m;
-        }
-        
-        function nodeModulesPathsSync (start) {
-            var parts;
-            if (start === '/') parts = [ '' ];
-            else parts = path.normalize(start).split('/');
-            
-            var dirs = [];
-            for (var i = parts.length - 1; i >= 0; i--) {
-                if (parts[i] === 'node_modules') continue;
-                var dir = parts.slice(0, i + 1).join('/') + '/node_modules';
-                dirs.push(dir);
-            }
-            
-            return dirs;
-        }
-    };
-})();
+/*
+GameController.prototype.update = function(dt) {
+  var input = Engine.input;
+  if (input.support.orientation) {
+    // Vec2.scal(input.orientation, 100, this.root.gravity);
+  }
+};
+*/
 
-require.alias = function (from, to) {
-    var path = require.modules.path();
-    var res = null;
-    try {
-        res = require.resolve(from + '/package.json', '/');
-    }
-    catch (err) {
-        res = require.resolve(from, '/');
-    }
-    var basedir = path.dirname(res);
-    
-    var keys = (Object.keys || function (obj) {
-        var res = [];
-        for (var key in obj) res.push(key);
-        return res;
-    })(require.modules);
-    
-    for (var i = 0; i < keys.length; i++) {
-        var key = keys[i];
-        if (key.slice(0, basedir.length + 1) === basedir + '/') {
-            var f = key.slice(basedir.length);
-            require.modules[to + f] = require.modules[basedir + f];
-        }
-        else if (key === basedir) {
-            require.modules[to] = require.modules[basedir];
-        }
-    }
+new Component('gameController', GameController);
+
+
+function Body() {
+  this.color = Color();
+  this.stroke = Color(Color.white);
+}
+
+Body.prototype.layer = 1;
+
+Body.prototype.attributes = {
+  color: Color()
 };
 
-(function () {
-    var process = {};
-    var global = typeof window !== 'undefined' ? window : {};
-    var definedProcess = false;
-    
-    require.define = function (filename, fn) {
-        if (!definedProcess && require.modules.__browserify_process) {
-            process = require.modules.__browserify_process();
-            definedProcess = true;
+
+Body.prototype.create = function(attributes) {
+  this.player = attributes.player;
+  Color.copy(this.color, attributes.color);
+};
+
+Body.prototype.render = function(ctx) {
+  ctx.save();
+  var pos = this.transform.pos;
+  ctx.fillStyle = Color.rgba(this.color);
+  ctx.strokeStyle = Color.rgba(this.stroke);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(pos[0] | 0, pos[1] | 0, this.bounds.radius | 0, 0, Math.TAU);
+  ctx.stroke();
+  ctx.fill();
+  ctx.restore();
+};
+
+new Component('body', Body);
+
+new Entity.Prefab('body', {
+  transform: null,
+  bounds: {
+    shape: 'circle',
+    radius: 15
+  },
+  kinetic: {
+    mass: 1,
+    drag: 0.998,
+    friction: 0.1,
+    maxVelocity: 200
+  },
+  border: {
+    bounciness: 0.2
+  },
+  body: null
+});
+
+/**
+ * Init
+ */
+
+Engine.gameScene = Entity.alloc(null, {
+  gameController: null
+});
+
+Engine.play(Engine.gameScene);
+
+},{"../../lib/core/engine":2,"../../lib/core/renderer":3,"../../lib/core/math":4,"../../lib/core/entity":5,"../../lib/core/component":6,"../../lib/core/pool":7,"../../lib/core/color":8,"../../lib/core/sprite":9,"../../lib/core/transform":10,"../../lib/core/bounds":11,"../../lib/core/border":12,"../../lib/core/collider":13,"../../lib/core/kinetic":14}],4:[function(require,module,exports){'use strict';
+
+/**
+ * http://docs.unity3d.com/Documentation/ScriptReference/Mathf.html
+ * https://github.com/secretrobotron/gladius.math/
+ * https://github.com/toji/gl-matrix/tree/master/src/gl-matrix
+ */
+var Mth = Math;
+
+var sqrt = Mth.sqrt;
+var pow = Mth.pow;
+var abs = Mth.abs;
+var random = Mth.random;
+
+var EPSILON = Mth.EPSILON = 0.001;
+
+Mth.TAU = Mth.PI * 2;
+Mth.PIRAD = 0.0174532925;
+Mth.UID = 1;
+
+Mth.uid = function() {
+  return Mth.UID++;
+};
+
+Mth.clamp = function(a, low, high) {
+  if (a < low) {
+    return low;
+  }
+  if (a > high) {
+    return high;
+  } else {
+    return a;
+  }
+};
+
+Mth.rand = function(low, high, ease) {
+  return (ease || Mth.linear)(random()) * (high - low) + low;
+};
+
+Mth.randArray = function(array) {
+  return array[random() * array.length + 0.5 | 0];
+};
+
+Mth.chance = function(chance) {
+  return random() <= chance;
+};
+
+var powIn = function(strength) {
+  if (strength == null) {
+    strength = 2;
+  }
+  return function(t) {
+    return pow(t, strength);
+  };
+};
+
+var toOut = function(fn) {
+  return function(t) {
+    return 1 - fn(1 - t);
+  };
+};
+
+var toInOut = function(fn) {
+  return function(t) {
+    return (t < 0.5 ? fn(t * 2) : 2 - fn(2 * (1 - t))) / 2;
+  };
+};
+
+Mth.linear = function(t) {
+  return t;
+};
+
+var transitions = ['quad', 'cubic', 'quart', 'quint'];
+for (var i = 0, l = transitions.length; i < l; i++) {
+  var transition = transitions[i];
+  var fn = powIn(i + 2);
+  Mth[transition + 'In'] = fn;
+  Mth[transition + 'Out'] = toOut(fn);
+  Mth[transition + 'InOut'] = toInOut(fn);
+}
+
+var ARRAY_TYPE = Mth.ARRAY_TYPE = window.Float32Array || function(arr) {
+  return arr;
+};
+
+/**
+ * Vec2
+ *
+ * Returns a new (typed) array.
+ *
+ * @param {Vec2|number} fromOrX Typed array to copy from or x
+ * @param {number} y       y, when x was provided as first argument
+ */
+var Vec2 = Mth.Vec2 = function(fromOrX, y) {
+  if (y != null) {
+    return new ARRAY_TYPE([fromOrX, y]);
+  }
+  if (fromOrX != null) {
+    return new ARRAY_TYPE(fromOrX);
+  }
+  return new ARRAY_TYPE(Vec2.zero);
+};
+
+Vec2.zero = Vec2.center = Vec2(0, 0);
+Vec2.cache = [Vec2(), Vec2(), Vec2(), Vec2(), Vec2()];
+Vec2.topLeft = Vec2(-1, -1);
+Vec2.topCenter = Vec2(0, -1);
+Vec2.topRight = Vec2(1, -1);
+Vec2.centerLeft = Vec2(-1, 0);
+Vec2.centerRight = Vec2(1, 0);
+Vec2.bottomLeft = Vec2(-1, 1);
+Vec2.bottomCenter = Vec2(0, 1);
+Vec2.bottomRight = Vec2(1, 1);
+
+var radCache = [Vec2(), Vec2()];
+var objCache = {
+  x: 0,
+  y: 0
+};
+var objVecCache = Vec2();
+
+Vec2.set = function(result, x, y) {
+  result[0] = x || 0;
+  result[1] = y || 0;
+  return result;
+};
+
+Vec2.copy = function(result, b) {
+  result.set(b || Vec2.zero);
+  return result;
+};
+
+Vec2.valid = function(a) {
+  return !(isNaN(a[0]) || isNaN(a[1]));
+};
+
+Vec2.toString = function(a) {
+  return "[" + a[0] + ", " + a[1] + "]";
+};
+
+Vec2.fromObj = function(obj, a) {
+  if (!a) {
+    a = objVecCache;
+  }
+  a[0] = obj.x;
+  a[1] = obj.y;
+  return a;
+};
+
+Vec2.toObj = function(a, obj) {
+  if (!obj) {
+    obj = objCache;
+  }
+  obj.x = a[0];
+  obj.y = a[1];
+  return obj;
+};
+
+Vec2.eq = function(a, b) {
+  return abs(a[0] - b[0]) < EPSILON && abs(a[1] - b[1]) < EPSILON;
+};
+
+Vec2.add = function(a, b, result) {
+  if (!result) {
+    result = a;
+  }
+  result[0] = a[0] + b[0];
+  result[1] = a[1] + b[1];
+  return result;
+};
+
+Vec2.sub = function(a, b, result) {
+  if (!result) {
+    result = a;
+  }
+  result[0] = a[0] - b[0];
+  result[1] = a[1] - b[1];
+  return result;
+};
+
+Vec2.mul = function(a, b, result) {
+  if (!result) {
+    result = a;
+  }
+  result[0] = a[0] * b[0];
+  result[1] = a[1] * b[1];
+  return result;
+};
+
+Vec2.scal = function(a, scalar, result) {
+  if (!result) {
+    result = a;
+  }
+  result[0] = a[0] * scalar;
+  result[1] = a[1] * scalar;
+  return result;
+};
+
+Vec2.norm = function(a, result, scalar) {
+  if (!result) {
+    result = a;
+  }
+  var x = a[0];
+  var y = a[1];
+  var len = (scalar || 1) / (sqrt(x * x + y * y) || 1);
+  result[0] = x * len;
+  result[1] = y * len;
+  return result;
+};
+
+Vec2.lenSq = function(a) {
+  return a[0] * a[0] + a[1] * a[1];
+};
+
+Vec2.len = function(a) {
+  return sqrt(a[0] * a[0] + a[1] * a[1]);
+};
+
+Vec2.dot = function(a, b) {
+  return a[0] * b[0] + a[1] * b[1];
+};
+
+Vec2.cross = function(a, b) {
+  return a[0] * b[1] - a[1] * b[0];
+};
+
+Vec2.lerp = function(a, b, scalar, result) {
+  if (!result) {
+    result = a;
+  }
+  result[0] = a[0] + scalar * (b[0] - a[0]);
+  result[1] = a[1] + scalar * (b[1] - a[1]);
+  return result;
+};
+
+Vec2.max = function(a, b, axis) {
+  if (axis != null) {
+    if (a[axis] > b[axis]) {
+      return a;
+    } else {
+      return b;
+    }
+  }
+  if (Vec2.lenSq(a) > Vec2.lenSq(b)) {
+    return a;
+  } else {
+    return b;
+  }
+};
+
+// http://www.cas.kth.se/CURE/doc-cure-2.2.1/html/toolbox_2src_2Math_2Vector2D_8hh-source.html
+Vec2.perp = function(a, result) {
+  if (!result) {
+    result = a;
+  }
+  var x = a[0];
+  result[0] = a[1];
+  result[1] = -x;
+  return result;
+};
+
+Vec2.dist = function(a, b) {
+  var x = b[0] - a[0];
+  var y = b[1] - a[1];
+  return sqrt(x * x + y * y);
+};
+
+Vec2.distSq = function(a, b) {
+  var x = b[0] - a[0];
+  var y = b[1] - a[1];
+  return x * x + y * y;
+};
+
+Vec2.limit = function(a, max, result) {
+  if (!result) {
+    result = a;
+  }
+  var x = a[0];
+  var y = a[1];
+  var ratio = max / sqrt(x * x + y * y);
+  if (ratio < 1) {
+    result[0] = x * ratio;
+    result[1] = y * ratio;
+  } else if (result !== a) {
+    result[0] = x;
+    result[1] = y;
+  }
+  return result;
+};
+
+Vec2.rad = function(a, b) {
+  if (!b) {
+    return Mth.atan2(a[1], a[0]);
+  }
+  return Mth.acos(Vec2.dot(Vec2.norm(a, radCache[0]), Vec2.norm(b, radCache[1])));
+};
+
+Vec2.rot = function(a, theta, result) {
+  if (!result) {
+    result = a;
+  }
+  var sinA = Mth.sin(theta);
+  var cosA = Mth.cos(theta);
+  var x = a[0];
+  var y = a[1];
+  result[0] = x * cosA - y * sinA;
+  result[1] = x * sinA + y * cosA;
+  return result;
+};
+
+Vec2.rotAxis = function(a, b, theta, result) {
+  return Vec2.add(
+    Vec2.rot(
+      Vec2.sub(a, b, result || a),
+      theta
+    ),
+    b
+  );
+};
+
+Vec2.lookAt = function(a, b, result) {
+  var len = Vec2.len(a);
+  return Vec2.norm(Vec2.rot(a, Mth.atan2(b[0] - a[0], b[1] - a[1]) - Mth.atan2(a[1], a[0]), result || a), null, len);
+};
+
+Vec2.variant = function(a, delta, result) {
+  if (!result) {
+    result = a;
+  }
+  result[0] = a[0] + Math.rand(-delta, delta);
+  result[1] = a[1] + Math.rand(-delta, delta);
+  return result;
+};
+
+/**
+
+// initialize temp arrays used in bezier calcs to avoid allocations
+Vector._tmpBezierX = new Array(64);
+Vector._tmpBezierY = new Array(64);
+
+Vector.calcPathBezier = function (points, delta) {
+    var result = new Vector(0, 0);
+    Vector.setCalcPathBezier(points, delta, result);
+    return result;
+};
+
+/**
+ * Calculates the bezier path vector
+ * @param points {Array.<Vector>}
+ * @param delta {number}
+ * @param result {Vector}
+ *
+Vector.setCalcPathBezier = function (points, delta, result) {
+    var count = points.length;
+    if (count <= 1) {
+        result.x = result.y = 0;
+        return;
+    }
+
+    var xs = Vector._tmpBezierX,
+        ys = Vector._tmpBezierY,
+        d1 = 1 - delta;
+
+    for (var j = 0; j < count; j++) {
+        var point = points[j];
+        xs[j] = point.x;
+        ys[j] = point.y;
+    }
+
+    var countMinusOne = count - 1;
+    for (; countMinusOne > 0; count--, countMinusOne--) {
+        var i = 0, iPlusOne = 1;
+        for (; i < countMinusOne; i++, iPlusOne++) {
+            xs[i] = xs[i] * d1 + xs[iPlusOne] * delta;
+            ys[i] = ys[i] * d1 + ys[iPlusOne] * delta;
         }
-        
-        var dirname = require._core[filename]
-            ? ''
-            : require.modules.path().dirname(filename)
-        ;
-        
-        var require_ = function (file) {
-            var requiredModule = require(file, dirname);
-            var cached = require.cache[require.resolve(file, dirname)];
+    }
+    result.x = xs[0];
+    result.y = ys[0];
+};
+ */
 
-            if (cached && cached.parent === null) {
-                cached.parent = module_;
+module.exports.Vec2 = Vec2;
+
+/**
+ * 2x3 Matrix
+ *
+ * https://github.com/toji/gl-matrix/blob/master/src/gl-matrix/mat2d.js
+ * @param {[type]} fromOrA [description]
+ * @param {[type]} b       [description]
+ * @param {[type]} c       [description]
+ * @param {[type]} d       [description]
+ * @param {[type]} tx      [description]
+ * @param {[type]} ty      [description]
+ */
+var Mat2 = Mth.Mat2 = function(fromOrA, b, c, d, tx, ty) {
+  if (b != null) {
+    return new ARRAY_TYPE([fromOrA, b, c, d, tx, ty]);
+  }
+  if (fromOrA != null) {
+    return new ARRAY_TYPE(fromOrA);
+  }
+  return new ARRAY_TYPE(Mat2.identity);
+};
+
+Mat2.identity = Mat2(1, 0, 0, 1, 0, 0);
+
+Mat2.set = function(result, a, b, c, d, tx, ty) {
+  result[0] = a || 0;
+  result[1] = b || 0;
+  result[2] = c || 0;
+  result[3] = d || 0;
+  result[4] = tx || 0;
+  result[5] = ty || 0;
+  return result;
+};
+
+Mat2.copy = function(result, b) {
+  result.set(b);
+  return result;
+};
+
+Mat2.valid = function(a) {
+  return !(isNaN(a[0]) || isNaN(a[1]) || isNaN(a[2]) || isNaN(a[3]) || isNaN(a[4]) || isNaN(a[5]));
+};
+
+Mat2.toString = function(a) {
+  return "[" + a[0] + ", " + a[1] + " | " + a[2] + ", " + a[3] + " | " + a[4] + ", " + a[5] + "]";
+};
+
+Mat2.mul = function(a, b, result) {
+  result || (result = a);
+  var aa = a[0];
+  var ab = a[1];
+  var ac = a[2];
+  var ad = a[3];
+  var atx = a[4];
+  var aty = a[5];
+  var ba = b[0];
+  var bb = b[1];
+  var bc = b[2];
+  var bd = b[3];
+  var btx = b[4];
+  var bty = b[5];
+  result[0] = aa * ba + ab * bc;
+  result[1] = aa * bb + ab * bd;
+  result[2] = ac * ba + ad * bc;
+  result[3] = ac * bb + ad * bd;
+  result[4] = ba * atx + bc * aty + btx;
+  result[5] = bb * atx + bd * aty + bty;
+  return result;
+};
+
+Mat2.rot = function(a, rad, result) {
+  result || (result = a);
+  var aa = a[0];
+  var ab = a[1];
+  var ac = a[2];
+  var ad = a[3];
+  var atx = a[4];
+  var aty = a[5];
+  var st = Mth.sin(rad);
+  var ct = Mth.cos(rad);
+  result[0] = aa * ct + ab * st;
+  result[1] = -aa * st + ab * ct;
+  result[2] = ac * ct + ad * st;
+  result[3] = -ac * st + ct * ad;
+  result[4] = ct * atx + st * aty;
+  result[5] = ct * aty - st * atx;
+  return result;
+};
+
+Mat2.scal = function(a, v, result) {
+  result || (result = a);
+  var vx = v[0];
+  var vy = v[1];
+  result[0] = a[0] * vx;
+  result[1] = a[1] * vy;
+  result[2] = a[2] * vx;
+  result[3] = a[3] * vy;
+  result[4] = a[4] * vx;
+  result[5] = a[5] * vy;
+  return result;
+};
+
+Mat2.trans = function(a, v, result) {
+  result || (result = a);
+  result[0] = a[0];
+  result[1] = a[1];
+  result[2] = a[2];
+  result[3] = a[3];
+  result[4] = a[4] + v[0];
+  result[5] = a[5] + v[1];
+  return result;
+};
+
+module.exports.Mat2 = Mat2;
+
+},{}],2:[function(require,module,exports){'use strict';
+
+var Entity = require('./entity');
+var Pool = require('./pool');
+var Vec2 = require('./math').Vec2;
+
+// Shimming required APIs
+
+var requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {
+	return setTimeout(callback, 20);
+};
+
+var perf = window.performance || {};
+perf.now = perf.now || perf.webkitNow || perf.msNow || perf.mozNow || Date.now;
+
+
+function Engine() {
+	Entity.call(this);
+}
+
+Engine.prototype = Object.create(Entity.prototype);
+
+Engine.prototype.tag = 'engine';
+
+Engine.prototype.init = function(element) {
+	this.element = element;
+
+	this.time = 0.0;
+	this.lastTime = 0.0;
+	this.frame = 0;
+	this.tail = 0.0;
+	this.fdt = 1 / 30;
+	this.dtMin = 1 / 60;
+	this.dtCap = 0.5;
+	this.fdtCap = this.fdt * 5;
+	this.scale = 1;
+
+	this.debug = {
+		profile: 0,
+		step: false,
+		time: true
+	};
+	this.samples = {
+		dt: 0,
+		lag: 0,
+		tick: 0,
+		fixedUpdate: 0,
+		update: 0,
+		render: 0
+	};
+
+	// Late require. TODO: Justify!
+	var Console = require('./console');
+	Console.alloc(this);
+	var Input = require('./input');
+	Input.alloc(this);
+
+	var engine = this;
+	this.tickBound = function Engine_tick(now) {
+		return engine.tick(now);
+	};
+};
+
+Engine.prototype.play = function(scene) {
+	this.scene = scene;
+	this.start();
+};
+
+Engine.prototype.start = function() {
+	if (this.running) {
+		return;
+	}
+	this.running = true;
+	requestAnimationFrame(this.tickBound);
+};
+
+Engine.prototype.tick = function(time) {
+	time = (time && time < 1e12 ? time : perf.now()) / 1000;
+	this.time = time;
+
+	var debug = this.debug;
+	var samples = this.samples;
+	var fdt = this.fdt;
+
+	if (this.lastTime) {
+		var dt = time - this.lastTime;
+		if (dt > this.dtCap) {
+			dt = this.dtMin;
+		} else if (dt > 0.01) {
+			samples.dt = dt;
+			var lag = time - samples.next;
+			if (lag > 0) {
+				samples.lag = lag * 1000;
+			}
+		}
+		this.dt = (dt *= this.scale);
+		this.frame++;
+
+		if (debug.profile && !debug.profileFrom) {
+			debug.profileFrom = debug.profile;
+			console.profile("Frame " + debug.profileFrom);
+		}
+
+		var ping = perf.now();
+		var pingTick = ping;
+
+		// Invoke fixed updates
+		var tail = Math.min(this.tail + dt, this.fdtCap * this.scale);
+		while (tail > fdt) {
+			tail -= fdt;
+			Pool.invoke('fixedUpdate', fdt);
+			Pool.invoke('simulate', fdt);
+		}
+		this.tail = tail;
+
+		var pong = perf.now();
+		samples.fixedUpdate = pong - ping;
+		ping = pong;
+
+		// Invoke update
+		Pool.invoke('update', dt);
+
+		Pool.free();
+
+		Pool.invoke('postUpdate', dt);
+
+		pong = perf.now();
+		samples.update = pong - ping;
+		ping = pong;
+
+		// Invoke render
+		Pool.invoke('preRender', dt);
+
+		var ctx = this.renderer.save();
+		Pool.invoke('render', ctx);
+		this.renderer.restore();
+
+		pong = perf.now();
+		samples.render = pong - ping;
+		samples.tick = pong - pingTick;
+
+		if (debug.step) {
+			debugger;
+		}
+		if (debug.profileFrom) {
+			if (!--debug.profile) {
+				console.profileEnd("Frame " + debug.profileFrom);
+				debug.profileFrom = 0;
+			}
+		}
+	}
+
+	this.lastTime = time;
+	samples.next = Math.max(time + 1 / 60, perf.now() / 1000);
+
+	this.pub('onTimeEnd', samples);
+
+	if (this.pauseNext) {
+		this.pub('onPause');
+		this.paused = true;
+		this.tickBound(samples.next * 1000);
+	} else if (this.running) {
+		requestAnimationFrame(this.tickBound);
+	}
+};
+
+var engine = new Engine();
+
+// Debugging hooks
+if ('console' in window) {
+	console.m = {
+		pool: function(flush) {
+			Pool.dump(flush);
+			return null;
+		},
+		profile: function(frames) {
+			if (frames == null) {
+				frames = 60;
+			}
+			engine.debug.profile = frames;
+			return null;
+		},
+		step: function() {
+			engine.debug.step = !engine.debug.step;
+			return null;
+		}
+	};
+}
+
+module.exports = engine;
+
+},{"./entity":5,"./pool":7,"./math":4,"./console":15,"./input":16}],3:[function(require,module,exports){'use strict';
+
+var Entity = require('./entity');
+var Bounds = require('./bounds');
+var Vec2 = require('./math').Vec2;
+var Color = require('./color');
+
+
+function Renderer(element, size) {
+  this.element = element;
+  this.size = Vec2(size);
+  this.content = Vec2(size);
+  this.browser = Vec2();
+  this.margin = Vec2();
+  this.pos = Vec2();
+  this.scale = 0;
+  this.orientation = 'landscape';
+
+  this.canvas = document.createElement('canvas');
+  this.element.appendChild(this.canvas);
+  this.ctx = this.canvas.getContext('2d');
+
+  this.buffer = false;
+  if (this.buffer) {
+    this.buf = document.createElement('canvas');
+    this.bufctx = this.buf.getContext('2d');
+    this.buf.width = this.content[0];
+    this.buf.height = this.content[1];
+  }
+  this.canvas.width = this.content[0];
+  this.canvas.height = this.content[1];
+  this.element.style.width = this.content[0] + 'px';
+  this.element.style.height = this.content[1] + 'px';
+
+  window.addEventListener('resize', this, false);
+  document.addEventListener('fullscreenchange', this, false);
+  document.addEventListener('mozfullscreenchange', this, false);
+  document.addEventListener('webkitfullscreenchange', this, false);
+
+  this.reflow();
+}
+
+Renderer.prototype.handleEvent = function(evt) {
+  if (~evt.type.indexOf('fullscreenchange')) {
+    this.fullscreenChange();
+  } else {
+    this.reflow();
+  }
+};
+
+Renderer.prototype.reflow = function() {
+  var browser = Vec2.set(this.browser, window.innerWidth, window.innerHeight);
+  var scale = Math.min(this.browser[0] / this.content[0], this.browser[1] / this.content[1]);
+  if (scale !== this.scale) {
+    this.scale = scale;
+    Vec2.scal(this.content, this.scale, this.size);
+  }
+  var off = Vec2.scal(Vec2.sub(browser, this.size, this.margin), 0.5);
+  var rule = "translate(" + off[0] + "px, " + off[1] + "px) scale(" + scale + ")";
+  this.element.style.transform = rule;
+  this.element.style.webkitTransform = rule;
+};
+
+Renderer.prototype.save = function() {
+  var ctx = this.buffer ? this.bufctx : this.ctx;
+  if (this.color) {
+    ctx.fillStyle = Color.rgba(this.color);
+    ctx.fillRect(0, 0, this.content[0], this.content[1]);
+  } else {
+    ctx.clearRect(0, 0, this.content[0], this.content[1]);
+  }
+  return ctx;
+};
+
+Renderer.prototype.restore = function() {
+  if (this.buffer) {
+    this.ctx.clearRect(0, 0, this.content[0], this.content[1]);
+    this.ctx.drawImage(this.buf, 0, 0);
+  }
+};
+
+// FIXME: Unused
+Renderer.prototype.center = function(pos) {
+  Vec2.set(this.pos, pos[0] - this.size[0] / 2, pos[0] - this.size[1] / 2);
+  return this;
+};
+
+// FIXME: Unused
+Renderer.prototype.cull = function(entity) {
+  var bounds = entity.bounds;
+  if (!bounds) {
+    return false;
+  }
+  if (bounds.withinRect(this.pos, this.content)) {
+    if (bounds.culled) {
+      bounds.culled = false;
+    }
+    return false;
+  }
+  if (!bounds.culled) {
+    bounds.culled = true;
+  }
+  return true;
+};
+
+Renderer.prototype.isFullscreen = function() {
+  var doc = document;
+  return doc.fullscreen || doc.mozFullScreen || doc.webkitIsFullScreen;
+};
+
+Renderer.prototype.requestFullscreen = function() {
+  if (!this.isFullscreen()) {
+    var target = this.element.parentNode;
+    if ('webkitRequestFullScreen' in target) {
+      target.webkitRequestFullScreen();
+    } else if ('mozRequestFullScreen' in target) {
+      target.mozRequestFullScreen();
+    }
+  }
+};
+
+Renderer.prototype.fullscreenChange = function() {
+  if (this.orientation) {
+    this.lockOrientation(this.orientation);
+  }
+};
+
+Renderer.prototype.lockOrientation = function(format) {
+  if (format == null) {
+    format = this.orientation;
+  }
+  var target = window.screen;
+  if ('lockOrientation' in target) {
+    screen.lockOrientation(format);
+  } else if ('mozLockOrientation' in target) {
+    screen.mozLockOrientation(format);
+  }
+};
+
+module.exports = Renderer;
+
+},{"./entity":5,"./bounds":11,"./math":4,"./color":8}],5:[function(require,module,exports){'use strict';
+
+var Pool = require('./pool');
+
+function Entity() {
+	this.children = {};
+	this.components = {};
+	this.subs = {};
+	this.refSubs = [];
+}
+
+Entity.prototype.tag = 'entity';
+
+Entity.prototype.toString = function() {
+	var comps = Object.keys(this.components).join(', ');
+	return "Entity " + (this.id || '') + "#" + this.uid +
+		" (" + comps + ") [^ " + this.parent + "]";
+};
+
+Entity.prototype.alloc = function(attributes) {
+	if (this.parent) {
+		this.parent.children[this.uid] = this;
+	}
+
+	if (attributes) {
+		for (var key in attributes) {
+			var attribute = attributes[key];
+			switch (key) {
+				case 'id':
+					this.id = attribute;
+					break;
+				default:
+					if (!this.addComponent(key, attribute)) {
+						throw new Error("Unknown attribute key '" + key +
+							"', expected component. " + this);
+					}
+			}
+		}
+	}
+};
+
+Entity.prototype.addComponent = function(tag, attributes) {
+	var pool = Pool.byTag[tag];
+	if (!pool) {
+		return false;
+	}
+	return pool.alloc(this, attributes);
+};
+
+Entity.prototype.addChild = function(prefabId, attributes) {
+	if (typeof prefabId === 'string') {
+		return Prefab.alloc(prefabId, this, attributes);
+	}
+	return Entity.alloc(this, prefabId);
+};
+
+Entity.prototype.destroy = function() {
+	this.pool.destroy(this);
+	for (var key in this.components) {
+		this.components[key].destroy();
+	}
+	for (key in this.children) {
+		this.children[key].destroy();
+	}
+};
+
+Entity.prototype.free = function() {
+	// Remove referenced subscribers
+	var refSubs = this.refSubs;
+	for (var i = 0, l = refSubs.length; i < l; i++) {
+		refSubs[i].unsub(this);
+	}
+	refSubs.length = 0;
+
+	// Remove own subscribers
+	var subs = this.subs;
+	for (var topic in subs) {
+		subs[topic].length = 0;
+	}
+	if (this.parent) {
+		delete this.parent.children[this.uid];
+	}
+	this.pool.free(this);
+};
+
+Entity.prototype.match = function(selector) {
+	var components = this.components;
+	if (Array.isArray(selector)) {
+		for (var i = 0, l = selector.length; i < l; i++) {
+			if (components[selector[i]]) {
+				return true;
+			}
+		}
+	} else if (components[selector]) {
+		return true;
+	}
+	return false;
+};
+
+Entity.prototype.enable = function(state, deep) {
+	if (state == null) {
+		state = !this.state;
+	}
+	this.enabled = state;
+	this.parent.pub((state ? 'onEnable' : 'onDisable'), this);
+	for (var key in this.components) {
+		this.components[key].enable(state, true);
+	}
+	if (deep) {
+		for (var key in this.children) {
+			this.children[key].enable(state, true);
+		}
+	}
+};
+
+Entity.prototype.sub = function(scope, topic, method) {
+	if (scope == null) {
+		scope = this;
+	}
+	var subs = this.subs;
+	var items = (subs[topic] || (subs[topic] = []));
+	items.push(scope, method);
+	if (scope !== this) {
+		var refs = (scope.refSubs || (scope.refSubs = []));
+		refs.push(this);
+	}
+};
+
+Entity.prototype.pub = function(topic, a0, a1, a2, a3) {
+	var items = this.subs[topic], i = 0;
+	if (items && (i = items.length)) {
+		var scope;
+		while ((scope = items[i -= 2])) {
+			if (scope.enabled && scope[items[i + 1] || topic](a0, a1, a2, a3) === false) {
+				return false;
+			}
+		}
+	}
+};
+
+Entity.prototype.pubUp = function(topic, a0, a1, a2, a3) {
+	var entity = this;
+	do {
+		if (entity.enabled && entity.pub(topic, a0, a1, a2, a3) === false) {
+			return false;
+		}
+	} while (entity = entity.parent);
+};
+
+Entity.prototype.pubAll = function(topic, a0, a1, a2, a3) {
+	return Pool.call(topic, a0, a1, a2, a3);
+};
+
+Entity.prototype.unsub = function(unscope, untopic) {
+	var subs = this.subs, i = 0;
+	for (var topic in subs) {
+		if (untopic && untopic === topic) {
+			continue;
+		}
+		var items = subs[topic];
+		if (!items || !(i = items.length)) {
+			continue;
+		}
+		var length = i / 2, scope;
+		while ((i -= 2) >= 0) {
+			if ((scope = items[i]) && (!unscope || unscope === scope)) {
+				items[i] = null;
+				length--;
+			}
+		}
+		if (length === 0) {
+			items.length = 0;
+		}
+	}
+};
+
+new Pool(Entity);
+
+/**
+ * Prefab
+ *
+ * @param {String} id         Id
+ * @param {Object} attributes Default attributes
+ */
+function Prefab(id, attributes) {
+	if (!attributes) {
+		attributes = id;
+		id = null;
+	}
+	this.id = id || attributes.id || Math.uid();
+	this.attributes = attributes;
+	this.attributeKeys = Object.keys(attributes);
+	for (var key in attributes) {
+		if (!attributes[key]) {
+			attributes[key] = {};
+		}
+	}
+	Prefab.byId[this.id] = this;
+}
+
+Prefab.byId = {};
+
+Prefab.alloc = function(id, parent, attributes) {
+	var prefab = Prefab.byId[id];
+	if (!prefab) {
+		throw new Error('Prefab "' + id + '"" not found.');
+	}
+	return prefab.alloc(parent, attributes);
+};
+
+Prefab.prototype.alloc = function(parent, attributes) {
+	var defaults = this.attributes;
+	if (attributes) {
+		var keys = this.attributeKeys;
+		for (var i = 0, l = keys.length; i < l; i++) {
+			var key = keys[i];
+			var value = defaults[key];
+			if (!attributes[key]) {
+				attributes[key] = value;
+			} else {
+				var subPresets = attributes[key];
+				if (typeof value === 'object') {
+					// TODO: Use __proto__
+					for (var subKey in value) {
+						if (!(subKey in subPresets)) {
+							subPresets[subKey] = value[subKey];
+						}
+					}
+				}
+				// Move to last position
+				// TODO: Only when needed!
+				delete attributes[key];
+				attributes[key] = subPresets;
+			}
+		}
+	}
+	return Entity.alloc(parent, attributes || defaults);
+};
+
+Entity.Prefab = Prefab;
+
+module.exports = Entity;
+
+},{"./pool":7}],6:[function(require,module,exports){'use strict';
+
+var Pool = require('./pool');
+
+function Component(tag, cls) {
+  if (!tag) {
+    return null;
+  }
+  var proto = cls.prototype;
+  cls.prototype = Object.create(Component.prototype);
+  cls.prototype.tag = tag;
+
+  var key = '';
+  for (key in proto) {
+    cls.prototype[key] = proto[key];
+  }
+  new Pool(cls);
+  return null;
+}
+
+Component.prototype.tag = 'component';
+
+Component.prototype.toString = function() {
+  return "Component " + this.tag + "#" + this.uid + " [^ " + this.entity + "]";
+};
+
+Component.prototype.alloc = function(attributes) {
+  var entity = this.entity = this.parent;
+  entity.components[this.tag] = this;
+  entity[this.tag] = this;
+
+  var components = entity.components;
+  for (var tag in components) {
+    if (tag === this.tag) {
+      continue;
+    }
+    this[tag] = components[tag];
+    components[tag][this.tag] = this;
+  }
+
+  if (this.create) {
+    this.create(attributes);
+  }
+};
+
+Component.prototype.destroy = function() {
+  this.pool.destroy(this);
+};
+
+Component.prototype.free = function() {
+  delete this.entity.components[this.tag];
+  this.entity[this.tag] = null;
+
+  var components = this.entity.components;
+  for (var tag in components) {
+    if (tag === this.tag) {
+      continue;
+    }
+    this[components[tag].tag] = null;
+    components[tag][this.tag] = null;
+  }
+  this.entity = null;
+  this.pool.free(this);
+};
+
+Component.prototype.enable = function(state, silent) {
+  if (state == null) {
+    state = !this.state;
+  }
+  this.enabled = state;
+  if (silent) {
+    this.entity.pub('onComponent' + (state ? 'Enable' : 'Disable'), this);
+  }
+};
+
+module.exports = Component;
+
+},{"./pool":7}],7:[function(require,module,exports){'use strict';
+
+require('./math');
+
+function Pool(cls) {
+  this.cls = cls;
+  var proto = cls.prototype;
+  proto.pool = this;
+  cls.pool = this;
+  this.register = [];
+  this.enabled = false;
+  this.allocd = 0;
+  this.tag = proto.tag;
+  if (this.tag) {
+    Pool.byTag[this.tag] = this;
+  } else {
+    throw new Error('No tag provided.');
+  }
+
+  var pool = this;
+  cls.alloc = function(parent, attributes) {
+    return pool.alloc(parent, attributes);
+  };
+
+  this.advanced = (this.tag !== 'entity' && !proto.light);
+
+  if (this.advanced) {
+    this.layer = proto.layer || cls.layer || 0;
+    this.subs = [];
+    this.calls = [];
+
+    if ((this.attributes = proto.attributes || null)) {
+      this.attributeKeys = Object.keys(this.attributes);
+    }
+
+    var types = Pool.typedCalls;
+    var keys = Object.keys(proto).concat(Object.keys(cls));
+    var fn = '';
+    for (var i = 0, l = keys.length; i < l; i++) {
+      fn = keys[i];
+      if (Pool.regxCall.test(fn)) {
+        if (!~types.indexOf(fn)) {
+          types.push(fn);
+          Pool.calls[fn] = [];
+        }
+        this.subs.push(fn);
+      } else if (Pool.regxGetter.test(fn)) {
+        var key = fn.substr(3, 1).toLowerCase() + fn.substr(4);
+        Pool.defineGetter(proto, key, fn);
+      }
+    }
+    for (i = 0, l = types.length; i < l; i++) {
+      fn = types[i];
+      if (fn in cls) {
+        this[fn] = cls[fn];
+        Pool.calls[fn].push(this);
+      } else if (fn in proto) {
+        this.calls.push(fn);
+      }
+    }
+  }
+}
+
+Pool.prototype.toString = function() {
+  return "Pool " + this.tag +
+    " [" + this.allocd + " / " + this.register.length + "]";
+};
+
+Pool.prototype.fill = function(i) {
+  while (i--) {
+    this.newInstance();
+  }
+};
+
+Pool.prototype.newInstance = function() {
+  var entity = new this.cls();
+  entity.enabled = false;
+  entity.allocd = false;
+  this.register.push(entity);
+
+  var calls = this.calls;
+  if (calls) {
+    for (var i = 0, l = calls.length; i < l; i++) {
+      Pool.calls[calls[i]].push(entity);
+    }
+  }
+  return entity;
+};
+
+Pool.prototype.alloc = function(parent, attributes) {
+  // Get free or create new entity
+  var entity = null;
+  var register = this.register;
+  var i = register.length;
+  while (i--) {
+    if (!register[i].allocd) {
+      entity = register[i];
+      break;
+    }
+  }
+  if (!entity) {
+    entity = this.newInstance();
+  }
+
+  var defaults = null;
+  this.allocd++;
+  this.enabled = true;
+  var uid = entity.uid = Math.uid();
+  entity.enabled = true;
+  entity.allocd = true;
+  entity.parent = parent || null;
+  entity.root = parent && parent.root || parent || entity;
+
+  if (this.advanced) {
+    var calls = this.calls;
+    for (var i = 0, l = calls.length; i < l; i++) {
+      var call = calls[i];
+      if (Pool.order[call] != null) {
+        Pool.order[call] = true;
+      }
+    }
+    entity.layer = (parent && parent.layer || 0) + this.layer + 2 - 1 / uid;
+    defaults = this.attributes;
+    if (defaults) {
+      if (attributes && !attributes._merged) {
+        if (attributes.__proto__) {
+          attributes.__proto__ = defaults;
+        } else {
+          var attributeKeys = this.attributeKeys;
+          for (i = 0, l = attributeKeys.length; i < l; i++) {
+            var key = attributeKeys[i];
+            if (!(key in attributes)) {
+              attributes[key] = defaults[key];
             }
+          }
+        }
+        attributes._merged = true;
+      }
+    }
+    var subs = this.subs;
+    for (var j = 0, l1 = subs.length; j < l1; j++) {
+      parent.sub(entity, subs[j]);
+    }
+  }
 
-            return requiredModule;
-        };
-        require_.resolve = function (name) {
-            return require.resolve(name, dirname);
-        };
-        require_.modules = require.modules;
-        require_.define = require.define;
-        require_.cache = require.cache;
-        var module_ = {
-            id : filename,
-            filename: filename,
-            exports : {},
-            loaded : false,
-            parent: null
-        };
-        
-        require.modules[filename] = function () {
-            require.cache[filename] = module_;
-            fn.call(
-                module_.exports,
-                require_,
-                module_,
-                module_.exports,
-                dirname,
-                filename,
-                process,
-                global
-            );
-            module_.loaded = true;
-            return module_.exports;
-        };
-    };
-})();
+  entity.alloc(attributes || defaults || null);
+  // console.log(this.tag, entity);
+  return entity;
+};
+
+Pool.prototype.destroy = function(entity) {
+  entity.enabled = false;
+  Pool.calls.free.push(entity);
+};
+
+Pool.prototype.free = function(entity) {
+  entity.allocd = false;
+  entity.uid = null;
+  entity.root = null;
+  entity.parent = null;
+  this.enabled = (this.allocd--) > 1;
+};
+
+Pool.prototype.invoke = function(fn, a0, a1, a2, a3) {
+  var stack = this.register;
+  var i = this.register.length;
+  while (i--) {
+    if (stack[i].enabled) {
+      stack[i][fn](a0, a1, a2, a3);
+    }
+  }
+  return this;
+};
+
+Pool.typedCalls = ['fixedUpdate', 'simulate', 'update', 'postUpdate', 'preRender', 'render'];
+// Create call array
+Pool.calls = {free: []};
+for (var i = 0, l = Pool.typedCalls.length; i < l; i++) {
+  Pool.calls[Pool.typedCalls[i]] = [];
+}
+
+Pool.regxCall = /^on[A-Z]/;
+Pool.regxGetter = /^get[A-Z]/;
+Pool.byTag = {};
+Pool.order = {
+  render: false
+};
+
+Pool.dump = function(flush) {
+  var byTag = Pool.byTag;
+  for (var tag in byTag) {
+    var pool = byTag[tag];
+    console.log("%s: %d/%d allocd", tag, pool.allocd, pool.register.length);
+  }
+  if (flush) {
+    Pool.flush();
+  }
+};
+
+Pool.defineGetter = function(proto, key, fn) {
+  Object.defineProperty(proto, key, {
+    get: proto[fn],
+    enumerable: true,
+    configurable: true
+  });
+  return proto;
+};
+
+Pool.free = function() {
+  var stack = this.calls.free;
+  for (var i = 0, l = stack.length; i < l; i++) {
+    stack[i].free();
+  }
+  stack.length = 0;
+};
+
+Pool.flush = function() {
+  var byTag = Pool.byTag;
+  for (var tag in byTag) {
+    var register = byTag[tag].register;
+    var i = register.length;
+    var freed = 0;
+    while (i--) {
+      if (register[i].allocd) {
+        continue;
+      }
+      register.splice(i, 1);
+      freed++;
+    }
+    console.log("%s: %d/%d flushed", tag, freed, register.length);
+  }
+};
+
+Pool.invoke = function(fn, arg) {
+  var stack = this.calls[fn], i = stack.length;
+  if (!i) {
+    return;
+  }
+  if (Pool.order[fn]) {
+    stack.sort(Pool.orderFn);
+    Pool.order[fn] = false;
+  }
+  while (i--) {
+    if (stack[i].enabled) {
+      stack[i][fn](arg);
+    }
+  }
+};
+
+Pool.orderFn = function(a, b) {
+  return b.layer - a.layer;
+};
+
+module.exports = Pool;
+
+},{"./math":4}],8:[function(require,module,exports){'use strict';
+
+require('./math');
+
+var ARRAY_TYPE = Math.ARRAY_TYPE;
+
+function Color(fromOrR, g, b, a) {
+  if (g != null) {
+    return new ARRAY_TYPE([fromOrR, g, b, (a != null) ? a : 1]);
+  }
+  if (fromOrR != null) {
+    return new ARRAY_TYPE([fromOrR[0], fromOrR[1], fromOrR[2], (fromOrR[3] != null) ? fromOrR[3] : 1]);
+  }
+  return new ARRAY_TYPE(Color.black);
+}
+
+Color.white = Color(255, 255, 255);
+Color.black = Color(0, 0, 0);
+Color.gray = Color(128, 128, 128);
+Color.cache = [Color(), Color(), Color(), Color()];
+
+Color.set = function(result, r, g, b, a) {
+  result[0] = r || 0;
+  result[1] = g || 0;
+  result[2] = b || 0;
+  result[3] = a || 0;
+  return result;
+};
+
+Color.copy = function(result, b) {
+  result.set(b || Color.black);
+  return result;
+};
+
+Color.lerp = function(a, b, t, alpha, result) {
+  if (!result) {
+    result = a;
+  }
+  result[0] = (1 - t) * a[0] + t * b[0];
+  result[1] = (1 - t) * a[1] + t * b[1];
+  result[2] = (1 - t) * a[2] + t * b[2];
+  if (alpha > 0.05) {
+    result[3] = (1 - t) * a[3] + t * b[3];
+  } else {
+    result[3] = a[3];
+  }
+  return result;
+};
+
+Color.lerpList = function(result, list, t) {
+  var last = list.length - 1;
+  var t = Math.clamp(t * last, 0, last);
+  var start = t | 0;
+  var sub = t - start;
+  if (sub < 0.02) {
+    return Color.copy(result, list[start]);
+  }
+  if (sub > 0.98) {
+    return Color.copy(result, list[start + 1]);
+  }
+  return Color.lerp(list[start], list[start + 1], sub, null, result);
+};
+
+Color.variant = function(a, t, result) {
+  t = Math.rand(-t, t);
+  return Color.lerp(a, (t > 0 ? Color.white : Color.black), t, false, result);
+};
+
+Color.rgba = function(a, alpha) {
+  if (!alpha) {
+    alpha = a[3];
+  }
+  if (alpha > 0.98) {
+    return "rgb(" + (a[0] | 0) + ", " + (a[1] | 0) + ", " + (a[2] | 0) + ")";
+  } else {
+    return "rgba(" + (a[0] | 0) + ", " + (a[1] | 0) + ", " + (a[2] | 0) + ", " + alpha + ")";
+  }
+};
+
+module.exports = Color;
+
+},{"./math":4}],9:[function(require,module,exports){'use strict';
+
+var Vec2 = require('./math').Vec2;
+var Component = require('./component');
+var Pool = require('./pool');
+
+/**
+ * Sprite.Asset
+ *
+ * Represents a single image, either loaded from source or drawn via
+ * callback.
+ *
+ * @param {String|Function} srcOrRepaint [description]
+ * @param {Array} size Override size for drawing canvas
+ * @param {Number} baseScale Base scale applied to all draws, defaults to 1
+ */
+function SpriteAsset(srcOrRepaint, size, baseScale) {
+	this.baseScale = (baseScale != null) ? baseScale : 1;
+	this.size = Vec2(size);
+	this.bufferSize = Vec2(size);
+	this.defaultAlign = Vec2.center;
+	this.defaultOffset = Vec2();
+	this.defaultScale = Vec2(1, 1);
+	this.buffer = document.createElement('canvas');
+	this.bufferCtx = this.buffer.getContext('2d');
+	this.scale = 1;
+	switch (typeof srcOrRepaint) {
+		case 'string':
+			this.src = srcOrRepaint;
+			var img = new Image();
+			this.img = img;
+			img.addEventListener('load', this);
+			this.loading = true;
+			img.src = srcOrRepaint;
+			if (this.loading && img.width && img.height) {
+				this.handleEvent();
+			}
+			break;
+		case 'function':
+			this.repaint = srcOrRepaint;
+			this.refresh();
+			break;
+	}
+}
+
+SpriteAsset.prototype.toString = function() {
+	var url = (this.buffer) ? this.buffer.toDataURL() : 'Pending';
+	return "SpriteAsset " + (Vec2.toString(this.size)) + " " +
+		(Vec2.toString(this.bufferSize)) + "\n" +
+		(this.src || this.repaint) + "\n" +
+		url;
+};
+
+SpriteAsset.prototype.handleEvent = function() {
+	// console.log('Loaded ' + this);
+	if (!this.loading) {
+		return;
+	}
+	this.loading = false;
+	Vec2.set(this.size, this.img.width, this.img.height);
+	this.refresh();
+};
+
+SpriteAsset.prototype.draw = function(ctx, toPos, align, size, fromPos, scale) {
+	if (!this.ready) {
+		return;
+	}
+	if (!toPos) {
+		toPos = Vec2.zero;
+	}
+	if (!align) {
+		align = this.defaultAlign;
+	}
+	if (!size) {
+		size = this.bufferSize;
+	}
+	if (!fromPos) {
+		fromPos = this.defaultOffset;
+	}
+	if (!scale) {
+		scale = this.defaultScale;
+	}
+	ctx.drawImage(this.buffer,
+		fromPos[0] | 0, fromPos[1] | 0,
+		size[0], size[1],
+		toPos[0] - size[0] / 2 * (align[0] + 1) | 0,
+		toPos[1] - size[1] / 2 * (align[1] + 1) | 0,
+		size[0] * scale[0], size[1] * scale[1]
+	);
+};
+
+SpriteAsset.prototype.repaint = function() {
+	var size = this.size;
+	this.buffer.width = size[0];
+	this.buffer.height = size[1];
+	this.bufferCtx.drawImage(this.img, 0, 0, size[0], size[1]);
+	this.sample();
+};
+
+SpriteAsset.prototype.sample = function() {
+	var scale = this.scale;
+	var size = this.size;
+	var bufferCtx = this.bufferCtx;
+	var data = bufferCtx.getImageData(0, 0, size[0], size[1]).data;
+	this.buffer.width = this.bufferSize[0];
+	this.buffer.height = this.bufferSize[1];
+	for (var x = 0, w = size[0], h = size[1]; x <= w; x += 1) {
+		for (var y = 0; y <= h; y += 1) {
+			var i = (y * size[0] + x) * 4;
+			bufferCtx.fillStyle = "rgba(" + data[i] + ", " + data[i + 1] + ", " +
+				data[i + 2] + ", " + (data[i + 3] / 255) + ")";
+			bufferCtx.fillRect(x * scale, y * scale, scale, scale);
+		}
+	}
+};
+
+SpriteAsset.prototype.refresh = function(scale) {
+	// console.log('Refresh');
+	scale = (scale || 1) * this.baseScale;
+	if (this.ready && this.scale === scale) {
+		return;
+	}
+	this.scale = scale;
+	this.buffer.width = this.bufferSize[0] = this.size[0] * scale | 0;
+	this.buffer.height = this.bufferSize[1] = this.size[1] * scale | 0;
+	Vec2.scal(this.bufferSize, -0.5, this.defaultOffset);
+	this.repaint(this.bufferCtx, scale);
+	this.ready = true;
+};
 
 
-require.define("path",Function(['require','module','exports','__dirname','__filename','process','global'],"function filter (xs, fn) {\n    var res = [];\n    for (var i = 0; i < xs.length; i++) {\n        if (fn(xs[i], i, xs)) res.push(xs[i]);\n    }\n    return res;\n}\n\n// resolves . and .. elements in a path array with directory names there\n// must be no slashes, empty elements, or device names (c:\\) in the array\n// (so also no leading and trailing slashes - it does not distinguish\n// relative and absolute paths)\nfunction normalizeArray(parts, allowAboveRoot) {\n  // if the path tries to go above the root, `up` ends up > 0\n  var up = 0;\n  for (var i = parts.length; i >= 0; i--) {\n    var last = parts[i];\n    if (last == '.') {\n      parts.splice(i, 1);\n    } else if (last === '..') {\n      parts.splice(i, 1);\n      up++;\n    } else if (up) {\n      parts.splice(i, 1);\n      up--;\n    }\n  }\n\n  // if the path is allowed to go above the root, restore leading ..s\n  if (allowAboveRoot) {\n    for (; up--; up) {\n      parts.unshift('..');\n    }\n  }\n\n  return parts;\n}\n\n// Regex to split a filename into [*, dir, basename, ext]\n// posix version\nvar splitPathRe = /^(.+\\/(?!$)|\\/)?((?:.+?)?(\\.[^.]*)?)$/;\n\n// path.resolve([from ...], to)\n// posix version\nexports.resolve = function() {\nvar resolvedPath = '',\n    resolvedAbsolute = false;\n\nfor (var i = arguments.length; i >= -1 && !resolvedAbsolute; i--) {\n  var path = (i >= 0)\n      ? arguments[i]\n      : process.cwd();\n\n  // Skip empty and invalid entries\n  if (typeof path !== 'string' || !path) {\n    continue;\n  }\n\n  resolvedPath = path + '/' + resolvedPath;\n  resolvedAbsolute = path.charAt(0) === '/';\n}\n\n// At this point the path should be resolved to a full absolute path, but\n// handle relative paths to be safe (might happen when process.cwd() fails)\n\n// Normalize the path\nresolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {\n    return !!p;\n  }), !resolvedAbsolute).join('/');\n\n  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';\n};\n\n// path.normalize(path)\n// posix version\nexports.normalize = function(path) {\nvar isAbsolute = path.charAt(0) === '/',\n    trailingSlash = path.slice(-1) === '/';\n\n// Normalize the path\npath = normalizeArray(filter(path.split('/'), function(p) {\n    return !!p;\n  }), !isAbsolute).join('/');\n\n  if (!path && !isAbsolute) {\n    path = '.';\n  }\n  if (path && trailingSlash) {\n    path += '/';\n  }\n  \n  return (isAbsolute ? '/' : '') + path;\n};\n\n\n// posix version\nexports.join = function() {\n  var paths = Array.prototype.slice.call(arguments, 0);\n  return exports.normalize(filter(paths, function(p, index) {\n    return p && typeof p === 'string';\n  }).join('/'));\n};\n\n\nexports.dirname = function(path) {\n  var dir = splitPathRe.exec(path)[1] || '';\n  var isWindows = false;\n  if (!dir) {\n    // No dirname\n    return '.';\n  } else if (dir.length === 1 ||\n      (isWindows && dir.length <= 3 && dir.charAt(1) === ':')) {\n    // It is just a slash or a drive letter with a slash\n    return dir;\n  } else {\n    // It is a full dirname, strip trailing slash\n    return dir.substring(0, dir.length - 1);\n  }\n};\n\n\nexports.basename = function(path, ext) {\n  var f = splitPathRe.exec(path)[2] || '';\n  // TODO: make this comparison case-insensitive on windows?\n  if (ext && f.substr(-1 * ext.length) === ext) {\n    f = f.substr(0, f.length - ext.length);\n  }\n  return f;\n};\n\n\nexports.extname = function(path) {\n  return splitPathRe.exec(path)[3] || '';\n};\n\n//@ sourceURL=path"
-));
+function SpriteSheet(attributes) {
+	var sprites = attributes.sprites || [];
+	this.sprites = Array.isArray(sprites) ? sprites : [sprites];
+	this.frames = [];
+	if (Array.isArray(attributes.frames)) {
+		var frames = attributes.frames;
+		for (var i = 0, l = frames.length; i < l; i++) {
+			this.frames.push(frames[i]);
+		}
+	}
+	this.defaults = {};
+	this.defaults.speed = attributes.speed || 0.2;
+	this.defaults.size = attributes.size || Vec2(1, 1);
+	this.defaults.align = attributes.align || Vec2.center;
+	this.sequences = {};
+	var	sequences = attributes.sequences || {};
+	for (var id in sequences) {
+		this.addSequence(id, sequences[id]);
+	}
+}
 
-require.define("__browserify_process",Function(['require','module','exports','__dirname','__filename','process','global'],"var process = module.exports = {};\n\nprocess.nextTick = (function () {\n    var canSetImmediate = typeof window !== 'undefined'\n        && window.setImmediate;\n    var canPost = typeof window !== 'undefined'\n        && window.postMessage && window.addEventListener\n    ;\n\n    if (canSetImmediate) {\n        return function (f) { return window.setImmediate(f) };\n    }\n\n    if (canPost) {\n        var queue = [];\n        window.addEventListener('message', function (ev) {\n            if (ev.source === window && ev.data === 'browserify-tick') {\n                ev.stopPropagation();\n                if (queue.length > 0) {\n                    var fn = queue.shift();\n                    fn();\n                }\n            }\n        }, true);\n\n        return function nextTick(fn) {\n            queue.push(fn);\n            window.postMessage('browserify-tick', '*');\n        };\n    }\n\n    return function nextTick(fn) {\n        setTimeout(fn, 0);\n    };\n})();\n\nprocess.title = 'browser';\nprocess.browser = true;\nprocess.env = {};\nprocess.argv = [];\n\nprocess.binding = function (name) {\n    if (name === 'evals') return (require)('vm')\n    else throw new Error('No such module. (Possibly not yet loaded)')\n};\n\n(function () {\n    var cwd = '/';\n    var path;\n    process.cwd = function () { return cwd };\n    process.chdir = function (dir) {\n        if (!path) path = require('path');\n        cwd = path.resolve(dir, cwd);\n    };\n})();\n\n//@ sourceURL=__browserify_process"
-));
+/**
+ * Add sequence to spritesheet.
+ *
+ * Sequences are defined as short-form by Array:
+ *   [frameIndexes, next || null, speed || defaultSpeed || sprite || 0]
+ * or Object:
+ *   {frames: [], next: "id", speed: seconds, sprite: 0}
+ *
+ * @param {String} id       Sequence name (walk, jump, etc)
+ * @param {Array|Object} sequence Array or object
+ */
+SpriteSheet.prototype.addSequence = function(id, sequence) {
+	if (Array.isArray(sequence)) {
+		// Convert short form Array to Object
+		var frames = [];
+		for (var frame = sequence[0], l = sequence[1]; frame <= l; frame++) {
+			frames.push(frame);
+		}
+		sequence = {
+			frames: frames,
+			next: sequence[2] || null,
+			speed: sequence[3] || this.defaults.speed,
+			name: id,
+			sprite: sequence[4] || 0
+		};
+	}
+	if (sequence.next === true) {
+		sequence.next = id;
+	}
+	if (!sequence.speed) {
+		sequence.speed = this.defaults.speed;
+	}
 
-require.define("/lib/core/bounds.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Bounds, BoundsDebug, Color, Component, Pool, Vec2,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nColor = require('./color');\n\nVec2 = require('./math').Vec2;\n\nBounds = (function(_super) {\n\n  __extends(Bounds, _super);\n\n  Bounds.prototype.type = 'bounds';\n\n  Bounds.prototype.presets = {\n    shape: 'rect',\n    radius: 0,\n    size: Vec2()\n  };\n\n  function Bounds() {\n    this.size = Vec2();\n  }\n\n  Bounds.prototype.reset = function(presets) {\n    Vec2.copy(this.size, presets.size);\n    this.shape = presets.shape;\n    this.radius = presets.radius;\n    return this;\n  };\n\n  Bounds.prototype.getTop = function() {\n    if (this.shape === 'circle') {\n      return this.transform.pos[1] - this.radius;\n    }\n    return this.transform.pos[1];\n  };\n\n  Bounds.prototype.getBottom = function() {\n    if (this.shape === 'circle') {\n      return this.transform.pos[1] + this.radius;\n    }\n    return this.transform.pos[1] + this.size[1];\n  };\n\n  Bounds.prototype.intersectLine = function(p1, p2) {\n    return null;\n  };\n\n  Bounds.prototype.intersect = function(bound) {\n    return null;\n  };\n\n  Bounds.prototype.contains = function(point) {\n    var pos;\n    pos = this.transform.pos;\n    switch (this.shape) {\n      case 'circle':\n        return Bounds.circPoint(pos, this.radius, point);\n      case 'rect':\n        return Bounds.rectPoint(pos, this.size, point);\n    }\n    return false;\n  };\n\n  Bounds.prototype.withinRect = function(pos, size) {\n    var mypos;\n    mypos = this.transform.pos;\n    switch (this.shape) {\n      case 'circle':\n        return Bounds.rectCirc(pos, size, mypos, this.radius);\n      case 'rect':\n        return Bounds.rectRect(pos, size, mypos, this.size);\n    }\n    return false;\n  };\n\n  return Bounds;\n\n})(Component);\n\nBounds.circPoint = function(center, radius, point) {\n  return Vec2.distSq(point, center) <= radius * radius;\n};\n\nBounds.rectPoint = function(pos, size, point) {\n  return pos[0] - size[0] < point[0] && pos[1] < point[1] && pos[0] + size[0] > point[0] && pos[1] + size[1] > point[1];\n};\n\nBounds.rectCirc = function(topLeft, size, center, radius) {\n  var circleDistanceX, circleDistanceY, cornerDistance;\n  circleDistanceX = Math.abs(center[0] - topLeft[0] - size[0] / 2);\n  circleDistanceY = Math.abs(center[1] - topLeft[1] - size[1] / 2);\n  if (circleDistanceX > (size[0] / 2 + radius) || circleDistanceY > (size[1] / 2 + radius)) {\n    return false;\n  }\n  if (circleDistanceX <= size[0] / 2 || circleDistanceY <= size[1] / 2) {\n    return true;\n  }\n  cornerDistance = Math.pow(circleDistanceX - size[0] / 2, 2) + Math.pow(circleDistanceY - size[1] / 2, 2);\n  return cornerDistance <= Math.pow(radius, 2);\n};\n\nBounds.rectRect = function(pos, size, pos2, size2) {\n  return !(pos[0] > pos2[0] + size2[0] || pos[0] + size[0] < pos2[0] || pos[1] > pos2[1] + size2[1] || pos[1] + size[1] < pos2[1]);\n};\n\nBounds.lineRect = function(point1, point2, topLeft, size) {\n  var botOverlap, bottomIntersection, bottomPoint, c, m, topIntersection, topOverlap, topPoint, _ref, _ref1;\n  this.topLeft = topLeft;\n  this.size = size;\n  m = (y2 - y1) / (x2 - x1);\n  c = y1(-(m * x1));\n  if (m > 0) {\n    topIntersection = m * rx + c;\n    bottomIntersection = m * (rx + rw) + c;\n  } else {\n    topIntersection = m * (rx + rw) + c;\n    bottomIntersection = m * rx + c;\n  }\n  if (y1 < y2) {\n    topPoint = y1;\n    bottomPoint = y2;\n  } else {\n    topPoint = y2;\n    bottomPoint = y1;\n  }\n  topOverlap = (_ref = topIntersection > topPoint) != null ? _ref : {\n    topIntersection: topPoint\n  };\n  botOverlap = (_ref1 = bottomIntersection < bottomPoint) != null ? _ref1 : {\n    bottomIntersection: bottomPoint\n  };\n  return (topOverlap < botOverlap) && (!((botOverlap < ry) || (topOverlap > ry + rh)));\n};\n\nBounds.lineCirc = function(point1, point2, center, radius) {\n  var a, b, bb4ac, c, dx, dy, ix1, ix2, iy1, iy2, mu, testX, testY;\n  dx = x2 - x1;\n  dy = y2 - y1;\n  a = dx * dx + dy * dy;\n  b = 2 * (dx * (x1 - cx) + dy * (y1 - cy));\n  c = cx * cx + cy * cy;\n  c += x1 * x1 + y1 * y1;\n  c -= 2 * (cx * x1 + cy * y1);\n  c -= cr * cr;\n  bb4ac = b * b - 4 * a * c;\n  if (bb4ac < 0) {\n    return false;\n  }\n  mu = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);\n  ix1 = x1 + mu * dx;\n  iy1 = y1 + mu * dy;\n  mu = (-b - sqrt(b * b - 4 * a * c)) / (2 * a);\n  ix2 = x1 + mu * dx;\n  iy2 = y1 + mu * dy;\n  if (dist(x1, y1, cx, cy) < dist(x2, y2, cx, cy)) {\n    testX = x2;\n    testY = y2;\n  } else {\n    testX = x1;\n    testY = y1;\n  }\n  if (dist(testX, testY, ix1, iy1) < dist(x1, y1, x2, y2) || dist(testX, testY, ix2, iy2) < dist(x1, y1, x2, y2)) {\n    return true;\n  }\n  return false;\n};\n\nnew Pool(Bounds);\n\nBoundsDebug = (function(_super) {\n\n  __extends(BoundsDebug, _super);\n\n  BoundsDebug.prototype.type = 'boundsDebug';\n\n  BoundsDebug.prototype.presets = {\n    color: Color.white,\n    opacity: 0.5,\n    fill: false\n  };\n\n  function BoundsDebug() {\n    this.color = Vec2();\n  }\n\n  BoundsDebug.prototype.reset = function(presets) {\n    Vec2.copy(this.color, presets.color);\n    this.opacity = presets.opacity, this.fill = presets.fill;\n    return this;\n  };\n\n  BoundsDebug.prototype.render = function(ctx) {\n    var bounds, size;\n    bounds = this.bounds;\n    ctx.save();\n    if (this.fill) {\n      ctx.fillStyle = Color.rgba(this.color, this.opacity * 0.5);\n    }\n    ctx.strokeStyle = Color.rgba(this.color, this.opacity);\n    ctx.lineWidth = 1;\n    this.transform.applyMatrix(ctx);\n    if (bounds.shape === 'circle') {\n      ctx.beginPath();\n      ctx.lineTo(0, bounds.radius);\n      ctx.moveTo(0, 0);\n      ctx.arc(0, 0, bounds.radius | 0, 0, Math.TAU);\n      if (this.fill) {\n        ctx.fill();\n      }\n      ctx.stroke();\n    } else {\n      size = bounds.size;\n      ctx.strokeRect(-size[0] / 2 | 0, -size[1] / 2 | 0, size[0] | 0, size[1] | 0);\n      if (this.fill) {\n        ctx.fillRect(-size[0] / 2 | 0, -size[1] / 2 | 0, size[0] | 0, size[1] | 0);\n      }\n    }\n    ctx.restore();\n    return this;\n  };\n\n  return BoundsDebug;\n\n})(Component);\n\nnew Pool(BoundsDebug);\n\nBounds.Debug = BoundsDebug;\n\nmodule.exports = Bounds;\n\n//@ sourceURL=/lib/core/bounds.js"
-));
+	this.sequences[id] = sequence;
+	if (!this.defaultSequence) {
+		this.defaultSequence = id;
+	}
+};
 
-require.define("/lib/core/collider.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Collider, Component, Engine, Pool, Vec2,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nVec2 = require('./math').Vec2;\n\nEngine = require('./engine');\n\nCollider = (function(_super) {\n\n  __extends(Collider, _super);\n\n  function Collider() {\n    Collider.__super__.constructor.apply(this, arguments);\n  }\n\n  Collider.prototype.type = 'collider';\n\n  Collider.prototype.presets = {\n    trigger: false\n  };\n\n  Collider.prototype.reset = function(presets) {\n    this.trigger = presets.trigger;\n    return this;\n  };\n\n  return Collider;\n\n})(Component);\n\nCollider.simulate = function(dt) {\n  var collider1, collider2, colliders, diff, diffSq, i, j, kinetic1, kinetic2, mass1, mass2, n, p, parent1, parent2, pos1, pos2, radius1, radius2, radiusSum, vel1, vel2, vn1, vn2, vp1, vp1After, vp2, vp2After;\n  colliders = this.roster;\n  i = colliders.length;\n  while (i--) {\n    collider1 = colliders[i];\n    if (!collider1.enabled) {\n      continue;\n    }\n    j = i;\n    while (j--) {\n      collider2 = colliders[j];\n      kinetic1 = collider1.kinetic;\n      kinetic2 = collider2.kinetic;\n      if (!collider2.enabled || (kinetic1.sleeping && kinetic2.sleeping)) {\n        continue;\n      }\n      parent1 = collider1.parent;\n      parent2 = collider2.parent;\n      radius1 = parent1.radius || parent1.bounds.radius;\n      radius2 = parent2.radius || parent2.bounds.radius;\n      pos1 = parent1.transform.pos;\n      pos2 = parent2.transform.pos;\n      radiusSum = radius1 + radius2;\n      diffSq = Vec2.distSq(pos1, pos2);\n      if (diffSq > radiusSum * radiusSum) {\n        continue;\n      }\n      p = Vec2.norm(Vec2.sub(pos1, pos2, Vec2.cache[0]));\n      diff = Math.sqrt(diffSq);\n      if (collider1.trigger || collider2.trigger) {\n        parent1.pub('onTrigger', parent2, p, diff);\n        parent2.pub('onTrigger', parent1, p, diff);\n        continue;\n      }\n      diff -= radiusSum;\n      vel1 = kinetic1.vel;\n      vel2 = kinetic2.vel;\n      mass1 = kinetic1.mass || 1;\n      mass2 = kinetic2.mass || 1;\n      if (diff < 0) {\n        Vec2.add(pos1, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]));\n        Vec2.add(pos2, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]));\n      }\n      n = Vec2.perp(p, Vec2.cache[1]);\n      vp1 = Vec2.dot(vel1, p);\n      vn1 = Vec2.dot(vel1, n);\n      vp2 = Vec2.dot(vel2, p);\n      vn2 = Vec2.dot(vel2, n);\n      vp1After = (mass1 * vp1 + mass2 * (2 * vp2 - vp1)) / (mass1 + mass2);\n      vp2After = (mass1 * (2 * vp1 - vp2) + mass2 * vp2) / (mass1 + mass2);\n      Vec2.add(Vec2.scal(p, vp1After, Vec2.cache[2]), Vec2.scal(n, vn1, Vec2.cache[3]), vel1);\n      Vec2.add(Vec2.scal(p, vp2After, Vec2.cache[2]), Vec2.scal(n, vn2, Vec2.cache[3]), vel2);\n      parent1.pub('onCollide', parent2, n);\n      parent2.pub('onCollide', parent1, n);\n    }\n  }\n  return this;\n};\n\nnew Pool(Collider);\n\nmodule.exports = Collider;\n\n//@ sourceURL=/lib/core/collider.js"
-));
+SpriteSheet.prototype.prepare = function() {
+	var sprites = this.sprites;
+	for (var i = 0, l = sprites.length; i < l; i++) {
+		if (!sprites[i].ready) {
+			return false;
+		}
+	}
+	if (!this.frames.length) {
+		var defaults = this.defaults;
+		var size = defaults.size;
+		var align = defaults.align;
+		for (var j = 0, l = sprites.length; j < l; j++) {
+			var sprite = sprites[j];
+			var cols = sprite.size[0] / size[0] | 0;
+			var rows = sprite.size[1] / size[1] | 0;
+			// debugger;
+			for (var y = 0; y < rows; y++) {
+				for (var x = 0; x < cols; x++) {
+					this.frames.push({
+						sprite: sprite,
+						pos: Vec2(x * size[0], y * size[1]),
+						size: size,
+						align: align || Vec2.center
+					});
+				}
+			}
+		}
+	}
+	this.ready = true;
+	return true;
+};
 
-require.define("/lib/core/color.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Color, typedArray;\n\nrequire('./math');\n\ntypedArray = Math.TypedArray;\n\nColor = function(fromOrR, g, b, a) {\n  var _ref;\n  if (g != null) {\n    return new typedArray([fromOrR, g, b, a != null ? a : 1]);\n  }\n  if (fromOrR != null) {\n    return new typedArray([fromOrR[0], fromOrR[1], fromOrR[2], (_ref = fromOrR[3]) != null ? _ref : 1]);\n  }\n  return new typedArray(Color.black);\n};\n\nColor.white = Color(255, 255, 255);\n\nColor.black = Color(0, 0, 0);\n\nColor.cache = [Color(), Color(), Color(), Color()];\n\nColor.set = function(result, r, g, b, a) {\n  result[0] = r || 0;\n  result[1] = g || 0;\n  result[2] = b || 0;\n  result[3] = a || 0;\n  return result;\n};\n\nColor.copy = function(result, b) {\n  result[0] = b[0];\n  result[1] = b[1];\n  result[2] = b[2];\n  result[3] = b[3];\n  return result;\n};\n\nColor.lerp = function(a, b, t, alpha, result) {\n  result || (result = a);\n  result[0] = (1 - t) * a[0] + t * b[0];\n  result[1] = (1 - t) * a[1] + t * b[1];\n  result[2] = (1 - t) * a[2] + t * b[2];\n  if (alpha > 0.05) {\n    result[3] = (1 - t) * a[3] + t * b[3];\n  } else {\n    result[3] = a[3];\n  }\n  return result;\n};\n\nColor.variant = function(a, t, result) {\n  t = Math.rand(-t, t);\n  return Color.lerp(a, (t > 0 ? Color.white : Color.black), t, false, result);\n};\n\nColor.rgba = function(a, alpha) {\n  alpha || (alpha = a[3]);\n  if (alpha > 0.98) {\n    return \"rgb(\" + (a[0] | 0) + \", \" + (a[1] | 0) + \", \" + (a[2] | 0) + \")\";\n  } else {\n    return \"rgba(\" + (a[0] | 0) + \", \" + (a[1] | 0) + \", \" + (a[2] | 0) + \", \" + alpha + \")\";\n  }\n};\n\nmodule.exports = Color;\n\n//@ sourceURL=/lib/core/color.js"
-));
+SpriteSheet.prototype.draw = function(ctx, idx) {
+	if (!this.ready && !this.prepare()) {
+		return;
+	}
+	var frame = this.frames[idx || 0];
+	frame.sprite.draw(ctx, null, frame.align, frame.size, frame.pos);
+};
 
-require.define("/lib/core/border.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Border, Component, Engine, Pool, Vec2, pos,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nVec2 = require('./math').Vec2;\n\nEngine = require('./engine');\n\nBorder = (function(_super) {\n\n  __extends(Border, _super);\n\n  function Border() {\n    Border.__super__.constructor.apply(this, arguments);\n  }\n\n  Border.prototype.type = 'border';\n\n  Border.prototype.presets = {\n    mode: 'bounce',\n    restitution: 1\n  };\n\n  Border.prototype.reset = function(presets) {\n    this.mode = presets.mode, this.restitution = presets.restitution;\n    return this;\n  };\n\n  return Border;\n\n})(Component);\n\npos = Vec2();\n\nBorder.simulate = function(dt) {\n  var border, bounce, diff, hit, horizontal, kinetic, mirror, mode, parent, radius, restitution, size, vel, vertical, viewport, _i, _len, _ref;\n  size = Engine.renderer.content;\n  viewport = Engine.renderer.pos;\n  horizontal = Vec2.set(Vec2.cache[0], viewport[0], viewport[0] + size[0]);\n  vertical = Vec2.set(Vec2.cache[1], viewport[1], viewport[1] + size[1]);\n  _ref = this.roster;\n  for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n    border = _ref[_i];\n    if (!border.enabled) {\n      continue;\n    }\n    parent = border.parent, restitution = border.restitution, mode = border.mode, kinetic = border.kinetic;\n    vel = null;\n    if (kinetic) {\n      if (!kinetic.enabled || kinetic.sleeping) {\n        continue;\n      }\n      vel = kinetic.vel;\n    }\n    mirror = mode === 'mirror';\n    bounce = mode === 'bounce' && vel;\n    Vec2.copy(pos, parent.transform.pos);\n    radius = parent.bounds.radius;\n    if (mirror) {\n      radius *= -1;\n    }\n    hit = 0;\n    if ((diff = pos[0] - radius - horizontal[0]) < 0) {\n      if (mirror) {\n        pos[0] = horizontal[1] - radius;\n      } else {\n        pos[0] -= diff;\n        if (bounce) {\n          vel[0] *= -restitution;\n        }\n      }\n      hit = -1;\n    } else {\n      diff = pos[0] + radius - horizontal[1];\n      if (diff > 0) {\n        if (mirror) {\n          pos[0] = radius;\n        } else {\n          pos[0] -= diff;\n          if (bounce) {\n            vel[0] *= -restitution;\n          }\n        }\n        hit = -1;\n      }\n    }\n    if ((diff = pos[1] - radius - vertical[0]) < 0) {\n      if (mirror) {\n        pos[1] = vertical[1] - radius;\n      } else {\n        pos[1] -= diff;\n        if (bounce) {\n          vel[1] *= -restitution;\n        }\n      }\n      hit = 1;\n    } else {\n      diff = pos[1] + radius - vertical[1];\n      if (diff > 0) {\n        if (mirror) {\n          pos[1] = radius;\n        } else {\n          pos[1] -= diff;\n          if (bounce) {\n            vel[1] *= -restitution;\n          }\n        }\n        hit = 1;\n      }\n    }\n    if (hit != null) {\n      parent.transform.setTransform(pos);\n      parent.pub('onBorder', hit);\n      if (border.mode === 'kill') {\n        parent.free();\n      }\n    }\n  }\n  return this;\n};\n\nnew Pool(Border);\n\nmodule.exports = Border;\n\n//@ sourceURL=/lib/core/border.js"
-));
 
-require.define("/lib/core/component.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Component;\n\nrequire('./math');\n\nComponent = (function() {\n\n  function Component() {}\n\n  Component.prototype.type = 'component';\n\n  Component.prototype.toString = function() {\n    return \"Component \" + this.type + \"#\" + this.uid + \" [\" + this.parent + \"]\";\n  };\n\n  Component.prototype.alloc = function(presets) {\n    var component, components, type;\n    this.parent.components[this.type] = this;\n    this.parent[this.type] = this;\n    components = this.parent.components;\n    for (type in components) {\n      if (!(type !== this.type)) {\n        continue;\n      }\n      this[type] = component = components[type];\n      component[this.type] = this;\n    }\n    if (this.reset) {\n      this.reset(presets);\n    }\n    return this;\n  };\n\n  Component.prototype.free = function() {\n    var components, type;\n    delete this.parent.components[this.type];\n    this.parent[this.type] = null;\n    components = this.parent.components;\n    for (type in components) {\n      if (!(type !== this.type)) {\n        continue;\n      }\n      this[components[type].type] = null;\n      components[type][this.type] = null;\n    }\n    this.pool.free(this);\n    return this;\n  };\n\n  Component.prototype.enable = function(state) {\n    this.enabled = state != null ? state : state = !this.state;\n    this.parent.pub('onComponent' + (state ? 'Enable' : 'Disable'), this);\n    return this;\n  };\n\n  Component.prototype.sub = function(scope, topic, method) {\n    if (scope == null) {\n      scope = this;\n    }\n    this.parent.sub(scope, topic, method);\n    return this;\n  };\n\n  return Component;\n\n})();\n\nmodule.exports = Component;\n\n//@ sourceURL=/lib/core/component.js"
-));
+function SpriteTween() {}
 
-require.define("/lib/core/composite.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Composite, Pool;\n\nPool = require('./pool');\n\nComposite = (function() {\n\n  function Composite() {\n    this.children = {};\n    this.components = {};\n  }\n\n  Composite.prototype.toString = function() {\n    return \"Composite \" + (this.name || this.type) + \"#\" + this.uid;\n  };\n\n  Composite.prototype.alloc = function(presets) {\n    var child, pool, preset, type, _i, _len;\n    if (this.parent) {\n      this.parent.children[this.uid] = this;\n    }\n    if (presets) {\n      for (type in presets) {\n        preset = presets[type];\n        switch (type) {\n          case 'children':\n            for (_i = 0, _len = preset.length; _i < _len; _i++) {\n              child = preset[_i];\n              Composite.alloc(this, child);\n            }\n            break;\n          case 'name':\n            this.name = presets[type];\n            break;\n          default:\n            if ((pool = Pool.types[type])) {\n              pool.alloc(this, preset);\n            } else {\n              throw new Error(\"Unknown preset \" + type + \", expected component. \" + this);\n            }\n        }\n      }\n    }\n    return this;\n  };\n\n  Composite.prototype.free = function() {\n    var key, ref, refSubs, _i, _len;\n    if (refSubs = this.refSubs) {\n      for (_i = 0, _len = refSubs.length; _i < _len; _i++) {\n        ref = refSubs[_i];\n        ref.unsub(this);\n      }\n    }\n    this.refSubs = this.subs = null;\n    for (key in this.components) {\n      this.components[key].free();\n    }\n    for (key in this.children) {\n      this.children[key].free();\n    }\n    if (this.parent) {\n      delete this.parent.children[this.uid];\n    }\n    this.pool.free(this);\n    return this;\n  };\n\n  Composite.prototype.enable = function(state, deep) {\n    var key;\n    this.enabled = state != null ? state : state = !this.state;\n    this.parent.pub('on' + (state ? 'Enable' : 'Disable'), this);\n    for (key in this.components) {\n      this.components[key].enable(state);\n    }\n    if (deep) {\n      for (key in this.children) {\n        this.children[key].enable(state, true);\n      }\n    }\n    return this;\n  };\n\n  Composite.prototype.sub = function(scope, topic, method) {\n    var items, refs, subs;\n    if (scope == null) {\n      scope = this;\n    }\n    subs = this.subs || (this.subs = {});\n    items = subs[topic] || (subs[topic] = []);\n    items.push(scope, method);\n    if (scope !== this) {\n      refs = scope.refSubs || (scope.refSubs = []);\n      if (!~refs.indexOf(this)) {\n        refs.push(this);\n      }\n    }\n    return this;\n  };\n\n  Composite.prototype.pub = function(topic, a0, a1, a2, a3) {\n    var i, items, scope;\n    if (this.subs && (items = this.subs[topic]) && (i = items.length)) {\n      while (scope = items[i -= 2]) {\n        scope[items[i + 1] || topic](a0, a1, a2, a3);\n      }\n    }\n    return this;\n  };\n\n  Composite.prototype.pubUp = function(topic, a0, a1, a2, a3) {\n    var comp;\n    comp = this;\n    while (comp) {\n      if (comp.pub(topic, a0, a1, a2, a3) === false) {\n        break;\n      }\n      comp = comp.parent;\n    }\n    return this;\n  };\n\n  Composite.prototype.pubAll = function(topic, a0, a1, a2, a3) {\n    return Pool.call(topic, a0, a1, a2, a3);\n  };\n\n  Composite.prototype.unsub = function(unscope, untopic) {\n    var i, items, length, scope, subs, topic;\n    if (subs = this.subs) {\n      for (topic in subs) {\n        items = subs[topic];\n        if (!((i = items.length) && (!untopic || untopic === topic))) {\n          continue;\n        }\n        length = i / 2;\n        while ((i -= 2) >= 0) {\n          if (scope = items[i]) {\n            if (unscope && scope !== unscope) {\n              continue;\n            } else {\n              items[i] = null;\n            }\n            length--;\n          }\n        }\n        if (!length) {\n          items.length = 0;\n        }\n      }\n    }\n    return this;\n  };\n\n  return Composite;\n\n})();\n\nnew Pool(Composite);\n\nComposite.Prefab = (function() {\n\n  function Prefab(presets) {\n    var key;\n    this.presets = presets;\n    for (key in presets) {\n      presets[key] = this.presets[key] || {};\n    }\n  }\n\n  Prefab.prototype.alloc = function(parent, presets) {\n    var defaults, key, subKey, subPresets, value;\n    if ((defaults = this.presets) && presets) {\n      for (key in defaults) {\n        value = defaults[key];\n        if (!(key in presets)) {\n          presets[key] = value;\n        } else {\n          subPresets = presets[key];\n          if (key === 'children') {\n            subPresets.unshift.apply(subPresets, value);\n          } else if (typeof value === 'object') {\n            for (subKey in value) {\n              if (!(subKey in subPresets)) {\n                subPresets[subKey] = value[subKey];\n              }\n            }\n          }\n          delete presets[key];\n          presets[key] = subPresets;\n        }\n      }\n    }\n    return Composite.alloc(parent, presets || defaults);\n  };\n\n  return Prefab;\n\n})();\n\nmodule.exports = Composite;\n\n//@ sourceURL=/lib/core/composite.js"
-));
+SpriteTween.prototype.attributes = {
+	asset: null,
+	speed: null,
+	sequence: null,
+	offset: 0,
+	composite: null
+};
 
-require.define("/lib/core/force.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Component, Force, Pool, Vec2, cache,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nVec2 = require('./math').Vec2;\n\ncache = Vec2();\n\nForce = (function(_super) {\n\n  __extends(Force, _super);\n\n  Force.prototype.type = 'force';\n\n  Force.prototype.presets = {\n    acc: Vec2(),\n    torque: 0\n  };\n\n  function Force() {\n    this.acc = Vec2();\n  }\n\n  Force.prototype.reset = function(presets) {\n    Vec2.copy(this.acc, presets.acc);\n    this.torque = presets.torque;\n    this.age = 0;\n    return this;\n  };\n\n  Force.prototype.add = function(acc) {\n    Vec2.add(this.acc, acc);\n    return this;\n  };\n\n  Force.prototype.simulate = function(dt) {\n    Vec2.add(this.kinetic.acc, this.acc);\n    return this;\n  };\n\n  return Force;\n\n})(Component);\n\nnew Pool(Force);\n\nmodule.exports = Force;\n\n//@ sourceURL=/lib/core/force.js"
-));
+SpriteTween.prototype.create = function(attributes) {
+	this.asset = attributes.asset;
+	this.composite = attributes.composite;
+	this.sequence = attributes.sequence;
+	this.speed = attributes.speed;
+	this.isSheet = this.asset instanceof SpriteSheet;
+	if (this.isSheet) {
+		this.frame = 0;
+		if (this.speed == null) {
+			this.speed = this.asset.defaults.speed;
+		}
+		this.dtime = attributes.offset;
+		if (!this.sequence) {
+			this.sequence = this.asset.defaultSequence;
+		}
+	}
+};
 
-require.define("/lib/core/kinetic.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Component, Force, Kinetic, Pool, Vec2, cache, copyVel,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nForce = require('./force');\n\nVec2 = require('./math').Vec2;\n\ncache = Vec2();\n\ncopyVel = Vec2();\n\nKinetic = (function(_super) {\n\n  __extends(Kinetic, _super);\n\n  Kinetic.prototype.type = 'kinetic';\n\n  Kinetic.gravity = null;\n\n  Kinetic.friction = 15;\n\n  Kinetic.drag = 0.999;\n\n  Kinetic.prototype.presets = {\n    mass: 0,\n    drag: Kinetic.drag,\n    friction: Kinetic.friction,\n    fixed: false,\n    maxVel: 75,\n    maxAcc: 2000,\n    acc: Vec2(),\n    vel: Vec2()\n  };\n\n  function Kinetic() {\n    this.vel = Vec2();\n    this.acc = Vec2();\n    this.sleepVelSq = 0.2;\n  }\n\n  Kinetic.prototype.reset = function(presets) {\n    this.mass = presets.mass, this.drag = presets.drag, this.friction = presets.friction, this.fixed = presets.fixed, this.maxVel = presets.maxVel, this.maxAcc = presets.maxAcc;\n    Vec2.copy(this.vel, presets.vel);\n    Vec2.copy(this.acc, presets.acc);\n    this.pos = this.transform.pos;\n    this.sleeping = false;\n    return this;\n  };\n\n  Kinetic.prototype.applyImpulse = function(acc) {\n    Vec2.add(this.acc, Vec2.scal(acc, 1 / (this.mass || 1), cache));\n    return this;\n  };\n\n  Kinetic.prototype.applyForce = function(acc) {\n    if (!this.force) {\n      Force.alloc(this);\n    }\n    this.force.add(acc);\n    return this;\n  };\n\n  return Kinetic;\n\n})(Component);\n\nKinetic.simulate = function(dt) {\n  var acc, epsilon, kinetic, vel, _i, _len, _ref;\n  epsilon = Math.epsilon;\n  _ref = this.roster;\n  for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n    kinetic = _ref[_i];\n    if (!(kinetic.enabled && !kinetic.fixed)) {\n      continue;\n    }\n    vel = kinetic.vel;\n    acc = kinetic.acc;\n    if (kinetic.root.gravity && kinetic.mass > epsilon) {\n      Vec2.add(acc, Vec2.scal(kinetic.root.gravity, 1 / kinetic.mass, cache));\n    }\n    if (kinetic.friction) {\n      Vec2.add(acc, Vec2.scal(Vec2.norm(vel, cache), -kinetic.friction));\n    }\n    if (kinetic.maxAcc) {\n      Vec2.limit(acc, kinetic.maxAcc);\n    }\n    Vec2.copy(copyVel, vel);\n    Vec2.add(vel, Vec2.scal(acc, dt, cache));\n    if (kinetic.maxVel) {\n      Vec2.limit(vel, kinetic.maxVel);\n    }\n    Vec2.scal(Vec2.add(copyVel, vel), dt / 2);\n    Vec2.add(kinetic.pos, copyVel);\n    Vec2.add(vel, Vec2.scal(acc, dt));\n    if (kinetic.drag < 1) {\n      Vec2.scal(vel, kinetic.drag);\n    }\n    if (kinetic.sleepVelSq) {\n      if (Vec2.lenSq(vel) <= kinetic.sleepVelSq) {\n        if (!kinetic.sleeping) {\n          Vec2.set(vel);\n          kinetic.sleeping = true;\n          kinetic.parent.pubUp('onKineticSleep', kinetic);\n        }\n      } else {\n        if (kinetic.sleeping) {\n          kinetic.sleeping = false;\n          kinetic.parent.pubUp('onKineticWake', kinetic);\n        }\n      }\n    }\n    Vec2.set(acc);\n  }\n  return this;\n};\n\nnew Pool(Kinetic);\n\nmodule.exports = Kinetic;\n\n//@ sourceURL=/lib/core/kinetic.js"
-));
+SpriteTween.prototype.preRender = function(dt) {
+	if (this.isSheet && !this.paused) {
+		var dtime = (this.dtime += dt);
+		if (this.sequence) {
+			var sequence = this.asset.sequences[this.sequence];
+			var speed = sequence.speed;
+			var frames = sequence.frames;
+			var frameCount = frames.length;
+			if (dtime >= frameCount * speed) {
+				this.entity.pub('onSequenceEnd');
+				if (sequence.next) {
+					if (sequence.next !== this.sequence) {
+						return this.goto(sequence.next);
+					}
+				} else {
+					this.pause();
+					return this;
+				}
+				dtime = dtime % (frameCount * speed);
+			}
+			this.frame = frames[dtime / speed | 0];
+		} else {
+			var frames = this.asset.frames;
+			var frameCount = frames.length;
+			var speed = this.speed;
+			var dtime = dtime % (frameCount * speed);
+			var frame = dtime / speed | 0;
+			if (frame < this.frame) {
+				this.entity.pub('onSequenceEnd');
+			}
+			this.frame = dtime / speed | 0;
+		}
+	}
+};
 
-require.define("/lib/core/particle.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Color, Component, Composite, Engine, Kinetic, Particle, Pool, Sprite, Transform, Vec2, crop, cropOffset, offset,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComposite = require('./composite');\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nEngine = require('./engine');\n\nVec2 = require('./math').Vec2;\n\nColor = require('./color');\n\nTransform = require('./transform');\n\nKinetic = require('./kinetic');\n\nSprite = require('./sprite').Asset;\n\nParticle = (function(_super) {\n\n  __extends(Particle, _super);\n\n  Particle.prototype.type = 'particle';\n\n  Particle.layer = 10;\n\n  Particle.prototype.presets = {\n    color: Color.black,\n    colorVariant: 0.5,\n    lifetime: 1,\n    radius: 1,\n    alpha: 1,\n    composite: null,\n    sprite: Particle.sprite,\n    shrink: Math.quintIn,\n    fade: Math.quintIn,\n    sprite: null\n  };\n\n  function Particle() {\n    this.color = Color();\n  }\n\n  Particle.prototype.reset = function(presets) {\n    this.lifetime = presets.lifetime, this.radius = presets.radius, this.alpha = presets.alpha, this.composite = presets.composite, this.sprite = presets.sprite, this.shrink = presets.shrink, this.fade = presets.fade, this.colorVariant = presets.colorVariant, this.sprite = presets.sprite;\n    Color.copy(this.color, presets.color);\n    Color.variant(this.color, this.colorVariant);\n    this.age = 0;\n    return this;\n  };\n\n  Particle.prototype.update = function(dt) {\n    if ((this.age += dt) > this.lifetime) {\n      this.parent.free();\n    }\n    if (this.shrink) {\n      if (!(this.radius *= 1 - this.shrink(this.age / this.lifetime)) | 0) {\n        this.parent.free();\n      }\n    }\n    return this;\n  };\n\n  return Particle;\n\n})(Component);\n\nParticle.defaultComposite = null;\n\ncrop = Vec2();\n\ncropOffset = Vec2();\n\noffset = Vec2();\n\nParticle.render = function(ctx) {\n  var alpha, alphaPrev, composite, compositePrev, defaultComposite, particle, pos, radius, _i, _len, _ref;\n  ctx.save();\n  Vec2.set(crop, 50, 50);\n  Vec2.set(cropOffset, -25, -25);\n  alphaPrev = 1;\n  compositePrev = null;\n  defaultComposite = Particle.defaultComposite;\n  _ref = this.roster;\n  for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n    particle = _ref[_i];\n    if (!particle.enabled) {\n      continue;\n    }\n    radius = particle.radius;\n    pos = particle.transform.pos;\n    alpha = particle.alpha;\n    if (particle.fade) {\n      alpha -= particle.fade(particle.age / particle.lifetime);\n    }\n    composite = particle.composite || defaultComposite;\n    if (composite !== compositePrev) {\n      ctx.globalCompositeOperation = compositePrev = composite;\n    }\n    if (particle.sprite) {\n      Vec2.set(offset, 0, 50 * (radius - 1 | 0));\n      if (alpha !== alphaPrev) {\n        ctx.globalAlpha = alphaPrev = alpha;\n      }\n      particle.sprite.draw(ctx, pos, Vec2.center, crop, offset);\n    } else {\n      particle.color[3] = alpha;\n      ctx.fillStyle = Color.rgba(particle.color);\n      ctx.fillRect(pos[0] - radius / 2 | 0, pos[1] - radius / 2 | 0, radius | 0, radius | 0);\n    }\n  }\n  ctx.restore();\n  return this;\n};\n\nParticle.generateSprite = function(color, alpha, max) {\n  var size;\n  if (color == null) {\n    color = Color.white;\n  }\n  if (alpha == null) {\n    alpha = 1;\n  }\n  if (max == null) {\n    max = 25;\n  }\n  color = Color(color);\n  size = max * 2;\n  return new Sprite(function(ctx) {\n    var grad, radius, top, _i, _results;\n    _results = [];\n    for (radius = _i = 1; _i <= max; radius = _i += 1) {\n      top = max + size * (radius - 1);\n      grad = ctx.createRadialGradient(max, top, 0, max, top, radius);\n      color[3] = alpha;\n      grad.addColorStop(0, Color.rgba(color));\n      color[3] = 0;\n      grad.addColorStop(1, Color.rgba(color));\n      ctx.fillStyle = grad;\n      ctx.beginPath();\n      ctx.arc(max, top, radius, 0, Math.TAU, true);\n      ctx.closePath();\n      _results.push(ctx.fill());\n    }\n    return _results;\n  }, Vec2(size, size * max));\n};\n\nParticle.sprite = Particle.generateSprite();\n\nParticle.Prefab = new Composite.Prefab({\n  transform: null,\n  kinetic: {\n    mass: 0\n  },\n  particle: null\n});\n\nnew Pool(Particle);\n\nmodule.exports = Particle;\n\n//@ sourceURL=/lib/core/particle.js"
-));
+SpriteTween.prototype.render = function(ctx) {
+	ctx.save();
+	this.transform.applyMatrix(ctx);
+	if (this.composite) {
+		ctx.globalCompositeOperation = this.composite;
+	}
+	this.asset.draw(ctx, this.frame);
+	ctx.restore();
+};
 
-require.define("/lib/core/transform.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Component, Pool, Transform, Vec2,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nVec2 = require('./math').Vec2;\n\nTransform = (function(_super) {\n\n  __extends(Transform, _super);\n\n  Transform.prototype.type = 'transform';\n\n  Transform.prototype.presets = {\n    pos: Vec2(),\n    angle: 0\n  };\n\n  function Transform() {\n    this.pos = Vec2();\n  }\n\n  Transform.prototype.reset = function(presets) {\n    Vec2.copy(this.pos, presets.pos);\n    this.worldAngle = this.angle = presets.angle;\n    return this;\n  };\n\n  Transform.prototype.setTransform = function(pos, angle, silent) {\n    if (pos != null) {\n      Vec2.copy(this.pos, pos);\n    }\n    if (angle != null) {\n      this.angle = angle;\n    }\n    this.dirty = true;\n    if (!silent) {\n      this.parent.pub('onTransform', this.pos, this.angle);\n    }\n    return this;\n  };\n\n  Transform.prototype.toWorld = function() {\n    this.worldPos.copy(this.pos);\n    this.worldAngle = this.angle;\n    return this;\n  };\n\n  Transform.prototype.applyMatrix = function(ctx) {\n    ctx.translate(this.pos[0] | 0, this.pos[1] | 0);\n    if (this.angle) {\n      ctx.rotate(this.angle);\n    }\n    return this;\n  };\n\n  return Transform;\n\n})(Component);\n\nnew Pool(Transform);\n\nmodule.exports = Transform;\n\n//@ sourceURL=/lib/core/transform.js"
-));
+SpriteTween.prototype.pause = function() {
+	this.paused = true;
+	return this;
+};
 
-require.define("/lib/core/input.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Component, Engine, Input, Pool, Vec2, pool,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nVec2 = require('./math').Vec2;\n\nEngine = require('./engine');\n\nInput = (function(_super) {\n\n  __extends(Input, _super);\n\n  Input.prototype.type = 'input';\n\n  Input.prototype.support = {\n    touch: 'ontouchstart' in window,\n    orientation: 'ondeviceorientation' in window\n  };\n\n  function Input() {\n    var code, key, type, _ref;\n    this.queue = [];\n    this.locks = {};\n    this.pos = Vec2();\n    this.prevPos = Vec2();\n    this.touchState = null;\n    this.axis = Vec2();\n    this.mouseAxis = Vec2();\n    this.orientation = Vec2();\n    this.prevOrientation = Vec2();\n    this.baseOrientation = Vec2();\n    this.map = {\n      32: 'space',\n      192: 'debug',\n      38: 'up',\n      39: 'right',\n      40: 'bottom',\n      37: 'left'\n    };\n    this.axisMap = {\n      left: Vec2(0, -1),\n      right: Vec2(0, 1),\n      up: Vec2(1, -1),\n      bottom: Vec2(1, 1)\n    };\n    this.keyNames = [];\n    this.keys = {};\n    _ref = this.map;\n    for (code in _ref) {\n      key = _ref[code];\n      if (!~this.keyNames.indexOf(key)) {\n        this.keyNames.push(key);\n        this.keys[key] = null;\n      }\n    }\n    this.throttled = {\n      mousemove: true,\n      deviceorientation: true\n    };\n    this.lastEvent = null;\n    this.events = this.support.touch ? {\n      touchstart: 'startTouch',\n      touchmove: 'moveTouch',\n      touchend: 'endTouch',\n      touchcancel: 'endTouch'\n    } : {\n      mousedown: 'startTouch',\n      mousemove: 'moveTouch',\n      mouseup: 'endTouch',\n      keydown: 'keyStart',\n      keyup: 'keyEnd'\n    };\n    for (type in this.events) {\n      window.addEventListener(type, this, false);\n    }\n  }\n\n  Input.prototype.handleEvent = function(event) {\n    var type;\n    if (event.metaKey) {\n      return;\n    }\n    event.preventDefault();\n    type = event.type;\n    if (this.throttled[type] && this.lastEvent === type) {\n      this.queue[this.queue.length - 1] = event;\n    } else {\n      this.lastEvent = type;\n      this.queue.push(event);\n    }\n    return this;\n  };\n\n  Input.prototype.keyStart = function(event) {\n    var axis, key;\n    if ((key = this.map[event.keyCode]) && !this.keys[key]) {\n      if (!this.lock('key-' + key)) {\n        return false;\n      }\n      this.keys[key] = 'began';\n      if ((axis = this.axisMap[key])) {\n        this.axis[axis[0]] += axis[1];\n      }\n      Engine.pub('onKeyBegan', key);\n    }\n    return this;\n  };\n\n  Input.prototype.keyEnd = function(event) {\n    var axis, key;\n    if (key = this.map[event.keyCode]) {\n      if (!this.lock('key-' + key)) {\n        return false;\n      }\n      this.keys[key] = 'ended';\n      if ((axis = this.axisMap[key])) {\n        this.axis[axis[0]] -= axis[1];\n      }\n      Engine.pub('onKeyEnded', key);\n    }\n    return this;\n  };\n\n  Input.prototype.startTouch = function(event) {\n    if (!this.lock('touch')) {\n      return false;\n    }\n    this.resolve(event);\n    if (!this.touchState && !event.metaKey) {\n      this.touchState = 'began';\n      Engine.pub('onTouchBegan');\n    }\n    return this;\n  };\n\n  Input.prototype.moveTouch = function(event) {\n    var state;\n    state = this.touchState;\n    if ((state === 'began' || state === 'ended') && !this.lock('touch')) {\n      return false;\n    }\n    this.resolve(event);\n    if (state && state !== 'ended' && state !== 'moved') {\n      this.touchState = 'moved';\n    }\n    return this;\n  };\n\n  Input.prototype.endTouch = function(event) {\n    if (!this.lock('touch')) {\n      return false;\n    }\n    this.resolve(event);\n    if (this.touchState && (!this.support.touch || !event.targetTouches.length)) {\n      Engine.pub('onTouchEnded');\n      this.touchState = 'ended';\n    }\n    return this;\n  };\n\n  Input.prototype.calibrateOrientation = function() {\n    this.baseOrientationTime = this.orientationTime;\n    Vec2.copy(this.baseOrientation, this.orientation);\n    Vec2.set(this.orientation);\n    return this;\n  };\n\n  Input.prototype.deviceOrientation = function(event) {\n    Vec2.copy(this.prevOrientation, this.orientation);\n    Vec2.sub(Vec2.set(this.orientation, event.gamma | 0, event.beta | 0), this.baseOrientation);\n    this.orientationTime = event.timeStamp / 1000;\n    if (!this.baseOrientationTime) {\n      this.calibrateOrientation();\n    }\n    return this;\n  };\n\n  Input.prototype.resolve = function(event) {\n    var coords, renderer;\n    coords = this.support.touch ? event.targetTouches[0] : event;\n    if (coords) {\n      this.prevTime = this.time;\n      this.time = event.timeStamp / 1000;\n      Vec2.copy(this.prevPos, this.pos);\n      renderer = Engine.renderer;\n      Vec2.set(this.pos, (coords.pageX - renderer.margin[0]) / renderer.scale | 0, (coords.pageY - renderer.margin[1]) / renderer.scale | 0);\n    }\n    return this;\n  };\n\n  Input.prototype.lock = function(key) {\n    if (this.locks[key] === this.frame) {\n      console.log('LOCKED: ' + key);\n      return false;\n    }\n    this.locks[key] = this.frame;\n    return true;\n  };\n\n  Input.prototype.lateUpdate = function(dt, scene) {\n    var event, key, keys, queue, type, _i, _len, _ref;\n    switch (this.touchState) {\n      case 'began':\n        this.touchState = 'stationary';\n        break;\n      case 'ended':\n        this.touchState = null;\n        break;\n    }\n    keys = this.keys;\n    _ref = this.keyNames;\n    for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n      key = _ref[_i];\n      switch (keys[key]) {\n        case 'began':\n          keys[key] = 'pressed';\n          break;\n        case 'ended':\n          keys[key] = null;\n          break;\n      }\n    }\n    this.frame = Engine.frame;\n    queue = this.queue;\n    while ((event = queue[0])) {\n      type = event.type;\n      if (!this[this.events[type]](event)) {\n        break;\n      }\n      queue.shift();\n    }\n    if (!queue.length) {\n      this.lastEvent = null;\n    }\n    return this;\n  };\n\n  return Input;\n\n})(Component);\n\npool = new Pool(Input);\n\nmodule.exports = Input;\n\n//@ sourceURL=/lib/core/input.js"
-));
+SpriteTween.prototype.play = function() {
+	this.paused = false;
+	return this;
+};
 
-require.define("/lib/core/sprite.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Component, Pool, SpriteAsset, SpriteSheet, SpriteTween, Vec2,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nVec2 = require('./math').Vec2;\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nSpriteAsset = (function() {\n\n  function SpriteAsset(srcOrRepaint, size, baseScale) {\n    var img,\n      _this = this;\n    this.baseScale = baseScale != null ? baseScale : 1;\n    this.size = Vec2(size);\n    this.bufferSize = Vec2(size);\n    this.defaultAlign = Vec2.center;\n    this.defaultOffset = Vec2();\n    this.defaultScale = Vec2(1, 1);\n    this.buffer = document.createElement('canvas');\n    this.bufferCtx = this.buffer.getContext('2d');\n    this.scale = 1;\n    switch (typeof srcOrRepaint) {\n      case 'string':\n        this.src = srcOrRepaint;\n        this.img = img = new Image();\n        img.onload = function() {\n          if (!img.onload) {\n            return;\n          }\n          img.onload = null;\n          Vec2.set(_this.size, img.width, img.height);\n          return _this.refresh();\n        };\n        img.src = srcOrRepaint;\n        if (img.onload && img.width && img.height) {\n          img.onload();\n        }\n        break;\n      case 'function':\n        this.repaint = srcOrRepaint;\n        this.refresh();\n        break;\n    }\n  }\n\n  SpriteAsset.prototype.toString = function() {\n    return \"SpriteAsset \" + (Vec2.toString(this.size)) + \" \" + (Vec2.toString(this.bufferSize)) + \"x\\n\" + (this.src || this.repaint) + \"\\n\" + (this.buffer.toDataURL());\n  };\n\n  SpriteAsset.prototype.draw = function(ctx, toPos, align, size, fromPos, scale) {\n    if (toPos == null) {\n      toPos = Vec2.zero;\n    }\n    if (align == null) {\n      align = this.defaultAlign;\n    }\n    if (size == null) {\n      size = this.bufferSize;\n    }\n    if (fromPos == null) {\n      fromPos = this.defaultOffset;\n    }\n    if (scale == null) {\n      scale = this.defaultScale;\n    }\n    if (this.ready) {\n      ctx.drawImage(this.buffer, fromPos[0] | 0, fromPos[1] | 0, size[0], size[1], toPos[0] - size[0] / 2 * (align[0] + 1) | 0, toPos[1] - size[1] / 2 * (align[1] + 1) | 0, size[0] * scale[0], size[1] * scale[1]);\n    }\n    return this;\n  };\n\n  SpriteAsset.prototype.repaint = function() {\n    var size;\n    size = this.size;\n    this.buffer.width = size[0];\n    this.buffer.height = size[1];\n    this.bufferCtx.drawImage(this.img, 0, 0, size[0], size[1]);\n    this.sample();\n    return this;\n  };\n\n  SpriteAsset.prototype.sample = function() {\n    var bufferCtx, data, i, scale, size, x, y, _i, _j, _ref, _ref1;\n    scale = this.scale, size = this.size, bufferCtx = this.bufferCtx;\n    data = bufferCtx.getImageData(0, 0, size[0], size[1]).data;\n    this.buffer.width = this.bufferSize[0];\n    this.buffer.height = this.bufferSize[1];\n    for (x = _i = 0, _ref = size[0]; _i <= _ref; x = _i += 1) {\n      for (y = _j = 0, _ref1 = size[1]; _j <= _ref1; y = _j += 1) {\n        i = (y * size[0] + x) * 4;\n        bufferCtx.fillStyle = \"rgba(\" + data[i] + \", \" + data[i + 1] + \", \" + data[i + 2] + \", \" + (data[i + 3] / 255) + \")\";\n        bufferCtx.fillRect(x * scale, y * scale, scale, scale);\n      }\n    }\n    return this;\n  };\n\n  SpriteAsset.prototype.refresh = function(scale) {\n    scale = (scale || 1) * this.baseScale;\n    if (!this.ready || this.scale !== scale) {\n      this.scale = scale;\n      this.buffer.width = this.bufferSize[0] = this.size[0] * scale | 0;\n      this.buffer.height = this.bufferSize[1] = this.size[1] * scale | 0;\n      Vec2.scal(this.bufferSize, -0.5, this.defaultOffset);\n      this.repaint(this.bufferCtx, scale);\n      this.ready = true;\n    }\n    return this;\n  };\n\n  return SpriteAsset;\n\n})();\n\nSpriteSheet = (function() {\n\n  function SpriteSheet(presets) {\n    var frame, id, sequences, sprites, _base, _base1, _base2, _i, _len, _ref, _ref1, _ref2, _ref3;\n    sprites = presets.sprites || [];\n    this.sprites = Array.isArray(sprites) ? sprites : [sprites];\n    this.frames = [];\n    if (Array.isArray(presets.frames)) {\n      _ref = presets.frames;\n      for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n        frame = _ref[_i];\n        this.frames.push(frame);\n      }\n    }\n    this.defaults = {};\n    if ((_ref1 = (_base = this.defaults).speed) == null) {\n      _base.speed = presets.speed || 0.2;\n    }\n    if ((_ref2 = (_base1 = this.defaults).size) == null) {\n      _base1.size = presets.size || Vec2(1, 1);\n    }\n    if ((_ref3 = (_base2 = this.defaults).align) == null) {\n      _base2.align = presets.align || Vec2.center;\n    }\n    this.sequences = {};\n    sequences = presets.sequences || {};\n    for (id in sequences) {\n      this.addSequence(id, sequences[id]);\n    }\n  }\n\n  SpriteSheet.prototype.addSequence = function(id, sequence) {\n    var frame, frames, _i, _ref, _ref1;\n    if (Array.isArray(sequence)) {\n      frames = [];\n      for (frame = _i = _ref = sequence[0], _ref1 = sequence[1]; _i <= _ref1; frame = _i += 1) {\n        frames.push(frame);\n      }\n      sequence = {\n        frames: frames,\n        next: sequence[2] || null,\n        speed: sequence[3] || this.defaults.speed,\n        name: id,\n        sprite: sequence[4] || 0\n      };\n    }\n    if (sequence.next === true) {\n      sequence.next = id;\n    }\n    if (!sequence.speed) {\n      sequence.speed = this.defaults.speed;\n    }\n    this.sequences[id] = sequence;\n    if (!this.defaultSequence) {\n      this.defaultSequence = id;\n    }\n    return this;\n  };\n\n  SpriteSheet.prototype.prepare = function() {\n    var align, cols, rows, size, sprite, sprites, x, y, _i, _j, _k, _l, _len, _len1, _ref, _ref1, _ref2;\n    sprites = this.sprites;\n    for (_i = 0, _len = sprites.length; _i < _len; _i++) {\n      sprite = sprites[_i];\n      if (!sprite.ready) {\n        return false;\n      }\n    }\n    if (!this.frames.length) {\n      _ref = this.defaults, size = _ref.size, align = _ref.align;\n      for (_j = 0, _len1 = sprites.length; _j < _len1; _j++) {\n        sprite = sprites[_j];\n        cols = sprite.size[0] / size[0] | 0;\n        rows = sprite.size[1] / size[1] | 0;\n        for (y = _k = 0, _ref1 = rows - 1; _k <= _ref1; y = _k += 1) {\n          for (x = _l = 0, _ref2 = cols - 1; _l <= _ref2; x = _l += 1) {\n            this.frames.push({\n              sprite: sprite,\n              pos: Vec2(x * size[0], y * size[1]),\n              size: size,\n              align: align || Vec2.center\n            });\n          }\n        }\n      }\n    }\n    this.ready = true;\n    return this;\n  };\n\n  SpriteSheet.prototype.draw = function(ctx, frame) {\n    if (!this.ready && !this.prepare()) {\n      return this;\n    }\n    frame = this.frames[frame || 0];\n    frame.sprite.draw(ctx, null, frame.align, frame.size, frame.pos);\n    return this;\n  };\n\n  return SpriteSheet;\n\n})();\n\nSpriteTween = (function(_super) {\n\n  __extends(SpriteTween, _super);\n\n  function SpriteTween() {\n    SpriteTween.__super__.constructor.apply(this, arguments);\n  }\n\n  SpriteTween.prototype.type = 'spriteTween';\n\n  SpriteTween.prototype.presets = {\n    asset: null,\n    speed: null,\n    sequence: null,\n    offset: 0,\n    composite: null\n  };\n\n  SpriteTween.prototype.reset = function(presets) {\n    var _ref;\n    this.asset = presets.asset, this.composite = presets.composite;\n    this.isSheet = this.asset instanceof SpriteSheet;\n    if (this.isSheet) {\n      this.frame = 0;\n      this.sequence = presets.sequence, this.speed = presets.speed;\n      if ((_ref = this.speed) == null) {\n        this.speed = this.asset.defaults.speed;\n      }\n      this.dtime = presets.offset;\n      if (!this.sequence) {\n        this.sequence = this.asset.defaultSequence;\n      }\n    }\n    return this;\n  };\n\n  SpriteTween.prototype.lateUpdate = function(dt) {\n    var dtime, frame, frameCount, frames, sequence, speed;\n    if (this.isSheet && !this.paused) {\n      dtime = (this.dtime += dt);\n      if (this.sequence) {\n        sequence = this.asset.sequences[this.sequence];\n        speed = sequence.speed;\n        frames = sequence.frames;\n        frameCount = frames.length;\n        if (dtime >= frameCount * speed) {\n          this.parent.pub('onSequenceEnd');\n          if (sequence.next) {\n            if (sequence.next !== this.sequence) {\n              return this.goto(sequence.next);\n            }\n          } else {\n            this.pause();\n            return this;\n          }\n          dtime = dtime % (frameCount * speed);\n        }\n        this.frame = frames[dtime / speed | 0];\n      } else {\n        frames = this.asset.frames;\n        frameCount = frames.length;\n        speed = this.speed;\n        dtime = dtime % (frameCount * speed);\n        frame = dtime / speed | 0;\n        if (frame < this.frame) {\n          this.parent.pub('onSequenceEnd');\n        }\n        this.frame = dtime / speed | 0;\n      }\n    }\n    return this;\n  };\n\n  SpriteTween.prototype.render = function(ctx, dt) {\n    ctx.save();\n    this.transform.applyMatrix(ctx);\n    if (this.composite) {\n      ctx.globalCompositeOperation = this.composite;\n    }\n    this.asset.draw(ctx, this.frame);\n    ctx.restore();\n    return this;\n  };\n\n  SpriteTween.prototype.pause = function() {\n    this.paused = true;\n    return this;\n  };\n\n  SpriteTween.prototype.play = function() {\n    this.paused = false;\n    return this;\n  };\n\n  SpriteTween.prototype.goto = function(id) {\n    if (isNaN(id)) {\n      if (this.sequence !== id) {\n        this.dtime = 0;\n        this.sequence = id;\n      }\n    } else {\n      this.sequence = null;\n      this.frameIndex = id;\n    }\n    return this;\n  };\n\n  return SpriteTween;\n\n})(Component);\n\nnew Pool(SpriteTween);\n\nmodule.exports.Asset = SpriteAsset;\n\nmodule.exports.Tween = SpriteTween;\n\nmodule.exports.Sheet = SpriteSheet;\n\n//@ sourceURL=/lib/core/sprite.js"
-));
+SpriteTween.prototype.goto = function(id) {
+	if (isNaN(id)) {
+		if (this.sequence !== id) {
+			this.dtime = 0;
+			this.sequence = id;
+			if (this.paused) {
+				this.paused = false;
+				this.preRender(0);
+				this.paused = true;
+			}
+		}
+	} else {
+		this.sequence = null;
+		this.frameIndex = id;
+	}
+	return this;
+};
 
-require.define("/lib/core/boid.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Boid, Component, Kinetic, Pool, Vec2,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComponent = require('./component');\n\nPool = require('./pool');\n\nVec2 = require('./math').Vec2;\n\nKinetic = require('./kinetic');\n\nBoid = (function(_super) {\n\n  __extends(Boid, _super);\n\n  Boid.prototype.type = 'boid';\n\n  Boid.prototype.presets = {\n    perception: 100\n  };\n\n  function Boid() {\n    this.mod = 1;\n    this.cohesionMod = 0.5;\n    this.avoidanceMod = 2;\n    this.imitationMod = 1;\n  }\n\n  Boid.prototype.reset = function(presets) {\n    this.perception = presets.perception;\n    this.aura = presets.auroa || this.bounds.radius * 1.5;\n    this.perceptionSq = this.perception * this.perception;\n    this.auraSq = this.aura * this.aura;\n    return this;\n  };\n\n  return Boid;\n\n})(Component);\n\nBoid.fixedUpdate = function(dt) {\n  var acc, avoidance, avoidanceCount, boid1, boid2, boids, cohesion, cohesionCount, diffSq, i, imitation, imitationCount, j, len, limit, mod, parent1, parent2, pos1, pos2, stretch, vel;\n  cohesion = Vec2.cache[0];\n  avoidance = Vec2.cache[1];\n  imitation = Vec2.cache[2];\n  stretch = Vec2.cache[3];\n  acc = Vec2.cache[4];\n  limit = Kinetic.maxAcc / 3;\n  boids = this.roster;\n  i = len = boids.length;\n  while (i--) {\n    boid1 = boids[i];\n    if (!boid1.enabled) {\n      continue;\n    }\n    avoidanceCount = imitationCount = cohesionCount = 0;\n    parent1 = boid1.parent;\n    pos1 = parent1.transform.pos;\n    vel = parent1.kinetic.vel;\n    Vec2.set(acc);\n    j = len;\n    while (j--) {\n      boid2 = boids[j];\n      if (!boid2.enabled || boid1 === boid2) {\n        continue;\n      }\n      parent2 = boid2.parent;\n      pos2 = parent2.transform.pos;\n      diffSq = Vec2.distSq(pos1, pos2);\n      if (diffSq < boid1.perceptionSq) {\n        Vec2.sub(pos2, pos1, stretch);\n        Vec2.scal(stretch, Math.sqrt(parent1.kinetic.mass / parent2.kinetic.mass));\n        if (!cohesionCount++) {\n          Vec2.copy(cohesion, stretch);\n        } else {\n          Vec2.add(cohesion, stretch);\n        }\n        if (!imitationCount++) {\n          Vec2.copy(imitation, parent2.kinetic.vel);\n        } else {\n          Vec2.add(imitation, parent2.kinetic.vel);\n        }\n        if (diffSq < boid1.auraSq) {\n          if (!avoidanceCount++) {\n            Vec2.copy(avoidance, stretch);\n          } else {\n            Vec2.add(avoidance, stretch);\n          }\n        }\n      }\n    }\n    mod = boid1.mod;\n    if (cohesionCount && boid1.cohesionMod) {\n      if (cohesionCount > 1) {\n        Vec2.scal(cohesion, 1 / cohesionCount);\n      }\n      Vec2.add(parent1.kinetic.acc, Vec2.scal(cohesion, boid1.cohesionMod * mod));\n    }\n    if (imitationCount && boid1.imitationMod) {\n      if (imitationCount > 1) {\n        Vec2.scal(imitation, 1 / imitationCount);\n      }\n      Vec2.add(acc, Vec2.scal(imitation, boid1.imitationMod * mod));\n      Vec2.add(parent1.kinetic.acc, Vec2.sub(acc, vel));\n    }\n    if (avoidanceCount && boid1.avoidanceMod) {\n      if (avoidanceCount > 1) {\n        Vec2.scal(avoidance, 1 / avoidanceCount);\n      }\n      Vec2.sub(parent1.kinetic.acc, Vec2.scal(avoidance, boid1.avoidanceMod * mod));\n    }\n  }\n  return this;\n};\n\nBoid.explode = function() {\n  var comp, _i, _len, _ref;\n  _ref = Boid.pool.roster;\n  for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n    comp = _ref[_i];\n    if (comp.enabled) {\n      comp.parent.explode();\n    }\n  }\n  return this;\n};\n\nnew Pool(Boid);\n\nmodule.exports = Boid;\n\n//@ sourceURL=/lib/core/boid.js"
-));
+new Component('spriteTween', SpriteTween);
 
-require.define("/lib/core/renderer.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Bounds, Composite, Renderer, Vec2,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComposite = require('./composite');\n\nBounds = require('./bounds');\n\nVec2 = require('./math').Vec2;\n\nRenderer = (function(_super) {\n\n  __extends(Renderer, _super);\n\n  function Renderer(element, client) {\n    var fullscreenChange, self;\n    this.element = element;\n    this.client = Vec2(client);\n    this.content = Vec2(client);\n    this.canvas = document.createElement('canvas');\n    this.element.appendChild(this.canvas);\n    this.ctx = this.canvas.getContext('2d');\n    this.browser = Vec2();\n    this.margin = Vec2();\n    this.pos = Vec2();\n    this.scale = 0;\n    this.orientation = 'landscape';\n    this.buffer = false;\n    this.buf = document.createElement('canvas');\n    this.bufctx = this.buf.getContext('2d');\n    this.buf.width = this.canvas.width = this.content[0];\n    this.buf.height = this.canvas.height = this.content[1];\n    this.element.style.width = this.content[0] + 'px';\n    this.element.style.height = this.content[1] + 'px';\n    window.addEventListener('resize', this, false);\n    self = this;\n    fullscreenChange = function() {\n      return self.fullscreenChange();\n    };\n    document.addEventListener('fullscreenchange', fullscreenChange(false));\n    document.addEventListener('mozfullscreenchange', fullscreenChange, false);\n    document.addEventListener('webkitfullscreenchange', fullscreenChange, false);\n    this.reflow();\n    this;\n  }\n\n  Renderer.prototype.isFullscreen = function() {\n    var doc;\n    doc = document;\n    return doc.fullscreen || doc.mozFullScreen || doc.webkitIsFullScreen;\n  };\n\n  Renderer.prototype.requestFullscreen = function() {\n    var target;\n    if (!this.isFullscreen()) {\n      target = this.element.parentNode;\n      if ('webkitRequestFullScreen' in target) {\n        target.webkitRequestFullScreen();\n      } else if ('mozRequestFullScreen' in target) {\n        target.mozRequestFullScreen();\n      }\n    }\n    return this;\n  };\n\n  Renderer.prototype.fullscreenChange = function() {\n    if (this.orientation) {\n      this.lockOrientation(this.orientation);\n    }\n    return this;\n  };\n\n  Renderer.prototype.lockOrientation = function(format) {\n    var target;\n    if (format == null) {\n      format = this.orientation;\n    }\n    target = window.screen;\n    if ('lockOrientation' in target) {\n      screen.lockOrientation(format);\n    } else if ('mozLockOrientation' in target) {\n      screen.mozLockOrientation(format);\n    }\n    return this;\n  };\n\n  Renderer.prototype.handleEvent = function() {\n    this.reflow();\n    return this;\n  };\n\n  Renderer.prototype.reflow = function() {\n    var browser, rule, scale;\n    browser = Vec2.set(this.browser, window.innerWidth, window.innerHeight);\n    scale = Math.min(this.browser[0] / this.content[0], this.browser[1] / this.content[1]);\n    if (scale !== this.scale) {\n      this.scale = scale;\n      Vec2.scal(this.content, this.scale, this.client);\n    }\n    Vec2.scal(Vec2.sub(browser, this.client, this.margin), 0.5);\n    rule = \"translate(\" + this.margin[0] + \"px, \" + this.margin[1] + \"px) scale(\" + this.scale + \")\";\n    this.element.style.transform = rule;\n    this.element.style.webkitTransform = rule;\n    return this;\n  };\n\n  Renderer.prototype.save = function() {\n    var ctx;\n    ctx = this.buffer ? this.bufctx : this.ctx;\n    ctx.clearRect(0, 0, this.content[0], this.content[1]);\n    ctx.save();\n    ctx.translate(this.pos[0] | 0, this.pos[1] | 0);\n    return ctx;\n  };\n\n  Renderer.prototype.restore = function() {\n    if (this.buffer) {\n      this.bufctx.restore();\n      this.ctx.clearRect(0, 0, this.content[0], this.content[1]);\n      this.ctx.drawImage(this.buf, 0, 0);\n    } else {\n      this.ctx.restore();\n    }\n    return this;\n  };\n\n  Renderer.prototype.center = function(pos) {\n    Vec2.set(this.pos, pos[0] - this.client[0] / 2, pos[0] - this.client[1] / 2);\n    return this;\n  };\n\n  Renderer.prototype.cull = function(entity) {\n    var bounds;\n    if (!(bounds = entity.bounds)) {\n      return false;\n    }\n    if (bounds.withinRect(this.pos, this.content)) {\n      if (bounds.culled) {\n        bounds.culled = false;\n      }\n      return false;\n    }\n    if (!bounds.culled) {\n      bounds.culled = true;\n    }\n    return true;\n  };\n\n  return Renderer;\n\n})(Composite);\n\nmodule.exports = Renderer;\n\n//@ sourceURL=/lib/core/renderer.js"
-));
+module.exports.Asset = SpriteAsset;
+module.exports.Tween = SpriteTween;
+module.exports.Sheet = SpriteSheet;
 
-require.define("/lib/core/engine.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Composite, Engine, Pool, Vec2, engine, perf, requestAnimationFrame,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nComposite = require('./composite');\n\nPool = require('./pool');\n\nVec2 = require('./math').Vec2;\n\nrequestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {\n  return setTimeout(callback, 20);\n};\n\nperf = window.performance || {};\n\nperf.now = perf.now || perf.webkitNow || perf.msNow || perf.mozNow || Date.now;\n\nEngine = (function(_super) {\n\n  __extends(Engine, _super);\n\n  function Engine() {\n    Engine.__super__.constructor.apply(this, arguments);\n  }\n\n  Engine.prototype.type = 'engine';\n\n  Engine.prototype.init = function(element) {\n    var Input,\n      _this = this;\n    this.element = element;\n    this.time = 0.0;\n    this.frame = 0;\n    this.tail = 0.0;\n    this.debug = {\n      step: false,\n      fps: false,\n      fpsLength: 0,\n      fpsSum: 0,\n      mspf: true,\n      mspfLength: 0,\n      mspfSum: 0,\n      stats: false,\n      profile: 0\n    };\n    this.fdt = 1 / 60;\n    this.dtCap = 0.5;\n    this.fdtCap = this.fdt * 5;\n    this.scale = 1;\n    this.fps = 0;\n    this.mspf = 0;\n    Input = require('./input');\n    Input.alloc(this);\n    return this.tickBound = function(now) {\n      return _this.tick(now);\n    };\n  };\n\n  Engine.prototype.play = function(scene) {\n    this.scene = scene;\n    this.input.root = this.scene;\n    if (this.debug.stats) {\n      this.startStats();\n    }\n    if (!this.running) {\n      return this.start();\n    }\n  };\n\n  Engine.prototype.start = function() {\n    this.running = true;\n    requestAnimationFrame(this.tickBound);\n    return this;\n  };\n\n  Engine.prototype.tick = function(now) {\n    var debug, dt, mspfStart;\n    now = (now && now < 1e12 ? now : perf.now()) / 1000;\n    debug = this.debug;\n    if (this.lastTime) {\n      if ((dt = now - this.lastTime) > 0.5) {\n        dt = this.fdt;\n      } else if (dt > 0.01) {\n        if (debug.fpsSum > 0.333) {\n          this.fps = debug.fpsLength / debug.fpsSum;\n          debug.fpsLength = 0;\n          debug.fpsSum = 0;\n        }\n        debug.fpsSum += dt;\n        debug.fpsLength++;\n      }\n      this.dt = (dt *= this.scale);\n      this.time += dt;\n      this.frame++;\n      if (debug._stats) {\n        debug._stats.begin();\n      }\n      if (debug.mspf) {\n        mspfStart = perf.now();\n      }\n      if (debug.profile && !debug.profileFrom) {\n        debug.profileFrom = debug.profile;\n        console.profile(\"Frame \" + debug.profileFrom);\n      }\n      this.update(dt);\n      if (debug.profileFrom) {\n        if (!--debug.profile) {\n          console.profileEnd(\"Frame \" + debug.profileFrom);\n          debug.profileFrom = 0;\n        }\n      }\n      if (debug.step) {\n        debugger;\n      }\n      if (debug.mspf) {\n        if (debug.mspfSum > 100) {\n          this.mspf = debug.mspfSum / debug.mspfLength;\n          debug.mspfLength = 0;\n          debug.mspfSum = 0;\n        }\n        debug.mspfSum += perf.now() - mspfStart;\n        debug.mspfLength++;\n      }\n      if (debug._stats) {\n        debug._stats.end();\n      }\n    } else {\n      this.time = now;\n    }\n    this.lastTime = now;\n    if (this.running) {\n      requestAnimationFrame(this.tickBound);\n    }\n    return this;\n  };\n\n  Engine.prototype.update = function(dt) {\n    var ctx, fdt, fps, mspf, tail;\n    ctx = this.renderer.save();\n    tail = Math.min(this.tail + dt, this.fdtCap * this.scale);\n    fdt = this.fdt;\n    while (tail > fdt) {\n      tail -= fdt;\n      Pool.invoke('fixedUpdate', fdt);\n      Pool.invoke('simulate', fdt);\n    }\n    this.tail = tail;\n    Pool.invoke('update', dt);\n    Pool.invoke('lateUpdate', dt);\n    Pool.invoke('render', ctx, dt);\n    if (this.debug.fps && this.fps < 55) {\n      fps = Math.round(this.fps);\n      ctx.fillStyle = 'black';\n      ctx.strokeStyle = 'white';\n      ctx.lineWidth = 2;\n      ctx.strokeText(fps, 2, 11);\n      ctx.fillText(fps, 2, 11);\n    }\n    if (this.debug.mspf) {\n      mspf = Math.round(this.mspf);\n      ctx.fillStyle = 'black';\n      ctx.strokeStyle = 'white';\n      ctx.lineWidth = 2;\n      ctx.strokeText(mspf, 2, 11);\n      ctx.fillText(mspf, 2, 11);\n    }\n    return this.renderer.restore();\n  };\n\n  Engine.prototype.startStats = function() {\n    var el, stats;\n    if (this.debug._stats || !window.Stats) {\n      return;\n    }\n    this.debug._stats = stats = new Stats();\n    el = stats.domElement;\n    el.style.position = 'absolute';\n    el.style.left = 0;\n    el.style.top = 0;\n    document.body.appendChild(el);\n    return this;\n  };\n\n  return Engine;\n\n})(Composite);\n\nengine = new Engine();\n\nif ('console' in window) {\n  window.mgame = console.m = {\n    pool: Pool.dump,\n    profile: function(frames) {\n      if (frames == null) {\n        frames = 60;\n      }\n      engine.debug.profile = frames;\n      return null;\n    },\n    step: function() {\n      engine.debug.step = !engine.debug.step;\n      return null;\n    }\n  };\n}\n\nmodule.exports = engine;\n\n//@ sourceURL=/lib/core/engine.js"
-));
+},{"./math":4,"./component":6,"./pool":7}],10:[function(require,module,exports){'use strict';
 
-require.define("/lib/core/math.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Mat, Vec2, abs, epsilon, fn, i, objCache, objVecCache, pow, powIn, radCache, random, sqrt, toInOut, toOut, transition, typedArray, _i, _len, _ref;\n\nMat = Math;\n\nsqrt = Mat.sqrt, pow = Mat.pow, abs = Mat.abs, random = Mat.random;\n\nMat.epsilon = epsilon = 0.001;\n\nMat.TypedArray = typedArray = Float64Array || Float32Array || function(arr) {\n  return arr;\n};\n\nMat.Vec2 = Vec2 = function(fromOrX, y) {\n  if (y != null) {\n    return new typedArray([fromOrX, y]);\n  }\n  if (fromOrX != null) {\n    return new typedArray(fromOrX);\n  }\n  return new typedArray(Vec2.zero);\n};\n\nVec2.zero = Vec2.center = Vec2(0, 0);\n\nVec2.cache = [Vec2(), Vec2(), Vec2(), Vec2(), Vec2()];\n\nVec2.topLeft = Vec2(-1, -1);\n\nVec2.topCenter = Vec2(0, -1);\n\nVec2.topRight = Vec2(1, -1);\n\nVec2.centerLeft = Vec2(-1, 0);\n\nVec2.centerRight = Vec2(1, 0);\n\nVec2.bottomLeft = Vec2(-1, 1);\n\nVec2.bottomCenter = Vec2(0, 1);\n\nVec2.bottomRight = Vec2(1, 1);\n\nradCache = [Vec2(), Vec2()];\n\nobjCache = {\n  x: 0,\n  y: 0\n};\n\nobjVecCache = Vec2();\n\nVec2.set = function(result, x, y) {\n  result[0] = x || 0;\n  result[1] = y || 0;\n  return result;\n};\n\nVec2.copy = function(result, b) {\n  result[0] = b[0];\n  result[1] = b[1];\n  return result;\n};\n\nVec2.valid = function(a) {\n  return !(isNaN(a[0]) || isNaN(a[1]));\n};\n\nVec2.toString = function(a) {\n  return \"[\" + a[0] + \", \" + a[1] + \"]\";\n};\n\nVec2.fromObj = function(obj, a) {\n  a || (a = objVecCache);\n  a[0] = obj.x;\n  a[1] = obj.y;\n  return a;\n};\n\nVec2.toObj = function(a, obj) {\n  obj || (obj = objCache);\n  obj.x = a[0];\n  obj.y = a[1];\n  return obj;\n};\n\nVec2.eq = function(a, b) {\n  return abs(a[0] - b[0]) < epsilon && abs(a[1] - b[1]) < epsilon;\n};\n\nVec2.add = function(a, b, result) {\n  result || (result = a);\n  result[0] = a[0] + b[0];\n  result[1] = a[1] + b[1];\n  return result;\n};\n\nVec2.sub = function(a, b, result) {\n  result || (result = a);\n  result[0] = a[0] - b[0];\n  result[1] = a[1] - b[1];\n  return result;\n};\n\nVec2.mul = function(a, b, result) {\n  result || (result = a);\n  result[0] = a[0] * b[0];\n  result[1] = a[1] * b[1];\n  return result;\n};\n\nVec2.scal = function(a, scalar, result) {\n  result || (result = a);\n  result[0] = a[0] * scalar;\n  result[1] = a[1] * scalar;\n  return result;\n};\n\nVec2.norm = function(a, result, scalar) {\n  var len, x, y;\n  result || (result = a);\n  x = a[0];\n  y = a[1];\n  len = (scalar || 1) / (sqrt(x * x + y * y) || 1);\n  result[0] = x * len;\n  result[1] = y * len;\n  return result;\n};\n\nVec2.lenSq = function(a) {\n  return a[0] * a[0] + a[1] * a[1];\n};\n\nVec2.len = function(a) {\n  return sqrt(a[0] * a[0] + a[1] * a[1]);\n};\n\nVec2.dot = function(a, b) {\n  return a[0] * b[0] + a[1] * b[1];\n};\n\nVec2.cross = function(a, b) {\n  return a[0] * b[1] - a[1] * b[0];\n};\n\nVec2.lerp = function(a, b, scalar, result) {\n  result || (result = a);\n  result[0] = a[0] + scalar * (b[0] - a[0]);\n  result[1] = a[1] + scalar * (b[1] - a[1]);\n  return result;\n};\n\nVec2.max = function(a, b, axis) {\n  if (axis != null) {\n    if (a[axis] > b[axis]) {\n      return a;\n    } else {\n      return b;\n    }\n  }\n  if (Vec2.lenSq(a) > Vec2.lenSq(b)) {\n    return a;\n  } else {\n    return b;\n  }\n};\n\nVec2.perp = function(a, result) {\n  var x;\n  result || (result = a);\n  x = a[0];\n  result[0] = a[1];\n  result[1] = -x;\n  return result;\n};\n\nVec2.dist = function(a, b) {\n  var x, y;\n  x = b[0] - a[0];\n  y = b[1] - a[1];\n  return sqrt(x * x + y * y);\n};\n\nVec2.distSq = function(a, b) {\n  var x, y;\n  x = b[0] - a[0];\n  y = b[1] - a[1];\n  return x * x + y * y;\n};\n\nVec2.limit = function(a, max, result) {\n  var ratio, x, y;\n  result || (result = a);\n  x = a[0];\n  y = a[1];\n  if ((ratio = max / sqrt(x * x + y * y)) < 1) {\n    result[0] = x * ratio;\n    result[1] = y * ratio;\n  } else if (result !== a) {\n    result[0] = x;\n    result[1] = y;\n  }\n  return result;\n};\n\nVec2.rad = function(a, b) {\n  if (!b) {\n    return Mat.atan2(a[1], a[0]);\n  }\n  return Mat.acos(Vec2.dot(Vec2.norm(a, radCache[0]), Vec2.norm(b, radCache[1])));\n};\n\nVec2.rot = function(a, theta, result) {\n  var cosA, sinA, x, y;\n  result || (result = a);\n  sinA = Mat.sin(theta);\n  cosA = Mat.cos(theta);\n  x = a[0];\n  y = a[1];\n  result[0] = x * cosA - y * sinA;\n  result[1] = x * sinA + y * cosA;\n  return result;\n};\n\nVec2.rotAxis = function(a, b, theta, result) {\n  return Vec2.add(Vec2.rot(Vec2.sub(a, b, result || a), theta), b);\n};\n\nVec2.lookAt = function(a, b, result) {\n  var len;\n  len = Vec2.len(a);\n  return Vec2.norm(Vec2.rot(a, Mat.atan2(b[0] - a[0], b[1] - a[1]) - Mat.atan2(a[1], a[0]), result || a), null, len);\n};\n\nrandom = Mat.random, pow = Mat.pow;\n\nMat.TAU = Mat.PI * 2;\n\nMat.UID = 1;\n\nMat.uid = function() {\n  return Mat.UID++;\n};\n\nMat.clamp = function(a, low, high) {\n  if (a < low) {\n    return low;\n  }\n  if (a > high) {\n    return high;\n  } else {\n    return a;\n  }\n};\n\nMat.rand = function(low, high, ease) {\n  return (ease || Mat.linear)(random()) * (high - low) + low;\n};\n\nMat.randArray = function(array) {\n  return array[random() * array.length | 0];\n};\n\nMat.chance = function(chance) {\n  return random() <= chance;\n};\n\npowIn = function(strength) {\n  if (strength == null) {\n    strength = 2;\n  }\n  return function(t) {\n    return pow(t, strength);\n  };\n};\n\ntoOut = function(fn) {\n  return function(t) {\n    return 1 - fn(1 - t);\n  };\n};\n\ntoInOut = function(fn) {\n  return function(t) {\n    return (t < 0.5 ? fn(t * 2) : 2 - fn(2 * (1 - t))) / 2;\n  };\n};\n\nMat.linear = function(t) {\n  return t;\n};\n\n_ref = ['quad', 'cubic', 'quart', 'quint'];\nfor (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {\n  transition = _ref[i];\n  Mat[transition + 'In'] = fn = powIn(i + 2);\n  Mat[transition + 'Out'] = toOut(fn);\n  Mat[transition + 'InOut'] = toInOut(fn);\n}\n\nmodule.exports.Vec2 = Vec2;\n\n//@ sourceURL=/lib/core/math.js"
-));
+var Component = require('./component');
+var Pool = require('./pool');
+var Vec2 = require('./math').Vec2;
 
-require.define("/lib/core/pool.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\nvar Pool, fn, _i, _len, _ref;\n\nrequire('./math');\n\nPool = (function() {\n  var invoke;\n\n  Pool.typedHooks = ['fixedUpdate', 'simulate', 'update', 'lateUpdate', 'render'];\n\n  Pool.regxHook = /^on[A-Z]/;\n\n  Pool.regxGetter = /^get[A-Z]/;\n\n  Pool.hooks = {};\n\n  Pool.types = {};\n\n  Pool.defaults = {};\n\n  Pool.order = {\n    render: false\n  };\n\n  Pool.prototype.toString = function() {\n    return \"Pool {@type} [\" + this.roster.length + \"]\";\n  };\n\n  function Pool(cls) {\n    var fn, key, keys, proto, types, _i, _j, _len, _len1,\n      _this = this;\n    this.cls = cls;\n    proto = cls.prototype;\n    this.type = proto.type;\n    this.isComponent = this.type && this.type !== 'composite';\n    this.light = (!this.isComponent) || proto.light || false;\n    if (this.type) {\n      Pool.types[this.type] = this;\n    }\n    proto.pool = this;\n    cls.pool = this;\n    this.roster = [];\n    this.subs = [];\n    this.hooks = [];\n    this.enabled = false;\n    this.allocd = 0;\n    this.layer = proto.layer || cls.layer || 0;\n    if (this.isComponent) {\n      if (!this.light) {\n        types = Pool.typedHooks;\n        keys = Object.keys(proto).concat(Object.keys(cls));\n        for (_i = 0, _len = keys.length; _i < _len; _i++) {\n          fn = keys[_i];\n          if (Pool.regxHook.test(fn)) {\n            if (!~types.indexOf(fn)) {\n              types.push(fn);\n              Pool.hooks[fn] = [];\n            }\n            this.subs.push(fn);\n          } else if (Pool.regxGetter.test(fn)) {\n            key = fn.substr(3, 1).toLowerCase() + fn.substr(4);\n            Pool.defineGetter(proto, key, fn);\n          }\n        }\n        for (_j = 0, _len1 = types.length; _j < _len1; _j++) {\n          fn = types[_j];\n          if (fn in cls) {\n            this[fn] = cls[fn];\n            Pool.hooks[fn].push(this);\n          } else if (fn in proto) {\n            this.hooks.push(fn);\n          }\n        }\n      }\n    }\n    cls.alloc = function(parent, presets) {\n      return _this.alloc(parent, presets);\n    };\n  }\n\n  Pool.prototype.preinstantiate = function(i) {\n    while (i--) {\n      this.instantiate();\n    }\n    return this;\n  };\n\n  Pool.prototype.instantiate = function() {\n    var cls, hook, _i, _len, _ref;\n    cls = new this.cls();\n    this.roster.push(cls);\n    _ref = this.hooks;\n    for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n      hook = _ref[_i];\n      Pool.hooks[hook].push(cls);\n    }\n    return cls;\n  };\n\n  Pool.prototype.alloc = function(parent, presets) {\n    var defaults, entity, hook, i, roster, topic, uid, _i, _j, _len, _len1, _ref, _ref1;\n    roster = this.roster;\n    i = roster.length;\n    while (i--) {\n      if (!roster[i].allocd) {\n        entity = roster[i];\n        break;\n      }\n    }\n    if (!entity) {\n      entity = this.instantiate();\n    }\n    this.allocd++;\n    this.enabled = true;\n    _ref = this.hooks;\n    for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n      hook = _ref[_i];\n      if (hook in Pool.order) {\n        Pool.order[hook] = true;\n      }\n    }\n    entity.uid = uid = Math.uid();\n    entity.enabled = true;\n    entity.allocd = true;\n    entity.parent = parent || null;\n    entity.root = parent && parent.root || parent || entity;\n    entity.layer = (parent && parent.layer || 0) + this.layer + 2 - 1 / uid;\n    if (entity.root.descendants) {\n      entity.root.descendants[uid] = entity;\n    } else {\n      entity.descendants = {};\n    }\n    if (this.isComponent) {\n      if (defaults = entity.presets) {\n        if (presets && !presets._merged) {\n          presets.__proto__ = defaults;\n          presets._merged = true;\n        }\n      }\n      _ref1 = this.subs;\n      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {\n        topic = _ref1[_j];\n        parent.sub(entity, topic);\n      }\n    }\n    entity.alloc(presets || defaults || null);\n    return entity;\n  };\n\n  Pool.prototype.free = function(entity) {\n    if (entity.root === entity) {\n      entity.descendants = null;\n    } else if (entity.root.descendants) {\n      delete entity.root.descendants[entity.uid];\n    }\n    entity.enabled = false;\n    entity.allocd = false;\n    entity.uid = null;\n    entity.root = null;\n    entity.parent = null;\n    this.enabled = this.allocd-- > 1;\n    return this;\n  };\n\n  invoke = function(fn, a0, a1, a2, a3) {\n    var entity, _i, _len, _ref;\n    _ref = this.roster;\n    for (_i = 0, _len = _ref.length; _i < _len; _i++) {\n      entity = _ref[_i];\n      if (entity.enabled) {\n        entity[fn](a0, a1, a2, a3);\n      }\n    }\n    return this;\n  };\n\n  return Pool;\n\n})();\n\n_ref = Pool.typedHooks;\nfor (_i = 0, _len = _ref.length; _i < _len; _i++) {\n  fn = _ref[_i];\n  Pool.hooks[fn] = [];\n}\n\nPool.dump = function(free) {\n  var pool, type, _ref1;\n  _ref1 = Pool.types;\n  for (type in _ref1) {\n    pool = _ref1[type];\n    console.log(\"%s: %d/%d allocd\", type, pool.allocd, pool.roster.length);\n  }\n  if (free) {\n    Pool.free();\n  }\n  return null;\n};\n\nPool.defineGetter = function(proto, key, fn) {\n  Object.defineProperty(proto, key, {\n    get: proto[fn],\n    enumerable: true,\n    configurable: true\n  });\n  return proto;\n};\n\nPool.free = function() {\n  var freed, i, pool, roster, type, _ref1;\n  _ref1 = Pool.types;\n  for (type in _ref1) {\n    pool = _ref1[type];\n    roster = pool.roster;\n    i = roster.length;\n    freed = 0;\n    while (i--) {\n      if (!(!roster[i].allocd)) {\n        continue;\n      }\n      roster.splice(i, 1);\n      freed++;\n    }\n    console.log(\"%s: %d/%d freed\", type, freed, pool.roster.length);\n  }\n  return this;\n};\n\nPool.invoke = function(fn, a0, a1, a2, a3) {\n  var i, stack;\n  if ((stack = this.hooks[fn]) && (i = stack.length)) {\n    if (fn in Pool.order && Pool.order[fn]) {\n      stack.sort(Pool.orderFn);\n      Pool.order[fn] = false;\n    }\n    while (i--) {\n      if (stack[i].enabled) {\n        stack[i][fn](a0, a1, a2, a3);\n      }\n    }\n  }\n  return this;\n};\n\nPool.orderFn = function(a, b) {\n  return b.layer - a.layer;\n};\n\nmodule.exports = Pool;\n\n//@ sourceURL=/lib/core/pool.js"
-));
+function Transform() {
+  this.pos = Vec2();
+  this.angle = 0;
+  this.alpha = 1;
+  this.dirty = false;
+}
 
-require.define("/examples/rigid-device/index.js",Function(['require','module','exports','__dirname','__filename','process','global'],"// Generated by CoffeeScript 1.5.0\n'use strict';\nvar Body, Boid, Border, Bounds, Collider, Color, Component, Composite, Engine, GameController, Kinetic, Particle, Pool, Renderer, Sprite, Transform, Vec2, apps, request, url,\n  __hasProp = {}.hasOwnProperty,\n  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };\n\nVec2 = require('../../lib/core/math').Vec2;\n\nEngine = require('../../lib/core/engine');\n\nEngine.init(document.getElementById('game-1'));\n\nRenderer = require('../../lib/core/renderer');\n\nEngine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));\n\nif ((apps = navigator.mozApps)) {\n  url = 'http://testno.de/sputflik/examples/rigid-device/manifest.webapp';\n  request = apps.getSelf();\n  request.onsuccess = function() {\n    return apps.install(url);\n  };\n  request.onerror = function() {\n    return apps.install(url);\n  };\n}\n\nComposite = require('../../lib/core/composite');\n\nComponent = require('../../lib/core/component');\n\nPool = require('../../lib/core/pool');\n\nColor = require('../../lib/core/color');\n\nSprite = require('../../lib/core/sprite');\n\nTransform = require('../../lib/core/transform');\n\nBounds = require('../../lib/core/bounds');\n\nBorder = require('../../lib/core/border');\n\nBoid = require('../../lib/core/boid');\n\nParticle = require('../../lib/core/particle');\n\nCollider = require('../../lib/core/collider');\n\nKinetic = require('../../lib/core/kinetic');\n\nGameController = (function(_super) {\n\n  __extends(GameController, _super);\n\n  function GameController() {\n    GameController.__super__.constructor.apply(this, arguments);\n  }\n\n  GameController.prototype.type = 'gameController';\n\n  GameController.prototype.reset = function() {\n    this.colors = [Color(0, 160, 176), Color(106, 74, 60), Color(204, 51, 63), Color(235, 104, 65), Color(237, 201, 81)];\n    this.root.gravity = Vec2(0, 500);\n    this.spawnBodies(25);\n    if (!Engine.input.support.orientation) {\n      Engine.debug.warn = 'No devicemotion';\n    }\n    return this;\n  };\n\n  GameController.prototype.spawnBodies = function(count) {\n    var color, radius;\n    while (count--) {\n      color = Math.floor(Math.rand(0, this.colors.length - 1));\n      radius = Math.rand(5, 15);\n      Body.Prefab.alloc(this.root, {\n        transform: {\n          pos: Vec2(Math.rand(25, 295), Math.rand(25, 295))\n        },\n        bounds: {\n          radius: radius\n        },\n        kinetic: {\n          mass: radius\n        },\n        body: {\n          color: this.colors[color]\n        }\n      });\n    }\n    return this;\n  };\n\n  GameController.prototype.update = function(dt) {\n    var input;\n    input = Engine.input;\n    if (input.support.orientation) {\n      Vec2.scal(input.orientation, 100, this.root.gravity);\n    }\n    return this;\n  };\n\n  return GameController;\n\n})(Component);\n\nnew Pool(GameController);\n\nBody = (function(_super) {\n\n  __extends(Body, _super);\n\n  Body.prototype.type = 'body';\n\n  Body.prototype.layer = 1;\n\n  Body.prototype.presets = {\n    color: Color()\n  };\n\n  function Body() {\n    this.color = Color();\n    this.stroke = Color(Color.white);\n  }\n\n  Body.prototype.reset = function(presets) {\n    this.player = presets.player;\n    Color.copy(this.color, presets.color);\n    return this;\n  };\n\n  Body.prototype.render = function(ctx) {\n    var pos;\n    ctx.save();\n    pos = this.transform.pos;\n    ctx.fillStyle = Color.rgba(this.color);\n    ctx.strokeStyle = Color.rgba(this.stroke);\n    ctx.lineWidth = 1;\n    ctx.beginPath();\n    ctx.arc(pos[0] | 0, pos[1] | 0, this.bounds.radius | 0, 0, Math.TAU);\n    ctx.stroke();\n    ctx.fill();\n    ctx.restore();\n    return this;\n  };\n\n  return Body;\n\n})(Component);\n\nnew Pool(Body);\n\nBody.Prefab = new Composite.Prefab({\n  transform: null,\n  bounds: {\n    shape: 'circle',\n    radius: 15\n  },\n  kinetic: {\n    mass: 1,\n    drag: 0.998,\n    friction: 0.1,\n    maxVel: 200\n  },\n  border: {\n    bounciness: 0.2\n  },\n  body: null\n});\n\nEngine.gameScene = Composite.alloc(null, {\n  gameController: null\n});\n\nEngine.play(Engine.gameScene);\n\n//@ sourceURL=/examples/rigid-device/index.js"
-));
-require("/examples/rigid-device/index.js");
-})();
+Transform.prototype = Object.create(Component.prototype);
+
+Transform.prototype.tag = 'transform';
+
+Transform.prototype.attributes = {
+  pos: Vec2(),
+  angle: 0,
+  alpha: 1
+};
+
+Transform.prototype.create = function(attributes) {
+  Vec2.copy(this.pos, attributes.pos);
+  this.angle = attributes.angle;
+  this.alpha = attributes.alpha;
+};
+
+Transform.prototype.setTransform = function(pos, angle, silent) {
+  if (pos != null) {
+    Vec2.copy(this.pos, pos);
+  }
+  if (angle != null) {
+    this.angle = angle;
+  }
+  this.dirty = true;
+  if (!silent) {
+    this.entity.pub('onTransform', this.pos, this.angle);
+  }
+};
+
+Transform.prototype.applyMatrix = function(ctx) {
+  /**
+   mat = Mat2.trans(Mat2.identity, @pos, @matrix)
+   ctx.transform(mat[0], mat[1], mat[2], mat[3], mat[4], mat[5])
+   if Vec2.lenSq(@pos)
+   ctx.translate(@pos[0] | 0, @pos[1] | 0)
+   if (x = @scale[0]) isnt 1 or (y = @scale[1]) isnt 1
+    ctx.scale(x, y)
+   */
+  ctx.translate(this.pos[0] | 0, this.pos[1] | 0);
+  if (this.angle) {
+    ctx.rotate(this.angle);
+  }
+};
+
+new Pool(Transform);
+
+module.exports = Transform;
+
+},{"./component":6,"./pool":7,"./math":4}],11:[function(require,module,exports){'use strict';
+
+var Component = require('./component');
+var Pool = require('./pool');
+var Color = require('./color');
+var Vec2 = require('./math').Vec2;
+
+function Bounds() {
+	this.size = Vec2();
+}
+
+Bounds.prototype = {
+
+	attributes: {
+		shape: 'rect',
+		radius: 0,
+		size: Vec2()
+	},
+
+	create: function(attributes) {
+		Vec2.copy(this.size, attributes.size);
+		this.shape = attributes.shape;
+		this.radius = attributes.radius;
+	},
+
+	getTop: function() {
+		if (this.shape === 'circle') {
+			return this.transform.pos[1] - this.radius;
+		}
+		return this.transform.pos[1];
+	},
+
+	getBottom: function() {
+		if (this.shape === 'circle') {
+			return this.transform.pos[1] + this.radius;
+		}
+		return this.transform.pos[1] + this.size[1];
+	},
+
+	/*
+	getAabb: function() {
+		if (!this.topLeft) {
+			this.topLeft = Vec2();
+			this.bottomRight = Vec2();
+		}
+		Vec2.set(
+			this.topLeft,
+			this.pos[0] + this.size[0] * 0.5 * (this.align[0] + 1),
+			this.pos[1] + this.size[1] * 0.5 * (this.align[1] + 1)
+		);
+		Vec2.set(
+			this.bottomRight,
+			this.pos[0] + this.size[0] * 0.5 * (this.align[0] + 5),
+			this.pos[1] + this.size[1] * 0.5 * (this.align[1] + 5)
+		);
+		return this.topLeft;
+	},
+	*/
+
+	intersectLine: function(a1, a2, result) {
+		var pos = this.transform.pos;
+		switch (this.shape) {
+			case 'circle':
+				return Bounds.intersectLineCirc(a1, a2, pos, this.radius, result);
+			case 'rect':
+				return false;
+		}
+		return false;
+	},
+
+	intersect: function(bound) {
+		return null;
+	},
+
+	contains: function(point) {
+		var pos = this.transform.pos;
+		switch (this.shape) {
+			case 'circle':
+				return Bounds.circPoint(pos, this.radius, point);
+			case 'rect':
+				return Bounds.rectPoint(pos, this.size, point);
+		}
+		return false;
+	},
+
+	withinRect: function(pos, size) {
+		var mypos = this.transform.pos;
+		switch (this.shape) {
+			case 'circle':
+				return Bounds.rectCirc(pos, size, mypos, this.radius);
+			case 'rect':
+				return Bounds.rectRect(pos, size, mypos, this.size);
+		}
+		return false;
+	}
+
+};
+
+// http://www.openprocessing.org/user/54
+
+Bounds.circPoint = function(center, radius, point) {
+	return Vec2.distSq(point, center) <= radius * radius;
+};
+
+Bounds.rectPoint = function(pos, size, point) {
+	return pos[0] - size[0] < point[0] && pos[1] < point[1] && pos[0] + size[0] > point[0] && pos[1] + size[1] > point[1];
+};
+
+var v = Vec2();
+var w = Vec2();
+
+/**
+ * closestLinePoint
+ *
+ * http://blog.generalrelativity.org/actionscript-30/collision-detection-circleline-segment-circlecapsule/
+ *
+ * @param  {Vec2} a     [description]
+ * @param  {Vec2} b     [description]
+ * @param  {Vec2} point [description]
+ * @param  {Vec2} result [description]
+ * @return {Vec2}       result
+ */
+Bounds.closestLinePoint = function(a, b, point, result) {
+	Vec2.sub(b, a, v);
+	Vec2.sub(point, a, w);
+	var t = Math.clamp(Vec2.dot(w, v) / Vec2.dot(v, v), 0, 1);
+	return Vec2.add(a, Vec2.scal(v, t, result));
+};
+
+var lineCircTest = Vec2();
+
+/**
+ * intersectLineCirc
+ *
+ * @param  {Vec2} a      [description]
+ * @param  {Vec2} b      [description]
+ * @param  {Vec2} center [description]
+ * @param  {number} radius [description]
+ * @param  {Vec2} result [description]
+ * @return {Vec2|bool}        [description]
+ */
+Bounds.intersectLineCirc = function(a, b, center, radius, result) {
+	Bounds.closestLinePoint(a, b, center, lineCircTest);
+	Vec2.sub(lineCircTest, center);
+	if (Vec2.dot(lineCircTest, lineCircTest) > radius * radius) {
+		return false;
+	}
+	if (!result) {
+		return true;
+	}
+	return Vec2.copy(result, lineCircTest);
+};
+
+Bounds.rectCirc = function(topLeft, size, center, radius) {
+	var circleDistanceX, circleDistanceY, cornerDistance;
+	circleDistanceX = Math.abs(center[0] - topLeft[0] - size[0] / 2);
+	circleDistanceY = Math.abs(center[1] - topLeft[1] - size[1] / 2);
+	if (circleDistanceX > (size[0] / 2 + radius) || circleDistanceY > (size[1] / 2 + radius)) {
+		return false;
+	}
+	if (circleDistanceX <= size[0] / 2 || circleDistanceY <= size[1] / 2) {
+		return true;
+	}
+	cornerDistance = Math.pow(circleDistanceX - size[0] / 2, 2) + Math.pow(circleDistanceY - size[1] / 2, 2);
+	return cornerDistance <= Math.pow(radius, 2);
+};
+
+Bounds.rectRect = function(pos, size, pos2, size2) {
+	return !(pos[0] > pos2[0] + size2[0] || pos[0] + size[0] < pos2[0] || pos[1] > pos2[1] + size2[1] || pos[1] + size[1] < pos2[1]);
+};
+
+new Component('bounds', Bounds);
+
+/**
+ * Bounds.lineRect
+ *
+ * http://www.openprocessing.org/sketch/8010
+ *
+ * @param  {[type]} point1  [description]
+ * @param  {[type]} point2  [description]
+ * @param  {[type]} topLeft [description]
+ * @param  {[type]} size    [description]
+ * @return {bool}           They intersect
+ *
+Bounds.lineRect = function(point1, point2, topLeft, size) {
+	// Calculate m and c for the equation for the line (y = mx+c)
+	m = (a1[1] - y0) / (a1[0] - x0);
+	c = y0 - (m * x0);
+
+	// if the line is going up from right to left then the top intersect point is on the left
+	if (m > 0) {
+		top_intersection = (m * l + c);
+		bottom_intersection = (m * r + c);
+	}
+	// otherwise it's on the right
+	else {
+		top_intersection = (m * r + c);
+		bottom_intersection = (m * l + c);
+	}
+
+	// work out the top and bottom extents for the triangle
+	if (y0 < a1[1]) {
+		toptrianglepoint = y0;
+		bottomtrianglepoint = a1[1];
+	} else {
+		toptrianglepoint = a1[1];
+		bottomtrianglepoint = y0;
+	}
+
+	var topoverlap: Number;
+	var botoverlap: Number;
+
+	// and calculate the overlap between those two bounds
+	topoverlap = top_intersection > toptrianglepoint ? top_intersection : toptrianglepoint;
+	botoverlap = bottom_intersection < bottomtrianglepoint ? bottom_intersection : bottomtrianglepoint;
+
+	// (topoverlap<botoverlap) :
+	// if the intersection isn't the right way up then we have no overlap
+
+	// (!((botoverlap<t) || (topoverlap>b)) :
+	// If the bottom overlap is higher than the top of the rectangle or the top overlap is
+	// lower than the bottom of the rectangle we don't have intersection. So return the negative
+	// of that. Much faster than checking each of the points is within the bounds of the rectangle.
+	return (topoverlap < botoverlap) && (!((botoverlap < t) || (topoverlap > b)));
+};
+*/
+
+/*
+Bounds.lineCirc = function(point1, point2, center, radius) {
+	var a, b, bb4ac, c, dx, dy, ia1[0], ia2[0], ia1[1], ia2[1], mu, testX, testY;
+	dx = a2[0] - a1[0];
+	dy = a2[1] - a1[1];
+	a = dx * dx + dy * dy;
+	b = 2 * (dx * (a1[0] - cx) + dy * (a1[1] - cy));
+	c = cx * cx + cy * cy;
+	c += a1[0] * a1[0] + a1[1] * a1[1];
+	c -= 2 * (cx * a1[0] + cy * a1[1]);
+	c -= cr * cr;
+	bb4ac = b * b - 4 * a * c;
+	if (bb4ac < 0) {
+		return false;
+	}
+	mu = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
+	ia1[0] = a1[0] + mu * dx;
+	ia1[1] = a1[1] + mu * dy;
+	mu = (-b - sqrt(b * b - 4 * a * c)) / (2 * a);
+	ia2[0] = a1[0] + mu * dx;
+	ia2[1] = a1[1] + mu * dy;
+	if (dist(a1[0], a1[1], cx, cy) < dist(a2[0], a2[1], cx, cy)) {
+		testX = a2[0];
+		testY = a2[1];
+	} else {
+		testX = a1[0];
+		testY = a1[1];
+	}
+	if (dist(testX, testY, ia1[0], ia1[1]) < dist(a1[0], a1[1], a2[0], a2[1]) || dist(testX, testY, ia2[0], ia2[1]) < dist(a1[0], a1[1], a2[0], a2[1])) {
+		return true;
+	}
+	return false;
+};
+*/
+
+/**
+ * Line Line intersection
+ *
+ * http://stackoverflow.com/questions/3746274/line-intersection-with-aabb-rectangle
+ * http://jsperf.com/line-intersection2/2
+ *
+ * @return {bool} Intersects
+ */
+Bounds.intersectLine = function(a1, a2, b1, b2, result) {
+	if (!result) {
+		// http://www.bryceboe.com/2006/10/23/line-segment-intersection-algorithm/comment-page-1/
+		return ccw(a1, b1, b2) != ccw(a2, b1, b2) &&
+			ccw(a1, a2, b1) != ccw(a1, a2, b2);
+	}
+
+	// http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/1968345#1968345
+	var s1_x = a2[0] - a1[0];
+	var s1_y = a2[1] - a1[1];
+	var s2_x = b2[0] - b1[0];
+	var s2_y = b2[1] - b1[1];
+
+	var s = (-s1_y * (a1[0] - b1[0]) + s1_x * (a1[1] - b1[1])) / (-s2_x * s1_y + s1_x * s2_y);
+	var t = (s2_x * (a1[1] - b1[1]) - s2_y * (a1[0] - b1[0])) / (-s2_x * s1_y + s1_x * s2_y);
+
+	// Collision detected
+	if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+		return Vec2.set(result, a1[0] + (t * s1_x), a1[1] + (t * s1_y));
+	}
+	return null;
+}
+
+function ccw(a, b, c) {
+	var cw = ((c[1] - a[1]) * (b[0] - a[0])) - ((b[1] - a[1]) * (c[0] - a[0]));
+	return (cw > 0) ? true : cw < 0 ? false : true /* colinear */
+	;
+};
+
+/**
+ * Component: Bounds.Debug
+ *
+ * Outlines the boundaries and angle of an entity.
+ */
+function BoundsDebug() {
+	this.color = Color();
+}
+
+BoundsDebug.prototype = {
+
+	attributes: {
+		color: Color.gray,
+		opacity: 0.5,
+		fill: false
+	},
+
+	create: function(attributes) {
+		this.opacity = attributes.opacity;
+		this.fill = attributes.fill;
+		Color.copy(this.color, attributes.color);
+	},
+
+	render: function(ctx) {
+		var bounds = this.bounds;
+		ctx.save();
+		if (this.fill) {
+			ctx.fillStyle = Color.rgba(this.color, this.opacity * 0.5);
+		}
+		ctx.strokeStyle = Color.rgba(this.color, this.opacity);
+		ctx.lineWidth = 1;
+		this.transform.applyMatrix(ctx);
+		if (bounds.shape === 'circle') {
+			ctx.beginPath();
+			ctx.lineTo(0, bounds.radius);
+			ctx.moveTo(0, 0);
+			ctx.arc(0, 0, bounds.radius | 0, 0, Math.TAU);
+			if (this.fill) {
+				ctx.fill();
+			}
+			ctx.stroke();
+		} else {
+			var size = bounds.size;
+			ctx.strokeRect(-size[0] / 2 | 0, -size[1] / 2 | 0, size[0] | 0, size[1] | 0);
+			if (this.fill) {
+				ctx.fillRect(-size[0] / 2 | 0, -size[1] / 2 | 0, size[0] | 0, size[1] | 0);
+			}
+		}
+		ctx.restore();
+	}
+
+};
+
+new Component('boundsDebug', BoundsDebug);
+
+Bounds.Debug = BoundsDebug;
+
+module.exports = Bounds;
+
+},{"./component":6,"./pool":7,"./color":8,"./math":4}],12:[function(require,module,exports){'use strict';
+
+var Component = require('./component');
+var Pool = require('./pool');
+var Vec2 = require('./math').Vec2;
+var Engine = require('./engine');
+
+function Border() {}
+
+Border.prototype = Object.create(Component.prototype);
+
+Border.prototype.tag = 'border';
+
+Border.prototype.attributes = {
+  mode: 'bounce',
+  restitution: 1
+};
+
+Border.prototype.create = function(attributes) {
+  this.mode = attributes.mode;
+  this.restitution = attributes.restitution;
+};
+
+var pos = Vec2();
+
+Border.simulate = function(dt) {
+  var size = Engine.renderer.content;
+  var viewport = Engine.renderer.pos;
+  var horizontal = Vec2.set(Vec2.cache[0], viewport[0], viewport[0] + size[0]);
+  var vertical = Vec2.set(Vec2.cache[1], viewport[1], viewport[1] + size[1]);
+
+  var register = this.register;
+  for (var i = 0, l = register.length; i < l; i++) {
+    var border = register[i];
+    if (!border.enabled) {
+      continue;
+    }
+
+    var entity = border.entity;
+    var restitution = border.restitution;
+    var mode = border.mode;
+    var kinetic = border.kinetic;
+
+    var vel = null;
+    if (kinetic) {
+      if (!kinetic.enabled || kinetic.sleeping) {
+        continue;
+      }
+      vel = kinetic.velocity;
+    }
+
+    var mirror = (mode === 'mirror');
+    var bounce = (mode === 'bounce' && vel);
+    Vec2.copy(pos, entity.transform.pos);
+
+    var radius = entity.bounds.radius;
+    if (mirror) {
+      radius *= -1;
+    }
+    var hit = 0;
+    var diff = pos[0] - radius - horizontal[0];
+    if (diff < 0) {
+      if (mirror) {
+        pos[0] = horizontal[1] - radius;
+      } else {
+        pos[0] -= diff;
+        if (bounce) {
+          vel[0] *= -restitution;
+        }
+      }
+      hit = -1;
+    } else {
+      diff = pos[0] + radius - horizontal[1];
+      if (diff > 0) {
+        if (mirror) {
+          pos[0] = radius;
+        } else {
+          pos[0] -= diff;
+          if (bounce) {
+            vel[0] *= -restitution;
+          }
+        }
+        hit = -1;
+      }
+    }
+    diff = pos[1] - radius - vertical[0];
+    if (diff < 0) {
+      if (mirror) {
+        pos[1] = vertical[1] - radius;
+      } else {
+        pos[1] -= diff;
+        if (bounce) {
+          vel[1] *= -restitution;
+        }
+      }
+      hit = 1;
+    } else {
+      diff = pos[1] + radius - vertical[1];
+      if (diff > 0) {
+        if (mirror) {
+          pos[1] = radius;
+        } else {
+          pos[1] -= diff;
+          if (bounce) {
+            vel[1] *= -restitution;
+          }
+        }
+        hit = 1;
+      }
+    }
+    if (hit) {
+      entity.transform.setTransform(pos);
+      entity.pub('onBorder', hit);
+      if (border.mode === 'kill') {
+        entity.destroy();
+      }
+    }
+  }
+};
+
+new Pool(Border);
+
+module.exports = Border;
+
+},{"./component":6,"./pool":7,"./math":4,"./engine":2}],13:[function(require,module,exports){'use strict';
+
+var Component = require('./component');
+var Pool = require('./pool');
+var Vec2 = require('./math').Vec2;
+var Engine = require('./engine');
+
+// http://gamedev.tutsplus.com/tutorials/implementation/when-worlds-collide-simulating-circle-circle-collisions/
+// https://sites.google.com/site/t3hprogrammer/research/circle-circle-collision-tutorial#TOC-Dynamic-Circle-Circle-Collision
+
+// TODO: http://jsperf.com/circular-collision-detection/2
+// http://jsperf.com/particle-collision-test/2
+
+/**
+ * Collider (Circle only)
+ */
+function Collider() {}
+
+Collider.prototype = Object.create(Component.prototype);
+
+Collider.prototype.tag = 'collider';
+
+Collider.prototype.attributes = {
+  trigger: false,
+  include: null,
+  exclude: null
+};
+
+Collider.prototype.create = function(attributes) {
+  this.trigger = attributes.trigger;
+  this.include = attributes.include;
+  this.exclude = attributes.exclude;
+};
+
+Collider.simulate = function(dt) {
+  var colliders = this.register;
+  var i = colliders.length;
+  while (i--) {
+    var collider1 = colliders[i];
+    if (!collider1.enabled) {
+      continue;
+    }
+    var j = i;
+    while (j-- && collider1.enabled) {
+      var collider2 = colliders[j];
+      var kinetic1 = collider1.kinetic;
+      var kinetic2 = collider2.kinetic;
+      var entity1 = collider1.entity;
+      var entity2 = collider2.entity;
+
+      if (!collider2.enabled || (kinetic1.sleeping && kinetic2.sleeping) || (collider1.include && !collider2[collider1.include]) || (collider2.include && !collider1[collider2.include]) || (collider1.exclude && collider2[collider1.exclude]) || (collider2.exclude && collider1[collider2.exclude])) {
+        continue;
+      }
+
+      var radius1 = entity1.bounds.radius;
+      var radius2 = entity2.bounds.radius;
+      var pos1 = entity1.transform.pos;
+      var pos2 = entity2.transform.pos;
+      var radiusSum = radius1 + radius2;
+
+      var diffSq = Vec2.distSq(pos1, pos2);
+      if (diffSq > radiusSum * radiusSum) {
+        continue;
+      }
+
+      var p = Vec2.norm(Vec2.sub(pos1, pos2, Vec2.cache[0]));
+      var diff = Math.sqrt(diffSq);
+
+      if (collider1.trigger || collider2.trigger) {
+        entity1.pub('onTrigger', entity2, p, diff);
+        entity2.pub('onTrigger', entity1, p, diff);
+        continue;
+      }
+
+      diff -= radiusSum;
+      var vel1 = kinetic1.velocity;
+      var vel2 = kinetic2.velocity;
+      var mass1 = kinetic1.mass || 1;
+      var mass2 = kinetic2.mass || 1;
+
+      if (diff < 0) {
+        Vec2.add(pos1, Vec2.scal(p, -diff * 2 * radius1 / radiusSum, Vec2.cache[1]));
+        Vec2.add(pos2, Vec2.scal(p, diff * 2 * radius2 / radiusSum, Vec2.cache[1]));
+      }
+
+      // normal vector to collision direction
+      var n = Vec2.perp(p, Vec2.cache[1]);
+
+      var vp1 = Vec2.dot(vel1, p); // velocity of P1 along collision direction
+      var vn1 = Vec2.dot(vel1, n); // velocity of P1 normal to collision direction
+      var vp2 = Vec2.dot(vel2, p); // velocity of P2 along collision direction
+      var vn2 = Vec2.dot(vel2, n); // velocity of P2 normal to collision
+
+      // fully elastic collision (energy & momentum preserved)
+      var vp1After = (mass1 * vp1 + mass2 * (2 * vp2 - vp1)) / (mass1 + mass2);
+      var vp2After = (mass1 * (2 * vp1 - vp2) + mass2 * vp2) / (mass1 + mass2);
+
+      Vec2.add(Vec2.scal(p, vp1After, Vec2.cache[2]), Vec2.scal(n, vn1, Vec2.cache[3]), vel1);
+      Vec2.add(Vec2.scal(p, vp2After, Vec2.cache[2]), Vec2.scal(n, vn2, Vec2.cache[3]), vel2);
+
+      entity1.pub('onCollide', entity2, n);
+      entity2.pub('onCollide', entity1, n);
+    }
+  }
+};
+
+new Pool(Collider);
+
+module.exports = Collider;
+
+},{"./component":6,"./pool":7,"./math":4,"./engine":2}],14:[function(require,module,exports){'use strict';
+
+var Component = require('./component');
+var Pool = require('./pool');
+var Vec2 = require('./math').Vec2;
+
+var cache = Vec2();
+var copyVel = Vec2();
+
+function Kinetic() {
+  this.velocity = Vec2();
+  this.force = Vec2();
+  this.continuous = Vec2();
+}
+
+Kinetic.prototype = Object.create(Component.prototype);
+
+Kinetic.prototype.tag = 'kinetic';
+
+Kinetic.gravity = null;
+
+Kinetic.prototype.attributes = {
+  mass: 1,
+  drag: 0.999,
+  friction: 15,
+  fixed: false,
+  maxVelocity: 75,
+  maxForce: 2000,
+  force: Vec2(),
+  continuous: Vec2(),
+  velocity: Vec2(),
+  sleepVelocity: 1,
+  fast: false
+};
+
+Kinetic.prototype.create = function(attributes) {
+  this.mass = attributes.mass;
+  this.drag = attributes.drag;
+  this.friction = attributes.friction;
+  this.fixed = attributes.fixed;
+  this.maxVelocity = attributes.maxVelocity;
+  this.maxForce = attributes.maxForce;
+  this.fast = attributes.fast;
+  this.sleepVelocity = attributes.sleepVelocity;
+  Vec2.copy(this.velocity, attributes.velocity);
+  Vec2.copy(this.force, attributes.force);
+  Vec2.copy(this.continuous, attributes.continuous);
+  this.sleeping = false;
+};
+
+Kinetic.prototype.applyImpulse = function(impulse) {
+  Vec2.add(
+    this.force,
+    (this.mass !== 1) ?
+      Vec2.scal(impulse, 1 / (this.mass || 1), cache) :
+      impulse
+  );
+};
+
+Kinetic.prototype.applyForce = function(force) {
+  Vec2.add(this.continuous, force);
+};
+
+Kinetic.simulate = function(dt) {
+  var epsilon = Math.epsilon;
+  var register = this.register;
+  for (var i = 0, l = register.length; i < l; i++) {
+    var kinetic = register[i];
+    if (!kinetic.enabled || kinetic.fixed) {
+      continue;
+    }
+    var velocity = kinetic.velocity;
+    var force = Vec2.add(kinetic.force, kinetic.continuous);
+
+    // Particle
+    if (kinetic.fast) {
+      if (kinetic.maxForce) {
+        Vec2.limit(force, kinetic.maxForce);
+      }
+      Vec2.add(velocity, Vec2.scal(force, dt));
+      Vec2.set(force);
+      if (kinetic.maxVelocity) {
+        Vec2.limit(velocity, kinetic.maxVelocity);
+      }
+      Vec2.add(kinetic.transform.pos, Vec2.scal(velocity, dt, cache));
+      continue;
+    }
+
+    // Apply scene gravity
+    var gravity = kinetic.root.gravity;
+    if (gravity && kinetic.mass > epsilon) {
+      debugger;
+      Vec2.add(
+        force,
+        (kinetic.mass !== 1) ?
+          Vec2.scal(gravity, 1 / kinetic.mass, cache) :
+          gravity
+      );
+    }
+
+    // Apply friction
+    if (kinetic.friction) {
+      Vec2.add(
+        force,
+        Vec2.scal(
+          Vec2.norm(velocity, cache),
+          -kinetic.friction
+        )
+      );
+    }
+
+    // http://www.richardlord.net/presentations/physics-for-flash-games
+    // https://github.com/soulwire/Coffee-Physics/tree/master/source/engine/integrator
+
+    if (kinetic.maxForce) {
+      Vec2.limit(force, kinetic.maxForce);
+    }
+
+    Vec2.copy(copyVel, velocity);
+    Vec2.add(velocity, Vec2.scal(force, dt));
+    if (kinetic.maxVelocity) {
+      Vec2.limit(velocity, kinetic.maxVelocity);
+    }
+    Vec2.scal(Vec2.add(copyVel, velocity), dt / 2);
+    Vec2.add(kinetic.transform.pos, copyVel);
+
+    Vec2.add(velocity, force);
+
+    // Apply drag
+    if (kinetic.drag < 1) {
+      Vec2.scal(velocity, kinetic.drag);
+    }
+
+    var sleepVelocity = kinetic.sleepVelocity;
+    if (sleepVelocity) {
+      if (Vec2.lenSq(velocity) <= sleepVelocity * sleepVelocity) {
+        if (!kinetic.sleeping) {
+          Vec2.set(velocity);
+          kinetic.sleeping = true;
+          kinetic.entity.pubUp('onKineticSleep', kinetic);
+        }
+      } else {
+        if (kinetic.sleeping) {
+          kinetic.sleeping = false;
+          kinetic.entity.pubUp('onKineticWake', kinetic);
+        }
+      }
+    }
+
+    // Reset force
+    Vec2.set(force);
+  }
+};
+
+new Pool(Kinetic);
+
+module.exports = Kinetic;
+
+},{"./component":6,"./pool":7,"./math":4}],15:[function(require,module,exports){'use strict';
+
+var Component = require('./component');
+var Pool = require('./pool');
+var Vec2 = require('./math').Vec2;
+var Engine = require('./engine');
+
+
+function Console() {
+  this.colors = ['#ddd', '#fff', '#ffc', '#fcc'];
+  this.sections = ['#f9f684', '#f9ad84', '#b778e2', '#78dbe2'];
+}
+
+Console.prototype = Object.create(Component.prototype);
+
+Console.prototype.tag = 'console';
+
+Console.prototype.attributes = {
+  css: '',
+  container: null,
+  width: 100,
+  height: 56,
+  cap: 50,
+  resolution: 0.25
+};
+
+Console.prototype.create = function(attributes) {
+  this.css = attributes.css;
+  this.container = attributes.container;
+  this.width = attributes.width;
+  this.height = attributes.height;
+  this.cap = attributes.cap;
+  this.resolution = attributes.resolution;
+
+  var wrap = this.wrap = document.createElement('div');
+  wrap.id = 'console';
+  wrap.style.cssText = '' +
+      'position: absolute;' +
+      'left: 0;' +
+      'top: 0;' +
+      'user-select: none;' +
+      'overflow: hidden;' +
+      'padding: 0;' +
+      'width: #{@width}px;' +
+      'color: #ccc;' +
+      'background-color: rgba(0, 0, 0, 0.75);' +
+      'outline: 1px solid rgba(128, 128, 128, 0.5);' +
+      'font: 400 9px/20px Helvetica,Arial,sans-serif;' +
+      'transform: translateZ(0);' +
+      'text-align: right;' +
+      'text-shadow: 1px 1px 0 rgba(0, 0, 0, 1), 0 0 1px rgba(0, 0, 0, 1);' +
+      'cursor: ns-resize;' + this.css;
+
+  var spanCss = 'font-weight: bold;' +
+    'font-size: 12px;' +
+    'float: left;';
+
+  this.fpsSpan = document.createElement('span');
+  this.fpsSpan.style.cssText = spanCss;
+  this.fpsSpan.title = 'FPS';
+  this.fpsSpan2 = document.createElement('span');
+  this.tickSpan = document.createElement('span');
+  this.tickSpan.style.cssText = spanCss;
+  this.tickSpan.title = 'MS per tick';
+  this.tickSpan2 = document.createElement('span');
+  this.fpsSpan2.title = this.tickSpan2.title = '± standard deviation';
+
+  var panelCss = 'width: 50%;' +
+    'padding: 0 5px;' +
+    'overflow: hidden;' +
+    'position: absolute;' +
+    'top: 0;' +
+    'left: 0;' +
+    '-moz-box-sizing: border-box;' +
+    '-webkit-box-sizing: border-box;' +
+    'z-index: 2;';
+  var panel = document.createElement('span');
+  panel.style.cssText = panelCss;
+  panel.appendChild(this.fpsSpan);
+  panel.appendChild(this.fpsSpan2);
+  wrap.appendChild(panel);
+
+  panel = document.createElement('span');
+  panel.style.cssText = panelCss + 'left: 50%;';
+  panel.appendChild(this.tickSpan);
+  panel.appendChild(this.tickSpan2);
+  wrap.appendChild(panel);
+
+  var rulerCss = 'position: absolute;' +
+    'left: 0;' +
+    'width: 100%;' +
+    'height: 1px;' +
+    'background-color: rgba(128, 128, 128, 0.5);';
+
+  var ruler = document.createElement('span');
+  ruler.style.cssText = rulerCss + ('bottom: ' + (this.height * 0.66) + 'px;');
+  wrap.appendChild(ruler);
+  ruler = document.createElement('span');
+  ruler.style.cssText = rulerCss + ('bottom: ' + (this.height * 0.33) + 'px;');
+  wrap.appendChild(ruler);
+
+  this.graphSpan = document.createElement('div');
+  this.graphSpan.style.cssText = '' +
+    'height: ' + this.height + 'px;' +
+    'z-index: 1;';
+  this.graphSpan.title = 'Fixed Update + Update + Render + Lag';
+
+  var barCss = 'width: 1px;' +
+    'float: left;' +
+    'margin-top: 0px;';
+  var sectionCss = 'display: block;' +
+    'height: 0px;';
+
+  var i = this.width;
+  while (i--) {
+    var bar = document.createElement('span');
+    bar.className = 'console-bar';
+    bar.style.cssText = barCss;
+    var  sections = this.sections;
+    for (var j = 0, l = sections.length; j < l; j++) {
+      var section = document.createElement('span');
+      section.className = 'console-section';
+      section.style.cssText = sectionCss + ('background-color: ' + sections[j]);
+      bar.appendChild(section);
+    }
+    this.graphSpan.appendChild(bar);
+  }
+  wrap.appendChild(this.graphSpan);
+
+  (this.container || document.body).appendChild(wrap);
+  this.nullify();
+
+  this.lastClick = 0;
+  wrap.addEventListener('click', this);
+
+  this.maximized = !(~(document.cookie || '').indexOf('console_max'));
+  this.toggle();
+};
+
+Console.prototype.handleEvent = function(evt) {
+  var time = evt.timeStamp;
+  console.log(time - this.lastClick);
+  if (time - this.lastClick < 250) {
+    this.destroy();
+  }
+  this.lastClick = time;
+
+  this.toggle();
+  return false;
+};
+
+Console.prototype.toggle = function() {
+  var margin = 0;
+  var opacity = 0.8;
+  this.maximized = !this.maximized;
+  if (!this.maximized) {
+    opacity = 0.5;
+    margin = -this.height + 20;
+    document.cookie = 'console_max=; expires=' + (new Date()).toGMTString();
+  } else {
+    document.cookie = 'console_max=1'
+  }
+  var style = this.graphSpan.style;
+  style.marginTop = '' + margin + 'px';
+  style.opacity = opacity;
+};
+
+Console.prototype.free = function() {
+  (this.container || document.body).removeChild(this.wrap);
+  this.wrap.removeEventListener('click', this);
+  this.wrap = null;
+  this.container = null;
+  Component.prototype.free.call(this);
+};
+
+Console.prototype.onTimeEnd = function(samples) {
+  var dt = samples.dt;
+  this.dtSum += dt;
+  if (!dt) {
+    return;
+  }
+
+  var fps = 1 / dt;
+  this.fpsSum += fps;
+  this.fpsSq += fps * fps;
+  var lag = samples.lag;
+  this.lagSum += lag;
+  this.lagSq += lag * lag;
+  var tick = samples.tick;
+  this.tickSum += tick;
+  this.tickSq += tick * tick;
+  this.updateSum += samples.update;
+  this.fixedUpdateSum += samples.fixedUpdate;
+  this.renderSum += samples.render;
+  this.frames++;
+  if (this.dtSum < this.resolution) {
+    return;
+  }
+
+  var colors = this.colors;
+  var tickMean = this.tickSum / this.frames;
+  var tickSD = Math.sqrt((this.tickSq - (this.tickSum * this.tickSum / this.frames)) / (this.frames - 1));
+
+  var color = colors[0];
+  if (tickMean > 33) {
+    color = colors[3];
+  } else if (tickMean > 16) {
+    color = colors[2];
+  } else if (tickMean > 5) {
+    color = colors[1];
+  }
+
+  this.tickSpan.textContent = tickMean < 10 ? Math.round(tickMean * 10) / 10 : Math.round(tickMean);
+  this.tickSpan.style.color = color;
+  this.tickSpan2.textContent = tickSD < 10 ? Math.round(tickSD * 10) / 10 : Math.round(tickSD);
+
+  var bar = this.graphSpan.appendChild(this.graphSpan.firstChild);
+  var overall = 0;
+
+  var mag = Math.round(this.height * this.lagSum / this.frames / this.cap);
+  bar.children[0].style.height = mag + 'px';
+  overall += mag;
+
+  mag = this.height * this.renderSum / this.frames / this.cap;
+  bar.children[1].style.height = mag + 'px';
+  overall += mag;
+
+  mag = Math.round(this.height * this.updateSum / this.frames / this.cap);
+  bar.children[2].style.height = mag + 'px';
+  overall += mag;
+
+  mag = Math.round(this.height * this.fixedUpdateSum / this.frames / this.cap);
+  bar.children[3].style.height = mag + 'px';
+  overall += mag;
+
+  bar.style.marginTop = '' + (this.height - overall) + 'px';
+
+  var fpsMean = this.fpsSum / this.frames;
+  var fpsSD = Math.sqrt((this.fpsSq - (this.fpsSum * this.fpsSum / this.frames)) / (this.frames - 1));
+  if (fpsMean < 30) {
+    color = colors[3];
+  } else if (fpsMean < 40) {
+    color = colors[2];
+  } else if (fpsMean < 55) {
+    color = colors[1];
+  } else {
+    color = colors[0];
+  }
+  this.fpsSpan.textContent = Math.round(fpsMean || 0);
+  this.fpsSpan.style.color = color;
+  this.fpsSpan2.textContent = Math.round(fpsSD || 0);
+
+  this.nullify();
+};
+
+Console.prototype.nullify = function() {
+  this.dtSum = 0;
+  this.fpsSum = this.fpsSq = 0;
+  this.tickSum = this.tickSq = 0;
+  this.lagSum = this.lagSq = 0;
+  this.fixedUpdateSum = 0;
+  this.updateSum = 0;
+  this.renderSum = 0;
+  this.frames = 0;
+};
+
+new Pool(Console);
+
+module.exports = Console;
+
+},{"./component":6,"./pool":7,"./math":4,"./engine":2}],16:[function(require,module,exports){'use strict';
+
+var Component = require('./component');
+var Pool = require('./pool');
+var Vec2 = require('./math').Vec2;
+var Engine = require('./engine');
+
+function Input() {
+  this.queue = [];
+  this.locks = {};
+  this.pos = Vec2();
+  this.prevPos = Vec2();
+  this.touchState = null;
+  this.axis = Vec2();
+  this.mouseAxis = Vec2();
+  this.orientation = Vec2();
+  this.prevOrientation = Vec2();
+  this.baseOrientation = Vec2();
+
+  this.map = {
+    32: 'space',
+    192: 'debug',
+    38: 'up',
+    87: 'up',
+    39: 'right',
+    68: 'right',
+    40: 'bottom',
+    83: 'bottom',
+    37: 'left',
+    65: 'left',
+    219: 'squareLeft',
+    221: 'squareRight'
+  };
+  this.axisMap = {
+    left: Vec2(0, -1),
+    right: Vec2(0, 1),
+    up: Vec2(1, -1),
+    bottom: Vec2(1, 1)
+  };
+
+  this.keyNames = [];
+  this.keys = {};
+
+  var map = this.map;
+  for (var code in map) {
+    var key = map[code];
+    if (!~this.keyNames.indexOf(key)) {
+      this.keyNames.push(key);
+      this.keys[key] = null;
+    }
+  }
+
+  this.throttled = {
+    mousemove: true,
+    deviceorientation: true
+  };
+
+  this.lastEvent = null;
+
+  this.events = this.support.touch ? {
+    touchstart: 'startTouch',
+    touchmove: 'moveTouch',
+    touchend: 'endTouch',
+    touchcancel: 'endTouch'
+  } : {
+    mousedown: 'startTouch',
+    mousemove: 'moveTouch',
+    mouseup: 'endTouch',
+    keydown: 'keyStart',
+    keyup: 'keyEnd'
+  };
+
+  this.events.blur = 'blur';
+  this.events.deviceorientation = 'deviceOrientation';
+
+  this.attach();
+}
+
+Input.prototype.attach = function() {
+  for (var type in this.events) {
+    window.addEventListener(type, this, false);
+  }
+};
+
+Input.prototype.detach = function() {
+  for (var type in this.events) {
+    window.removeEventListener(type, this, false);
+  }
+};
+
+Input.prototype.support = {
+  touch: 'ontouchstart' in window,
+  orientation: 'ondeviceorientation' in window
+};
+
+Input.prototype.handleEvent = function(event) {
+  if (event.metaKey) {
+    return;
+  }
+  event.preventDefault();
+  var type = event.type;
+  if (this.throttled[type] && this.lastEvent === type) {
+    this.queue[this.queue.length - 1] = event;
+  } else {
+    this.lastEvent = type;
+    this.queue.push(event);
+  }
+};
+
+Input.prototype.keyStart = function(event) {
+  var key = this.map[event.keyCode];
+  if (key && !this.keys[key]) {
+    if (!this.lock('key-' + key)) {
+      return false;
+    }
+    this.keys[key] = 'began';
+    this.updateAxis(key);
+    Engine.pub('onKeyBegan', key);
+  }
+};
+
+Input.prototype.keyEnd = function(event) {
+  var key = this.map[event.keyCode];
+  if (key) {
+    if (!this.lock('key-' + key)) {
+      return false;
+    }
+    this.keys[key] = 'ended';
+    this.updateAxis(key, true);
+    Engine.pub('onKeyEnded', key);
+  }
+};
+
+Input.prototype.startTouch = function(event) {
+  if (!this.lock('touch')) {
+    return false;
+  }
+  this.resolve(event);
+  if (!this.touchState && !event.metaKey) {
+    this.touchState = 'began';
+    Engine.pub('onTouchBegan');
+  }
+};
+
+Input.prototype.moveTouch = function(event) {
+  var state = this.touchState;
+  if ((state === 'began' || state === 'ended') && !this.lock('touch')) {
+    return false;
+  }
+  this.resolve(event);
+  if (state && state !== 'ended' && state !== 'moved') {
+    this.touchState = 'moved';
+  }
+};
+
+Input.prototype.endTouch = function(event) {
+  if (!this.lock('touch')) {
+    return false;
+  }
+  this.resolve(event);
+  if (this.touchState && (!this.support.touch || !event.targetTouches.length)) {
+    Engine.pub('onTouchEnded');
+    this.touchState = 'ended';
+  }
+};
+
+Input.prototype.updateAxis = function(key, ended) {
+  var axis = this.axisMap[key];
+  if (axis) {
+    if (ended) {
+      this.axis[axis[0]] -= axis[1];
+    } else {
+      this.axis[axis[0]] += axis[1];
+    }
+  }
+};
+
+Input.prototype.blur = function() {
+  if (this.touchState && this.touchState !== 'ended') {
+    this.touchState = 'ended';
+  }
+  var keys = this.keys;
+  var names = this.keyNames;
+  for (var i = 0, l = names.length; i < l; i++) {
+    var key = names[i];
+    if (keys[key] && keys[key] !== 'ended') {
+      keys[key] = 'ended';
+      this.updateAxis(key, true);
+    }
+  }
+};
+
+Input.prototype.calibrateOrientation = function() {
+  this.baseOrientationTime = this.orientationTime;
+  Vec2.copy(this.baseOrientation, this.orientation);
+  Vec2.set(this.orientation);
+};
+
+Input.prototype.deviceOrientation = function(event) {
+  Vec2.copy(this.prevOrientation, this.orientation);
+  Vec2.sub(Vec2.set(this.orientation, event.gamma | 0, event.beta | 0), this.baseOrientation);
+  this.orientationTime = event.timeStamp / 1000;
+  if (!this.baseOrientationTime) {
+    this.calibrateOrientation();
+  }
+};
+
+Input.prototype.resolve = function(event) {
+  var coords = this.support.touch ? event.targetTouches[0] : event;
+  if (coords) {
+    this.prevTime = this.time;
+    this.time = event.timeStamp / 1000;
+    Vec2.copy(this.prevPos, this.pos);
+    var renderer = Engine.renderer;
+    Vec2.set(this.pos, (coords.pageX - renderer.margin[0]) / renderer.scale | 0, (coords.pageY - renderer.margin[1]) / renderer.scale | 0);
+  }
+};
+
+Input.prototype.lock = function(key) {
+  if (this.locks[key] === this.frame) {
+    return false;
+  }
+  this.locks[key] = this.frame;
+  return true;
+};
+
+Input.prototype.postUpdate = function() {
+  switch (this.touchState) {
+    case 'began':
+      this.touchState = 'stationary';
+      break;
+    case 'ended':
+      this.touchState = null;
+      break;
+  }
+
+  var keys = this.keys;
+  var names = this.keyNames;
+  for (var i = 0, l = names.length; i < l; i++) {
+    var key = names[i];
+    switch (keys[key]) {
+      case 'began':
+        keys[key] = 'pressed';
+        break;
+      case 'ended':
+        keys[key] = null;
+        break;
+    }
+  }
+
+  this.frame = Engine.frame;
+
+  var event = null;
+  var queue = this.queue;
+  while ((event = queue[0])) {
+    var type = event.type;
+    if (this[this.events[type] || type](event) === false) {
+      break;
+    }
+    queue.shift();
+  }
+  if (!queue.length) {
+    this.lastEvent = null;
+  }
+};
+
+new Component('input', Input);
+
+module.exports = Input;
+
+},{"./component":6,"./pool":7,"./math":4,"./engine":2}]},{},[1]);

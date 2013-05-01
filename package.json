@@ -1,7 +1,7 @@
 {
-  "name": "mgame-js",
+  "name": "acme-js",
   "version": "0.0.1",
-  "description": "Reusable, low-garbage JavaScript game components",
+  "description": "Cross-platform, low-garbage entity/component JavaScript game framework",
   "main": "/test/index.js",
   "directories": {
     "example": "examples"
@@ -11,10 +11,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/digitarald/mgame-js.git"
+    "url": "git://github.com/digitarald/acmejs.git"
   },
   "keywords": [
-    "game"
+    "game", "canvas", "webgl"
   ],
   "author": "Harald Kirschner <harald@digitarald.com>",
   "license": "MIT",
@@ -23,11 +23,7 @@
     "mocha-cloud": "0.0.1",
     "grunt": "0.4.x",
     "grunt-contrib-watch": "0.3.x",
-    "grunt-contrib-coffee": "0.6.x",
     "grunt-browserify": "0.1.x",
-    "browserify": "2.x",
-    "coffee-script": "1.6.x",
-    "grunt-shell": "~0.2.1",
-    "grunt-parallel": "0.0.2"
+    "browserify": "2.x"
   }
 }

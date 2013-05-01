@@ -38,7 +38,7 @@ GameController = (function(_super) {
 
   GameController.prototype.tag = 'gameController';
 
-  GameController.prototype.instantiate = function() {
+  GameController.prototype.create = function() {
     this.root.gravity = Vec2(0, 10);
     Entity.alloc(this.root, {
       transform: {
@@ -199,7 +199,7 @@ Explosion = (function(_super) {
     this.color = Color();
   }
 
-  Explosion.prototype.instantiate = function(attributes) {
+  Explosion.prototype.create = function(attributes) {
     Color.copy(this.color, attributes.color);
     this.lifetime = attributes.lifetime;
     this.maxSize = attributes.maxSize;
@@ -296,7 +296,7 @@ Spark = (function(_super) {
     this.lastPos = Vec2();
   }
 
-  Spark.prototype.instantiate = function() {
+  Spark.prototype.create = function() {
     Vec2.copy(this.lastPos, this.transform.pos);
     this.lifetime = 2.5;
     this.age = 0;

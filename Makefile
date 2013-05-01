@@ -1,12 +1,7 @@
-
 .PHONY: grunt
 
 grunt:
 	grunt
-
-coffee:
-	@echo "Making .coffee"
-	@./node_modules/.bin/coffee -b -c -w ./ ./
 
 test:
 	node test-cloud.js

@@ -1,16 +1,15 @@
-# µGame.js
+# ACME.js
 
-Reusable, low-garbage JavaScript game components.
+Cross-platform, low-garbage entity/component JavaScript game framework
 
 ## Installation
 
 Dependencies:
 
- * `npm install -g coffee-script`
- * `npm install -g browserify`
+	$ npm install
 
 ## Quick Start
 
-`make` combines [CoffeeScript](http://coffeescript.org/) and [browserify](https://github.com/substack/node-browserify) for `examples/` for all examples listed in `Makefile`.
+	$ make
 
-	$ make grunt
+`make` commands `grunt` and uses [browserify](https://github.com/substack/node-browserify).

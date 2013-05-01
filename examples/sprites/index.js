@@ -40,7 +40,7 @@ GameController = (function(_super) {
 
   GameController.prototype.tag = 'gameController';
 
-  GameController.prototype.instantiate = function() {
+  GameController.prototype.create = function() {
     AgentPrefab.alloc(this.root, {
       transform: {
         pos: Vec2(240, 200)
