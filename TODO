@@ -1,4 +1,3 @@
-
 Animation Component
 
 Particle Emitter
@@ -7,16 +6,21 @@ Particle Emitter
   - http://docs.unity3d.com/Documentation/ScriptReference/ParticleSystem.Particle.html
   - http://docs.unity3d.com/Documentation/Components/class-ParticleSystem.html
 
+Transform
+  - scale/angle
+  - matrix transform
+  - local/global
+  - hierachy
+  - opacity
+  - composite
+  - http://craftstudio.wikia.com/wiki/Scripting_Reference/Transform
+  - Transform.LookAt
+
 API
-	- alloc -> create/initialize/reset?
-	- free/destroy -> ?
+  - alloc -> create/initialize/reset?
+  - free/destroy -> ?
 
-Transform scale/angle + local/global
-- http://craftstudio.wikia.com/wiki/Scripting_Reference/Transform
-- Transform hierachy
-- Transform.LookAt
-
-- Light
+Light
 	- http://www.openprocessing.org/sketch/17336
 
 - Controller controls

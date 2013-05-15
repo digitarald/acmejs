@@ -1,29 +1,13 @@
 {
   "name": "acme-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Cross-platform, low-garbage entity/component JavaScript game framework",
-  "main": "/test/index.js",
-  "directories": {
-    "example": "examples"
-  },
-  "scripts": {
-    "test": "make test"
-  },
+  "main": "/index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/digitarald/acmejs.git"
   },
-  "keywords": [
-    "game", "canvas", "webgl"
-  ],
+  "keywords": ["game", "canvas", "webgl"],
   "author": "Harald Kirschner <harald@digitarald.com>",
-  "license": "MIT",
-  "devDependencies": {
-    "mocha": "1.8.x",
-    "mocha-cloud": "0.0.1",
-    "grunt": "0.4.x",
-    "grunt-contrib-watch": "0.3.x",
-    "grunt-browserify": "0.1.x",
-    "browserify": "2.x"
-  }
+  "license": "MIT"
 }

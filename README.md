@@ -6,10 +6,8 @@ Cross-platform, low-garbage entity/component JavaScript game framework
 
 Dependencies:
 
-	$ npm install
+	$ make install
 
 ## Quick Start
 
-	$ make
-
-`make` commands `grunt` and uses [browserify](https://github.com/substack/node-browserify).
+	$ make build

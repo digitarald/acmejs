@@ -340,73 +340,87 @@ var random = Mth.random;
 
 var EPSILON = Mth.EPSILON = 0.001;
 
-Mth.TAU = Mth.PI * 2;
+var TAU = Mth.TAU = Mth.PI * 2;
 Mth.PIRAD = 0.0174532925;
 Mth.UID = 1;
 
 Mth.uid = function() {
-  return Mth.UID++;
+	return Mth.UID++;
 };
 
 Mth.clamp = function(a, low, high) {
-  if (a < low) {
-    return low;
-  }
-  if (a > high) {
-    return high;
-  } else {
-    return a;
-  }
+	if (a < low) {
+		return low;
+	}
+	if (a > high) {
+		return high;
+	} else {
+		return a;
+	}
 };
 
 Mth.rand = function(low, high, ease) {
-  return (ease || Mth.linear)(random()) * (high - low) + low;
+	return (ease || Mth.linear)(random()) * (high - low) + low;
 };
 
 Mth.randArray = function(array) {
-  return array[random() * array.length + 0.5 | 0];
+	return array[random() * array.length + 0.5 | 0];
 };
 
 Mth.chance = function(chance) {
-  return random() <= chance;
+	return random() <= chance;
 };
 
 var powIn = function(strength) {
-  if (strength == null) {
-    strength = 2;
-  }
-  return function(t) {
-    return pow(t, strength);
-  };
+	if (strength == null) {
+		strength = 2;
+	}
+	return function(t) {
+		return pow(t, strength);
+	};
 };
 
 var toOut = function(fn) {
-  return function(t) {
-    return 1 - fn(1 - t);
-  };
+	return function(t) {
+		return 1 - fn(1 - t);
+	};
 };
 
 var toInOut = function(fn) {
-  return function(t) {
-    return (t < 0.5 ? fn(t * 2) : 2 - fn(2 * (1 - t))) / 2;
-  };
+	return function(t) {
+		return (t < 0.5 ? fn(t * 2) : 2 - fn(2 * (1 - t))) / 2;
+	};
 };
 
 Mth.linear = function(t) {
-  return t;
+	return t;
 };
 
 var transitions = ['quad', 'cubic', 'quart', 'quint'];
 for (var i = 0, l = transitions.length; i < l; i++) {
-  var transition = transitions[i];
-  var fn = powIn(i + 2);
-  Mth[transition + 'In'] = fn;
-  Mth[transition + 'Out'] = toOut(fn);
-  Mth[transition + 'InOut'] = toInOut(fn);
+	var transition = transitions[i];
+	var fn = powIn(i + 2);
+	Mth[transition + 'In'] = fn;
+	Mth[transition + 'Out'] = toOut(fn);
+	Mth[transition + 'InOut'] = toInOut(fn);
 }
 
+Mth.distAng = function(a, b) {
+	if (a == b) {
+		return 0;
+	}
+	var ab = (a < b);
+	var l = ab ? (-a - TAU + b) : (b - a);
+	var r = ab ? (b - a) : (TAU - a + b);
+
+	return (Math.abs(l) > Math.abs(r)) ? r : l;
+};
+
+/**
+ * Typed Array to use for vectors and matrix
+ */
 var ARRAY_TYPE = Mth.ARRAY_TYPE = window.Float32Array || function(arr) {
-  return arr;
+	return arr;
 };
 
 /**
@@ -418,13 +432,13 @@ var ARRAY_TYPE = Mth.ARRAY_TYPE = window.Float32Array || function(arr) {
  * @param {number} y       y, when x was provided as first argument
  */
 var Vec2 = Mth.Vec2 = function(fromOrX, y) {
-  if (y != null) {
-    return new ARRAY_TYPE([fromOrX, y]);
-  }
-  if (fromOrX != null) {
-    return new ARRAY_TYPE(fromOrX);
-  }
-  return new ARRAY_TYPE(Vec2.zero);
+	if (y != null) {
+		return new ARRAY_TYPE([fromOrX, y]);
+	}
+	if (fromOrX != null) {
+		return new ARRAY_TYPE(fromOrX);
+	}
+	return new ARRAY_TYPE(Vec2.zero);
 };
 
 Vec2.zero = Vec2.center = Vec2(0, 0);
@@ -440,222 +454,222 @@ Vec2.bottomRight = Vec2(1, 1);
 
 var radCache = [Vec2(), Vec2()];
 var objCache = {
-  x: 0,
-  y: 0
+	x: 0,
+	y: 0
 };
 var objVecCache = Vec2();
 
 Vec2.set = function(result, x, y) {
-  result[0] = x || 0;
-  result[1] = y || 0;
-  return result;
+	result[0] = x || 0;
+	result[1] = y || 0;
+	return result;
 };
 
 Vec2.copy = function(result, b) {
-  result.set(b || Vec2.zero);
-  return result;
+	result.set(b || Vec2.zero);
+	return result;
 };
 
 Vec2.valid = function(a) {
-  return !(isNaN(a[0]) || isNaN(a[1]));
+	return !(isNaN(a[0]) || isNaN(a[1]));
 };
 
 Vec2.toString = function(a) {
-  return "[" + a[0] + ", " + a[1] + "]";
+	return "[" + a[0] + ", " + a[1] + "]";
 };
 
 Vec2.fromObj = function(obj, a) {
-  if (!a) {
-    a = objVecCache;
-  }
-  a[0] = obj.x;
-  a[1] = obj.y;
-  return a;
+	if (!a) {
+		a = objVecCache;
+	}
+	a[0] = obj.x;
+	a[1] = obj.y;
+	return a;
 };
 
 Vec2.toObj = function(a, obj) {
-  if (!obj) {
-    obj = objCache;
-  }
-  obj.x = a[0];
-  obj.y = a[1];
-  return obj;
+	if (!obj) {
+		obj = objCache;
+	}
+	obj.x = a[0];
+	obj.y = a[1];
+	return obj;
 };
 
 Vec2.eq = function(a, b) {
-  return abs(a[0] - b[0]) < EPSILON && abs(a[1] - b[1]) < EPSILON;
+	return abs(a[0] - b[0]) < EPSILON && abs(a[1] - b[1]) < EPSILON;
 };
 
 Vec2.add = function(a, b, result) {
-  if (!result) {
-    result = a;
-  }
-  result[0] = a[0] + b[0];
-  result[1] = a[1] + b[1];
-  return result;
+	if (!result) {
+		result = a;
+	}
+	result[0] = a[0] + b[0];
+	result[1] = a[1] + b[1];
+	return result;
 };
 
 Vec2.sub = function(a, b, result) {
-  if (!result) {
-    result = a;
-  }
-  result[0] = a[0] - b[0];
-  result[1] = a[1] - b[1];
-  return result;
+	if (!result) {
+		result = a;
+	}
+	result[0] = a[0] - b[0];
+	result[1] = a[1] - b[1];
+	return result;
 };
 
 Vec2.mul = function(a, b, result) {
-  if (!result) {
-    result = a;
-  }
-  result[0] = a[0] * b[0];
-  result[1] = a[1] * b[1];
-  return result;
+	if (!result) {
+		result = a;
+	}
+	result[0] = a[0] * b[0];
+	result[1] = a[1] * b[1];
+	return result;
 };
 
 Vec2.scal = function(a, scalar, result) {
-  if (!result) {
-    result = a;
-  }
-  result[0] = a[0] * scalar;
-  result[1] = a[1] * scalar;
-  return result;
+	if (!result) {
+		result = a;
+	}
+	result[0] = a[0] * scalar;
+	result[1] = a[1] * scalar;
+	return result;
 };
 
 Vec2.norm = function(a, result, scalar) {
-  if (!result) {
-    result = a;
-  }
-  var x = a[0];
-  var y = a[1];
-  var len = (scalar || 1) / (sqrt(x * x + y * y) || 1);
-  result[0] = x * len;
-  result[1] = y * len;
-  return result;
+	if (!result) {
+		result = a;
+	}
+	var x = a[0];
+	var y = a[1];
+	var len = (scalar || 1) / (sqrt(x * x + y * y) || 1);
+	result[0] = x * len;
+	result[1] = y * len;
+	return result;
 };
 
 Vec2.lenSq = function(a) {
-  return a[0] * a[0] + a[1] * a[1];
+	return a[0] * a[0] + a[1] * a[1];
 };
 
 Vec2.len = function(a) {
-  return sqrt(a[0] * a[0] + a[1] * a[1]);
+	return sqrt(a[0] * a[0] + a[1] * a[1]);
 };
 
 Vec2.dot = function(a, b) {
-  return a[0] * b[0] + a[1] * b[1];
+	return a[0] * b[0] + a[1] * b[1];
 };
 
 Vec2.cross = function(a, b) {
-  return a[0] * b[1] - a[1] * b[0];
+	return a[0] * b[1] - a[1] * b[0];
 };
 
 Vec2.lerp = function(a, b, scalar, result) {
-  if (!result) {
-    result = a;
-  }
-  result[0] = a[0] + scalar * (b[0] - a[0]);
-  result[1] = a[1] + scalar * (b[1] - a[1]);
-  return result;
+	if (!result) {
+		result = a;
+	}
+	result[0] = a[0] + scalar * (b[0] - a[0]);
+	result[1] = a[1] + scalar * (b[1] - a[1]);
+	return result;
 };
 
 Vec2.max = function(a, b, axis) {
-  if (axis != null) {
-    if (a[axis] > b[axis]) {
-      return a;
-    } else {
-      return b;
-    }
-  }
-  if (Vec2.lenSq(a) > Vec2.lenSq(b)) {
-    return a;
-  } else {
-    return b;
-  }
+	if (axis != null) {
+		if (a[axis] > b[axis]) {
+			return a;
+		} else {
+			return b;
+		}
+	}
+	if (Vec2.lenSq(a) > Vec2.lenSq(b)) {
+		return a;
+	} else {
+		return b;
+	}
 };
 
 // http://www.cas.kth.se/CURE/doc-cure-2.2.1/html/toolbox_2src_2Math_2Vector2D_8hh-source.html
 Vec2.perp = function(a, result) {
-  if (!result) {
-    result = a;
-  }
-  var x = a[0];
-  result[0] = a[1];
-  result[1] = -x;
-  return result;
+	if (!result) {
+		result = a;
+	}
+	var x = a[0];
+	result[0] = a[1];
+	result[1] = -x;
+	return result;
 };
 
 Vec2.dist = function(a, b) {
-  var x = b[0] - a[0];
-  var y = b[1] - a[1];
-  return sqrt(x * x + y * y);
+	var x = b[0] - a[0];
+	var y = b[1] - a[1];
+	return sqrt(x * x + y * y);
 };
 
 Vec2.distSq = function(a, b) {
-  var x = b[0] - a[0];
-  var y = b[1] - a[1];
-  return x * x + y * y;
+	var x = b[0] - a[0];
+	var y = b[1] - a[1];
+	return x * x + y * y;
 };
 
 Vec2.limit = function(a, max, result) {
-  if (!result) {
-    result = a;
-  }
-  var x = a[0];
-  var y = a[1];
-  var ratio = max / sqrt(x * x + y * y);
-  if (ratio < 1) {
-    result[0] = x * ratio;
-    result[1] = y * ratio;
-  } else if (result !== a) {
-    result[0] = x;
-    result[1] = y;
-  }
-  return result;
+	if (!result) {
+		result = a;
+	}
+	var x = a[0];
+	var y = a[1];
+	var ratio = max / sqrt(x * x + y * y);
+	if (ratio < 1) {
+		result[0] = x * ratio;
+		result[1] = y * ratio;
+	} else if (result !== a) {
+		result[0] = x;
+		result[1] = y;
+	}
+	return result;
 };
 
 Vec2.rad = function(a, b) {
-  if (!b) {
-    return Mth.atan2(a[1], a[0]);
-  }
-  return Mth.acos(Vec2.dot(Vec2.norm(a, radCache[0]), Vec2.norm(b, radCache[1])));
+	if (!b) {
+		return Mth.atan2(a[1], a[0]);
+	}
+	return Mth.acos(Vec2.dot(Vec2.norm(a, radCache[0]), Vec2.norm(b, radCache[1])));
 };
 
 Vec2.rot = function(a, theta, result) {
-  if (!result) {
-    result = a;
-  }
-  var sinA = Mth.sin(theta);
-  var cosA = Mth.cos(theta);
-  var x = a[0];
-  var y = a[1];
-  result[0] = x * cosA - y * sinA;
-  result[1] = x * sinA + y * cosA;
-  return result;
+	if (!result) {
+		result = a;
+	}
+	var sinA = Mth.sin(theta);
+	var cosA = Mth.cos(theta);
+	var x = a[0];
+	var y = a[1];
+	result[0] = x * cosA - y * sinA;
+	result[1] = x * sinA + y * cosA;
+	return result;
 };
 
 Vec2.rotAxis = function(a, b, theta, result) {
-  return Vec2.add(
-    Vec2.rot(
-      Vec2.sub(a, b, result || a),
-      theta
-    ),
-    b
-  );
+	return Vec2.add(
+		Vec2.rot(
+			Vec2.sub(a, b, result || a),
+			theta
+		),
+		b
+	);
 };
 
 Vec2.lookAt = function(a, b, result) {
-  var len = Vec2.len(a);
-  return Vec2.norm(Vec2.rot(a, Mth.atan2(b[0] - a[0], b[1] - a[1]) - Mth.atan2(a[1], a[0]), result || a), null, len);
+	var len = Vec2.len(a);
+	return Vec2.norm(Vec2.rot(a, Mth.atan2(b[0] - a[0], b[1] - a[1]) - Mth.atan2(a[1], a[0]), result || a), null, len);
 };
 
 Vec2.variant = function(a, delta, result) {
-  if (!result) {
-    result = a;
-  }
-  result[0] = a[0] + Math.rand(-delta, delta);
-  result[1] = a[1] + Math.rand(-delta, delta);
-  return result;
+	if (!result) {
+		result = a;
+	}
+	result[0] = a[0] + Math.rand(-delta, delta);
+	result[1] = a[1] + Math.rand(-delta, delta);
+	return result;
 };
 
 /**
@@ -665,9 +679,9 @@ Vector._tmpBezierX = new Array(64);
 Vector._tmpBezierY = new Array(64);
 
 Vector.calcPathBezier = function (points, delta) {
-    var result = new Vector(0, 0);
-    Vector.setCalcPathBezier(points, delta, result);
-    return result;
+		var result = new Vector(0, 0);
+		Vector.setCalcPathBezier(points, delta, result);
+		return result;
 };
 
 /**
@@ -677,32 +691,32 @@ Vector.calcPathBezier = function (points, delta) {
  * @param result {Vector}
  *
 Vector.setCalcPathBezier = function (points, delta, result) {
-    var count = points.length;
-    if (count <= 1) {
-        result.x = result.y = 0;
-        return;
-    }
+		var count = points.length;
+		if (count <= 1) {
+				result.x = result.y = 0;
+				return;
+		}
 
-    var xs = Vector._tmpBezierX,
-        ys = Vector._tmpBezierY,
-        d1 = 1 - delta;
+		var xs = Vector._tmpBezierX,
+				ys = Vector._tmpBezierY,
+				d1 = 1 - delta;
 
-    for (var j = 0; j < count; j++) {
-        var point = points[j];
-        xs[j] = point.x;
-        ys[j] = point.y;
-    }
+		for (var j = 0; j < count; j++) {
+				var point = points[j];
+				xs[j] = point.x;
+				ys[j] = point.y;
+		}
 
-    var countMinusOne = count - 1;
-    for (; countMinusOne > 0; count--, countMinusOne--) {
-        var i = 0, iPlusOne = 1;
-        for (; i < countMinusOne; i++, iPlusOne++) {
-            xs[i] = xs[i] * d1 + xs[iPlusOne] * delta;
-            ys[i] = ys[i] * d1 + ys[iPlusOne] * delta;
-        }
-    }
-    result.x = xs[0];
-    result.y = ys[0];
+		var countMinusOne = count - 1;
+		for (; countMinusOne > 0; count--, countMinusOne--) {
+				var i = 0, iPlusOne = 1;
+				for (; i < countMinusOne; i++, iPlusOne++) {
+						xs[i] = xs[i] * d1 + xs[iPlusOne] * delta;
+						ys[i] = ys[i] * d1 + ys[iPlusOne] * delta;
+				}
+		}
+		result.x = xs[0];
+		result.y = ys[0];
 };
  */
 
@@ -720,104 +734,104 @@ module.exports.Vec2 = Vec2;
  * @param {[type]} ty      [description]
  */
 var Mat2 = Mth.Mat2 = function(fromOrA, b, c, d, tx, ty) {
-  if (b != null) {
-    return new ARRAY_TYPE([fromOrA, b, c, d, tx, ty]);
-  }
-  if (fromOrA != null) {
-    return new ARRAY_TYPE(fromOrA);
-  }
-  return new ARRAY_TYPE(Mat2.identity);
+	if (b != null) {
+		return new ARRAY_TYPE([fromOrA, b, c, d, tx, ty]);
+	}
+	if (fromOrA != null) {
+		return new ARRAY_TYPE(fromOrA);
+	}
+	return new ARRAY_TYPE(Mat2.identity);
 };
 
 Mat2.identity = Mat2(1, 0, 0, 1, 0, 0);
 
 Mat2.set = function(result, a, b, c, d, tx, ty) {
-  result[0] = a || 0;
-  result[1] = b || 0;
-  result[2] = c || 0;
-  result[3] = d || 0;
-  result[4] = tx || 0;
-  result[5] = ty || 0;
-  return result;
+	result[0] = a || 0;
+	result[1] = b || 0;
+	result[2] = c || 0;
+	result[3] = d || 0;
+	result[4] = tx || 0;
+	result[5] = ty || 0;
+	return result;
 };
 
 Mat2.copy = function(result, b) {
-  result.set(b);
-  return result;
+	result.set(b);
+	return result;
 };
 
 Mat2.valid = function(a) {
-  return !(isNaN(a[0]) || isNaN(a[1]) || isNaN(a[2]) || isNaN(a[3]) || isNaN(a[4]) || isNaN(a[5]));
+	return !(isNaN(a[0]) || isNaN(a[1]) || isNaN(a[2]) || isNaN(a[3]) || isNaN(a[4]) || isNaN(a[5]));
 };
 
 Mat2.toString = function(a) {
-  return "[" + a[0] + ", " + a[1] + " | " + a[2] + ", " + a[3] + " | " + a[4] + ", " + a[5] + "]";
+	return "[" + a[0] + ", " + a[1] + " | " + a[2] + ", " + a[3] + " | " + a[4] + ", " + a[5] + "]";
 };
 
 Mat2.mul = function(a, b, result) {
-  result || (result = a);
-  var aa = a[0];
-  var ab = a[1];
-  var ac = a[2];
-  var ad = a[3];
-  var atx = a[4];
-  var aty = a[5];
-  var ba = b[0];
-  var bb = b[1];
-  var bc = b[2];
-  var bd = b[3];
-  var btx = b[4];
-  var bty = b[5];
-  result[0] = aa * ba + ab * bc;
-  result[1] = aa * bb + ab * bd;
-  result[2] = ac * ba + ad * bc;
-  result[3] = ac * bb + ad * bd;
-  result[4] = ba * atx + bc * aty + btx;
-  result[5] = bb * atx + bd * aty + bty;
-  return result;
+	result || (result = a);
+	var aa = a[0];
+	var ab = a[1];
+	var ac = a[2];
+	var ad = a[3];
+	var atx = a[4];
+	var aty = a[5];
+	var ba = b[0];
+	var bb = b[1];
+	var bc = b[2];
+	var bd = b[3];
+	var btx = b[4];
+	var bty = b[5];
+	result[0] = aa * ba + ab * bc;
+	result[1] = aa * bb + ab * bd;
+	result[2] = ac * ba + ad * bc;
+	result[3] = ac * bb + ad * bd;
+	result[4] = ba * atx + bc * aty + btx;
+	result[5] = bb * atx + bd * aty + bty;
+	return result;
 };
 
 Mat2.rot = function(a, rad, result) {
-  result || (result = a);
-  var aa = a[0];
-  var ab = a[1];
-  var ac = a[2];
-  var ad = a[3];
-  var atx = a[4];
-  var aty = a[5];
-  var st = Mth.sin(rad);
-  var ct = Mth.cos(rad);
-  result[0] = aa * ct + ab * st;
-  result[1] = -aa * st + ab * ct;
-  result[2] = ac * ct + ad * st;
-  result[3] = -ac * st + ct * ad;
-  result[4] = ct * atx + st * aty;
-  result[5] = ct * aty - st * atx;
-  return result;
+	result || (result = a);
+	var aa = a[0];
+	var ab = a[1];
+	var ac = a[2];
+	var ad = a[3];
+	var atx = a[4];
+	var aty = a[5];
+	var st = Mth.sin(rad);
+	var ct = Mth.cos(rad);
+	result[0] = aa * ct + ab * st;
+	result[1] = -aa * st + ab * ct;
+	result[2] = ac * ct + ad * st;
+	result[3] = -ac * st + ct * ad;
+	result[4] = ct * atx + st * aty;
+	result[5] = ct * aty - st * atx;
+	return result;
 };
 
 Mat2.scal = function(a, v, result) {
-  result || (result = a);
-  var vx = v[0];
-  var vy = v[1];
-  result[0] = a[0] * vx;
-  result[1] = a[1] * vy;
-  result[2] = a[2] * vx;
-  result[3] = a[3] * vy;
-  result[4] = a[4] * vx;
-  result[5] = a[5] * vy;
-  return result;
+	result || (result = a);
+	var vx = v[0];
+	var vy = v[1];
+	result[0] = a[0] * vx;
+	result[1] = a[1] * vy;
+	result[2] = a[2] * vx;
+	result[3] = a[3] * vy;
+	result[4] = a[4] * vx;
+	result[5] = a[5] * vy;
+	return result;
 };
 
 Mat2.trans = function(a, v, result) {
-  result || (result = a);
-  result[0] = a[0];
-  result[1] = a[1];
-  result[2] = a[2];
-  result[3] = a[3];
-  result[4] = a[4] + v[0];
-  result[5] = a[5] + v[1];
-  return result;
+	result || (result = a);
+	result[0] = a[0];
+	result[1] = a[1];
+	result[2] = a[2];
+	result[3] = a[3];
+	result[4] = a[4] + v[0];
+	result[5] = a[5] + v[1];
+	return result;
 };
 
 module.exports.Mat2 = Mat2;
@@ -1055,101 +1069,105 @@ function Renderer(element, size) {
   this.reflow();
 }
 
-Renderer.prototype.handleEvent = function(evt) {
-  if (~evt.type.indexOf('fullscreenchange')) {
-    this.fullscreenChange();
-  } else {
-    this.reflow();
-  }
-};
+Renderer.prototype  = {
 
-Renderer.prototype.reflow = function() {
-  var browser = Vec2.set(this.browser, window.innerWidth, window.innerHeight);
-  var scale = Math.min(this.browser[0] / this.content[0], this.browser[1] / this.content[1]);
-  if (scale !== this.scale) {
-    this.scale = scale;
-    Vec2.scal(this.content, this.scale, this.size);
-  }
-  var off = Vec2.scal(Vec2.sub(browser, this.size, this.margin), 0.5);
-  var rule = "translate(" + off[0] + "px, " + off[1] + "px) scale(" + scale + ")";
-  this.element.style.transform = rule;
-  this.element.style.webkitTransform = rule;
-};
-
-Renderer.prototype.save = function() {
-  var ctx = this.buffer ? this.bufctx : this.ctx;
-  if (this.color) {
-    ctx.fillStyle = Color.rgba(this.color);
-    ctx.fillRect(0, 0, this.content[0], this.content[1]);
-  } else {
-    ctx.clearRect(0, 0, this.content[0], this.content[1]);
-  }
-  return ctx;
-};
-
-Renderer.prototype.restore = function() {
-  if (this.buffer) {
-    this.ctx.clearRect(0, 0, this.content[0], this.content[1]);
-    this.ctx.drawImage(this.buf, 0, 0);
-  }
-};
-
-// FIXME: Unused
-Renderer.prototype.center = function(pos) {
-  Vec2.set(this.pos, pos[0] - this.size[0] / 2, pos[0] - this.size[1] / 2);
-  return this;
-};
-
-// FIXME: Unused
-Renderer.prototype.cull = function(entity) {
-  var bounds = entity.bounds;
-  if (!bounds) {
-    return false;
-  }
-  if (bounds.withinRect(this.pos, this.content)) {
-    if (bounds.culled) {
-      bounds.culled = false;
+    handleEvent: function(evt) {
+    if (~evt.type.indexOf('fullscreenchange')) {
+      this.fullscreenChange();
+    } else {
+      this.reflow();
     }
-    return false;
-  }
-  if (!bounds.culled) {
-    bounds.culled = true;
-  }
-  return true;
-};
+  },
 
-Renderer.prototype.isFullscreen = function() {
-  var doc = document;
-  return doc.fullscreen || doc.mozFullScreen || doc.webkitIsFullScreen;
-};
+  reflow: function() {
+    var browser = Vec2.set(this.browser, window.innerWidth, window.innerHeight);
+    var scale = Math.min(this.browser[0] / this.content[0], this.browser[1] / this.content[1]);
+    if (scale !== this.scale) {
+      this.scale = scale;
+      Vec2.scal(this.content, this.scale, this.size);
+    }
+    var off = Vec2.scal(Vec2.sub(browser, this.size, this.margin), 0.5);
+    var rule = "translate(" + off[0] + "px, " + off[1] + "px) scale(" + scale + ")";
+    this.element.style.transform = rule;
+    this.element.style.webkitTransform = rule;
+  },
 
-Renderer.prototype.requestFullscreen = function() {
-  if (!this.isFullscreen()) {
-    var target = this.element.parentNode;
-    if ('webkitRequestFullScreen' in target) {
-      target.webkitRequestFullScreen();
-    } else if ('mozRequestFullScreen' in target) {
-      target.mozRequestFullScreen();
+  save: function() {
+    var ctx = this.buffer ? this.bufctx : this.ctx;
+    if (this.color) {
+      ctx.fillStyle = Color.rgba(this.color);
+      ctx.fillRect(0, 0, this.content[0], this.content[1]);
+    } else {
+      ctx.clearRect(0, 0, this.content[0], this.content[1]);
+    }
+    return ctx;
+  },
+
+  restore: function() {
+    if (this.buffer) {
+      this.ctx.clearRect(0, 0, this.content[0], this.content[1]);
+      this.ctx.drawImage(this.buf, 0, 0);
+    }
+  },
+
+  // FIXME: Unused
+  center: function(pos) {
+    Vec2.set(this.pos, pos[0] - this.size[0] / 2, pos[0] - this.size[1] / 2);
+    return this;
+  },
+
+  // FIXME: Unused
+  cull: function(entity) {
+    var bounds = entity.bounds;
+    if (!bounds) {
+      return false;
+    }
+    if (bounds.withinRect(this.pos, this.content)) {
+      if (bounds.culled) {
+        bounds.culled = false;
+      }
+      return false;
+    }
+    if (!bounds.culled) {
+      bounds.culled = true;
+    }
+    return true;
+  },
+
+  isFullscreen: function() {
+    var doc = document;
+    return doc.fullscreen || doc.mozFullScreen || doc.webkitIsFullScreen;
+  },
+
+  requestFullscreen: function() {
+    if (!this.isFullscreen()) {
+      var target = this.element.parentNode;
+      if ('webkitRequestFullScreen' in target) {
+        target.webkitRequestFullScreen();
+      } else if ('mozRequestFullScreen' in target) {
+        target.mozRequestFullScreen();
+      }
+    }
+  },
+
+  fullscreenChange: function() {
+    if (this.orientation) {
+      this.lockOrientation(this.orientation);
+    }
+  },
+
+  lockOrientation: function(format) {
+    if (format == null) {
+      format = this.orientation;
+    }
+    var target = window.screen;
+    if ('lockOrientation' in target) {
+      screen.lockOrientation(format);
+    } else if ('mozLockOrientation' in target) {
+      screen.mozLockOrientation(format);
     }
   }
-};
 
-Renderer.prototype.fullscreenChange = function() {
-  if (this.orientation) {
-    this.lockOrientation(this.orientation);
-  }
-};
-
-Renderer.prototype.lockOrientation = function(format) {
-  if (format == null) {
-    format = this.orientation;
-  }
-  var target = window.screen;
-  if ('lockOrientation' in target) {
-    screen.lockOrientation(format);
-  } else if ('mozLockOrientation' in target) {
-    screen.mozLockOrientation(format);
-  }
 };
 
 module.exports = Renderer;
@@ -2352,20 +2370,20 @@ var Engine = require('./engine');
  */
 function Collider() {}
 
-Collider.prototype = Object.create(Component.prototype);
+Collider.prototype = {
 
-Collider.prototype.tag = 'collider';
+  attributes: {
+    trigger: false,
+    include: null,
+    exclude: null
+  },
 
-Collider.prototype.attributes = {
-  trigger: false,
-  include: null,
-  exclude: null
-};
+  create: function(attributes) {
+    this.trigger = attributes.trigger;
+    this.include = attributes.include;
+    this.exclude = attributes.exclude;
+  }
 
-Collider.prototype.create = function(attributes) {
-  this.trigger = attributes.trigger;
-  this.include = attributes.include;
-  this.exclude = attributes.exclude;
 };
 
 Collider.simulate = function(dt) {
@@ -2440,11 +2458,11 @@ Collider.simulate = function(dt) {
   }
 };
 
-new Pool(Collider);
+new Component('collider', Collider);
 
 module.exports = Collider;
 
-},{"./component":6,"./pool":7,"./math":3,"./engine":2}],13:[function(require,module,exports){'use strict';
+},{"./component":6,"./pool":7,"./engine":2,"./math":3}],13:[function(require,module,exports){'use strict';
 
 var Component = require('./component');
 var Pool = require('./pool');
@@ -2459,52 +2477,52 @@ function Kinetic() {
   this.continuous = Vec2();
 }
 
-Kinetic.prototype = Object.create(Component.prototype);
-
-Kinetic.prototype.tag = 'kinetic';
-
 Kinetic.gravity = null;
 
-Kinetic.prototype.attributes = {
-  mass: 1,
-  drag: 0.999,
-  friction: 15,
-  fixed: false,
-  maxVelocity: 75,
-  maxForce: 2000,
-  force: Vec2(),
-  continuous: Vec2(),
-  velocity: Vec2(),
-  sleepVelocity: 1,
-  fast: false
-};
+Kinetic.prototype = {
 
-Kinetic.prototype.create = function(attributes) {
-  this.mass = attributes.mass;
-  this.drag = attributes.drag;
-  this.friction = attributes.friction;
-  this.fixed = attributes.fixed;
-  this.maxVelocity = attributes.maxVelocity;
-  this.maxForce = attributes.maxForce;
-  this.fast = attributes.fast;
-  this.sleepVelocity = attributes.sleepVelocity;
-  Vec2.copy(this.velocity, attributes.velocity);
-  Vec2.copy(this.force, attributes.force);
-  Vec2.copy(this.continuous, attributes.continuous);
-  this.sleeping = false;
-};
+  attributes: {
+    mass: 1,
+    drag: 0.999,
+    friction: 15,
+    fixed: false,
+    maxVelocity: 75,
+    maxForce: 2000,
+    force: Vec2(),
+    continuous: Vec2(),
+    velocity: Vec2(),
+    sleepVelocity: 1,
+    fast: false
+  },
 
-Kinetic.prototype.applyImpulse = function(impulse) {
-  Vec2.add(
-    this.force,
-    (this.mass !== 1) ?
-      Vec2.scal(impulse, 1 / (this.mass || 1), cache) :
-      impulse
-  );
-};
+  create: function(attributes) {
+    this.mass = attributes.mass;
+    this.drag = attributes.drag;
+    this.friction = attributes.friction;
+    this.fixed = attributes.fixed;
+    this.maxVelocity = attributes.maxVelocity;
+    this.maxForce = attributes.maxForce;
+    this.fast = attributes.fast;
+    this.sleepVelocity = attributes.sleepVelocity;
+    Vec2.copy(this.velocity, attributes.velocity);
+    Vec2.copy(this.force, attributes.force);
+    Vec2.copy(this.continuous, attributes.continuous);
+    this.sleeping = false;
+  },
 
-Kinetic.prototype.applyForce = function(force) {
-  Vec2.add(this.continuous, force);
+  applyImpulse: function(impulse) {
+    Vec2.add(
+      this.force,
+      (this.mass !== 1) ?
+        Vec2.scal(impulse, 1 / (this.mass || 1), cache) :
+        impulse
+    );
+  },
+
+  applyForce: function(force) {
+    Vec2.add(this.continuous, force);
+  }
+
 };
 
 Kinetic.simulate = function(dt) {
@@ -2598,7 +2616,7 @@ Kinetic.simulate = function(dt) {
   }
 };
 
-new Pool(Kinetic);
+new Component('kinetic', Kinetic);
 
 module.exports = Kinetic;
 

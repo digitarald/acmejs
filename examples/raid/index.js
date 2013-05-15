@@ -7,7 +7,10 @@ Engine.init(document.getElementById('game-1'));
 var Vec2 = require('../../lib/core/math').Vec2;
 var Renderer = require('../../lib/core/renderer');
 
-Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
+Engine.renderer = new Renderer(
+	Engine.element.getElementsByClassName('game-canvas')[0],
+	Vec2(480, 320)
+);
 
 var Entity = require('../../lib/core/entity');
 var Component = require('../../lib/core/component');
@@ -48,26 +51,6 @@ GameController.prototype = {
 };
 
 new Component('gameController', GameController);
-
-var defaultSequence = {
-	walkS: {
-		frames: [0, 1, 2, 1],
-		next: 'walkS'
-	},
-	walkW: {
-		frames: [3, 4, 5, 4],
-		next: 'walkW'
-	},
-	walkN: {
-		frames: [9, 10, 11, 10],
-		next: 'walkN'
-	},
-	walkE: {
-		frames: [6, 7, 8, 7],
-		next: 'walkE'
-	}
-};
-
 
 /**
  * Component: Hero
@@ -152,6 +135,26 @@ Hero.prototype = {
 
 };
 
+
+var defaultSequence = {
+	walkS: {
+		frames: [0, 1, 2, 1],
+		next: 'walkS'
+	},
+	walkW: {
+		frames: [3, 4, 5, 4],
+		next: 'walkW'
+	},
+	walkN: {
+		frames: [9, 10, 11, 10],
+		next: 'walkN'
+	},
+	walkE: {
+		frames: [6, 7, 8, 7],
+		next: 'walkE'
+	}
+};
+
 Hero.sheet = new Sprite.Sheet({
 	sprites: new Sprite.Asset('./assets/hero.png'),
 	size: Vec2(32, 32),
@@ -204,7 +207,6 @@ Health.prototype = {
 };
 
 new Component('health', Health);
-
 
 /**
  * Component: Enemy
