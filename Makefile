@@ -19,6 +19,9 @@ deploy:
 	# so two lines: one if no commit, one if something to commit
 	@git commit -a -m "New deploy" && git push -f origin HEAD:gh-pages && git reset HEAD~
 
+deploy-soft:
+	git push -f origin HEAD:gh-pages
+
 # depends on `watchr`:
 #   gem install watchr
 #   gem install ruby-fsevent
