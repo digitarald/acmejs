@@ -4,7 +4,6 @@
 	"description": "Cross-platform, low-garbage, entity/component JavaScript game framework",
 	"version": "0.0.2",
 	"keywords": ["acmejs", "game", "canvas"],
-	"dependencies": {},
 	"license": "MIT",
 	"dependencies": {
 		"component/raf": "*"
@@ -12,13 +11,28 @@
 	"main": "index.js",
 	"scripts": [
 		"index.js",
-		"lib/core/engine.js",
-		"lib/core/pool.js",
-		"lib/core/component.js",
-		"lib/core/entity.js",
+		"lib/core/math-random.js",
 		"lib/core/math.js",
-		"lib/core/input.js",
+		"lib/core/color.js",
+		"lib/core/pool.js",
+		"lib/core/engine.js",
+		"lib/core/entity.js",
+		"lib/core/component.js",
+		"lib/core/renderer.js",
+		"lib/core/console.js",
 		"lib/core/transform.js",
-		"lib/core/renderer.js"
+		"lib/core/bounds.js",
+		"lib/core/input.js",
+		"lib/core/sprite.js",
+		"lib/core/border.js",
+		"lib/core/collider.js",
+		"lib/core/kinetic.js",
+		"lib/core/boid.js",
+		"lib/core/jitter.js",
+		"lib/core/particle.js",
+		"lib/math/mat2.js",
+		"lib/labs/perlin.js",
+		"lib/labs/heightmap.js"
 	]
 }
+

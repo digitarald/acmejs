@@ -1,28 +1,27 @@
 'use strict';
 
-var Vec2 = require('../../lib/core/math').Vec2;
-var Engine = require('../../lib/core/engine');
+var acmejs = require('acmejs');
+
+var Vec2 = acmejs.Math.Vec2;
+var Color = acmejs.Color;
+var Engine = acmejs.Engine;
 
 Engine.init(document.getElementById('game-1'));
 
-var Renderer = require('../../lib/core/renderer');
-Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(960, 640));
+var Renderer = acmejs.Renderer;
+Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
+Engine.renderer.color = Color.black;
 
-var Entity = require('../../lib/core/entity');
-var Component = require('../../lib/core/component');
-var Pool = require('../../lib/core/pool');
-var Color = require('../../lib/core/color');
-var Particle = require('../../lib/core/particle');
-require('../../lib/core/transform');
-require('../../lib/core/border');
-require('../../lib/core/collider');
-require('../../lib/core/kinetic');
-require('../../lib/core/jitter');
-require('../../lib/core/boid');
+var Entity = acmejs.Entity;
+var Component = acmejs.Component;
+var Particle = acmejs.Particle;
+
 
 function GameController() {
   this.started = 0;
 }
+
+var vel = Vec2();
 
 GameController.prototype.update = function(dt) {
   var input = Engine.input;
@@ -31,10 +30,13 @@ GameController.prototype.update = function(dt) {
     var i = 100 * dt * factor | 0;
     var speed = 10;
     while (i--) {
-      var spark = SparkPrefab.alloc(this.root);
-      Vec2.scal(Vec2.set(spark.kinetic.velocity, Math.rand(-speed, speed), Math.rand(-speed, speed)), factor);
-      Vec2.variant(input.pos, 10, spark.transform.pos);
-      spark.particle.radius = Math.rand(5, 25);
+      var spark = SparkPrefab.create(this.root);
+      Vec2.set(vel, Math.rand(-speed, speed), Math.rand(-speed, speed))
+      Vec2.scale(vel, factor * 25);
+      spark.kinetic.applyForce(vel);
+      // spark.kinetic.velocity
+      Vec2.variant(input.position, 10, spark.transform.position);
+      spark.particle.radius = Math.rand(2, 15);
     }
   } else if (this.started) {
     this.started = 0;
@@ -53,17 +55,20 @@ var SparkPrefab = new Entity.Prefab({
     maxForce: 0
   },
   particle: {
-    lifetime: 5,
-    // composite: 'multiply',
+    lifetime: 4,
+    composite: 'lighter',
     fade: Math.quadIn,
-    shrink: null,
+    shrink: Math.quadIn,
     sprite: Particle.generateSprite(Color(164, 164, 164), 1)
   },
-  jitter: null
+  jitter: {
+    // factor: 0.5,
+    // force: 2000
+  }
 });
 
 
-Engine.gameScene = Entity.alloc(null, {
+Engine.gameScene = Entity.create(null, {
   gameController: null
 });
 

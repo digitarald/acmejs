@@ -45,9 +45,9 @@ GameController.prototype.spawnBodies = function(count) {
   while (count--) {
     var color = Math.floor(Math.rand(0, this.colors.length - 1));
     var radius = Math.rand(5, 15);
-    this.root.addChild('body', {
+    this.root.createChild('body', {
       transform: {
-        pos: Vec2(Math.rand(25, 295), Math.rand(25, 295))
+        position: Vec2(Math.rand(25, 295), Math.rand(25, 295))
       },
       bounds: {
         radius: radius
@@ -66,7 +66,7 @@ GameController.prototype.spawnBodies = function(count) {
 GameController.prototype.update = function(dt) {
   var input = Engine.input;
   if (input.support.orientation) {
-    // Vec2.scal(input.orientation, 100, this.root.gravity);
+    // Vec2.scale(input.orientation, 100, this.root.gravity);
   }
 };
 */
@@ -93,7 +93,7 @@ Body.prototype.create = function(attributes) {
 
 Body.prototype.render = function(ctx) {
   ctx.save();
-  var pos = this.transform.pos;
+  var pos = this.transform.position;
   ctx.fillStyle = Color.rgba(this.color);
   ctx.strokeStyle = Color.rgba(this.stroke);
   ctx.lineWidth = 1;
@@ -128,7 +128,7 @@ new Entity.Prefab('body', {
  * Init
  */
 
-Engine.gameScene = Entity.alloc(null, {
+Engine.gameScene = Entity.create(null, {
   gameController: null
 });
 

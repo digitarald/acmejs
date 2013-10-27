@@ -7,7 +7,7 @@ html, body
 	overflow hidden
 
 body
-	background #f5f5f5 url('./css/square_bg.png')
+	background #eee
 	overflow hidden
 
 .game
@@ -26,9 +26,8 @@ body
 
 		background-color #fff
 
-
 		// Special FX
-		transition -webkit-filter .3s ease
+		transition -webkit-filter .2s ease
 		-webkit-transition -webkit-filter .3s ease
 		&.state-interference
 			-webkit-filter grayscale(0.5) blur(5px)
@@ -36,12 +35,12 @@ body
 			-webkit-filter grayscale(0.5) contrast(2)
 
 		canvas
-			image-rendering optimize-contrast
+			image-rendering crisp-edges
 			image-rendering -moz-crisp-edges
 			image-rendering -webkit-optimize-contrast
 
 .theme-dark
-	background #222 url('./css/hixs_pattern_evolution.png')
+	background #222
 
 	.game-canvas
 		background-color #000

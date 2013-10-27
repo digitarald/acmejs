@@ -36,13 +36,13 @@ GameController = (function(_super) {
     return GameController.__super__.constructor.apply(this, arguments);
   }
 
-  GameController.prototype.tag = 'gameController';
+  GameController.prototype.type = 'gameController';
 
   GameController.prototype.create = function() {
     this.root.gravity = Vec2(0, 10);
-    Entity.alloc(this.root, {
+    this.root.createChild({
       transform: {
-        pos: Vec2(240, 283)
+        position: Vec2(240, 283)
       },
       bounds: {
         shape: 'rect',
@@ -53,9 +53,9 @@ GameController = (function(_super) {
       },
       boundsDebug: null
     });
-    Entity.alloc(this.root, {
+    this.root.createChild({
       transform: {
-        pos: Vec2(240, 7)
+        position: Vec2(240, 7)
       },
       bounds: {
         shape: 'rect',
@@ -66,9 +66,9 @@ GameController = (function(_super) {
       },
       boundsDebug: null
     });
-    Entity.alloc(this.root, {
+    this.root.createChild({
       transform: {
-        pos: Vec2(7, 160)
+        position: Vec2(7, 160)
       },
       bounds: {
         shape: 'rect',
@@ -79,9 +79,9 @@ GameController = (function(_super) {
       },
       boundsDebug: null
     });
-    Entity.alloc(this.root, {
+    this.root.createChild({
       transform: {
-        pos: Vec2(473, 160)
+        position: Vec2(473, 160)
       },
       bounds: {
         shape: 'rect',
@@ -93,16 +93,15 @@ GameController = (function(_super) {
       boundsDebug: null
     });
     this.spawnBoxes();
-    return this;
   };
 
   GameController.prototype.spawnBox = function() {
     var size, sphere;
     size = Math.rand(5, 25);
     sphere = Math.chance(0.5);
-    Box.Prefab.alloc(this.root, {
+    Box.Prefab.create(this.root, {
       transform: {
-        pos: Vec2(Math.rand(25, 450), Math.rand(25, 265))
+        position: Vec2(Math.rand(25, 450), Math.rand(25, 265))
       },
       bounds: {
         radius: size / 2,
@@ -128,9 +127,9 @@ GameController = (function(_super) {
     var input;
     input = Engine.input;
     if (input.touchState === 'began') {
-      Explosion.Prefab.alloc(this.root, {
+      Explosion.Prefab.create(this.root, {
         transform: {
-          pos: input.pos
+          position: input.position
         }
       });
     }
@@ -154,7 +153,7 @@ Box = (function(_super) {
     return Box.__super__.constructor.apply(this, arguments);
   }
 
-  Box.prototype.tag = 'box';
+  Box.prototype.type = 'box';
 
   Box.prototype.onCollide = function(other, impulse) {
     return this;
@@ -187,7 +186,7 @@ Explosion = (function(_super) {
 
   __extends(Explosion, _super);
 
-  Explosion.prototype.tag = 'explosion';
+  Explosion.prototype.type = 'explosion';
 
   Explosion.prototype.attributes = {
     lifetime: 0.25,
@@ -204,7 +203,7 @@ Explosion = (function(_super) {
     this.lifetime = attributes.lifetime;
     this.maxSize = attributes.maxSize;
     this.impulse = 50000;
-    this.pos = this.transform.pos;
+    this.position = this.transform.position;
     this.age = 0;
     return this;
   };
@@ -227,15 +226,15 @@ Explosion = (function(_super) {
   Explosion.prototype.explode = function() {
     var body, distSq, factor, i, impulse, maxSize, maxSizeSq, pos, pos2, _i, _j, _len, _ref;
     maxSize = this.maxSize, impulse = this.impulse;
-    pos = this.transform.pos;
+    pos = this.transform.position;
     maxSizeSq = maxSize * maxSize;
-    _ref = Body.pool.register;
+    _ref = Body.pool.heap;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       body = _ref[_i];
       if (!(body.enabled && !body.fixed)) {
         continue;
       }
-      pos2 = body.transform.pos;
+      pos2 = body.transform.position;
       distSq = Vec2.distSq(pos, pos2);
       if (distSq < maxSizeSq) {
         factor = 1 - Math.sqrt(distSq) / maxSize;
@@ -244,9 +243,9 @@ Explosion = (function(_super) {
     }
     return this;
     for (i = _j = 0; _j <= 10; i = ++_j) {
-      Spark.Prefab.alloc(this.root, {
+      Spark.Prefab.create(this.root, {
         transform: {
-          pos: pos
+          position: pos
         },
         b2Body: {
           velocity: Vec2(Math.rand(-100, 100), Math.rand(-100, 100))
@@ -259,7 +258,7 @@ Explosion = (function(_super) {
   Explosion.prototype.render = function(ctx) {
     var circles, factor, i, pos, _i;
     ctx.save();
-    pos = this.pos;
+    pos = this.position;
     circles = 10;
     for (i = _i = 1; _i <= circles; i = _i += 1) {
       factor = Math.quadOut(i / circles);
@@ -290,14 +289,14 @@ Spark = (function(_super) {
 
   __extends(Spark, _super);
 
-  Spark.prototype.tag = 'spark';
+  Spark.prototype.type = 'spark';
 
   function Spark() {
     this.lastPos = Vec2();
   }
 
   Spark.prototype.create = function() {
-    Vec2.copy(this.lastPos, this.transform.pos);
+    Vec2.copy(this.lastPos, this.transform.position);
     this.lifetime = 2.5;
     this.age = 0;
     return this;
@@ -314,7 +313,7 @@ Spark = (function(_super) {
 
   Spark.prototype.render = function(ctx) {
     var pos;
-    pos = this.transform.pos;
+    pos = this.transform.position;
     ctx.save();
     ctx.strokeStyle = Color.rgba(Color.white);
     ctx.beginPath();
@@ -349,7 +348,7 @@ Spark.Prefab = new Entity.Prefab({
   }
 });
 
-Engine.gameScene = Entity.alloc(null, {
+Engine.gameScene = Entity.create(null, {
   gameController: null
 });
 
