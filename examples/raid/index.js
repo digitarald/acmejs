@@ -60,6 +60,7 @@ new Component('gameController', GameController);
  *
  * Playable character.
  */
+
 function Hero() {
 	this.aimNormal = Vec2();
 }
@@ -124,14 +125,16 @@ Hero.prototype = {
 
 		this.cooldown = 0.05;
 
-		// var projectile = Entity.Prefab.create('projectile', this.root, {
-		// 	transform: {
-		// 		position: this.transform.position
-		// 	},
-		// 	kinetic: {
-		// 		velocity: vel
-		// 	}
-		// });
+		/*
+		var projectile = Entity.Prefab.create('projectile', this.root, {
+			transform: {
+				position: this.transform.position
+			},
+			kinetic: {
+				velocity: vel
+			}
+		});
+		*/
 		return true;
 	}
 
@@ -202,6 +205,7 @@ new Entity.Prefab('hero', {
 /**
  * Component: Health
  */
+
 function Health() {}
 
 Health.prototype = {
@@ -231,6 +235,7 @@ new Component('health', Health);
 /**
  * Component: Enemy
  */
+
 function Enemy() {}
 
 Enemy.prototype = {
@@ -286,6 +291,7 @@ new Entity.Prefab('enemy', {
 /**
  * Component: Projectile
  */
+
 function Projectile() {
 	this.lastPos = Vec2();
 }
@@ -324,7 +330,7 @@ Projectile.prototype = {
 		while (i--) {
 			var pos = this.transform.position;
 			var direction = Math.chance(0.2) ? -0.2 : 1;
-			var impulse = Vec2.scale(this.kinetic.velocity, direction * 15,particleVelocity);
+			var impulse = Vec2.scale(this.kinetic.velocity, direction * 15, particleVelocity);
 			Vec2.variant(impulse, speed * 2);
 
 			this.root.createChild('particle', {
@@ -333,7 +339,7 @@ Projectile.prototype = {
 					alpha: Math.rand(0.7, 1),
 					radius: Math.rand(1, 4),
 					shrink: Math.quadIn,
-  				fade: null,
+					fade: null,
 					sprite: Projectile.particleHit
 				},
 				kinetic: {

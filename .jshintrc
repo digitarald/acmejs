@@ -1,0 +1,17 @@
+{
+	// Environments
+	"browser": true,
+	"node": true,
+	"devel": true,
+
+	"eqnull": true,
+	"newcap": false,
+	"proto": true,
+
+	"quotmark": "single",
+	"trailing": true,
+
+	"globals": {
+		"module": false
+	}
+}

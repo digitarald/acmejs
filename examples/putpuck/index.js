@@ -140,7 +140,8 @@ Puck.prototype = {
 
 	create: function(attributes) {
 		// console.log('Puck.create', this, attributes);
-		this.player = attributes.player, this.field = attributes.field;
+		this.player = attributes.player;
+		this.field = attributes.field;
 		Color.copy(this.color, attributes.color);
 		Color.lerp(this.color, Color.black, 0.2, false, this.outlineColor);
 		this.outlineColor[3] = 0.3;
@@ -290,34 +291,38 @@ function Field() {
 	this.color = Color();
 }
 
-Field.prototype.attributes = {
-	color: Color.white,
-	out: false,
-	player: 0
-};
+Field.prototype = {
 
-Field.prototype.create = function(attributes) {
-	this.out = attributes.out, this.player = attributes.player;
-	Color.copy(this.color, attributes.color);
-	this.root.on(this, 'onKineticSleep');
-};
+	attributes: {
+		color: Color.white,
+		out: false,
+		player: 0
+	},
 
-Field.prototype.onKineticSleep = function(kinetic) {
-	if (!this.bounds.contains(kinetic.transform.position)) {
-		return;
-	}
-	if (this.out) {
-		kinetic.entity.destroy();
-	}
-	return false;
-};
+	create: function(attributes) {
+		this.out = attributes.out;
+		this.player = attributes.player;
+		Color.copy(this.color, attributes.color);
+		this.root.on(this, 'onKineticSleep');
+	},
 
-Field.prototype.render = function(ctx) {
-	if (this.out) {
-		return;
+	onKineticSleep: function(kinetic) {
+		if (!this.bounds.contains(kinetic.transform.position)) {
+			return;
+		}
+		if (this.out) {
+			kinetic.entity.destroy();
+		}
+		return false;
+	},
+
+	render: function(ctx) {
+		if (this.out) {
+			return;
+		}
+		ctx.fillStyle = Color.rgba(this.color);
+		ctx.fillRect(this.transform.position[0], this.transform.position[1], this.bounds.size[0], this.bounds.size[1]);
 	}
-	ctx.fillStyle = Color.rgba(this.color);
-	ctx.fillRect(this.transform.position[0], this.transform.position[1], this.bounds.size[0], this.bounds.size[1]);
 };
 
 new Component('field', Field);

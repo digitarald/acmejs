@@ -31,7 +31,7 @@ GameController.prototype.update = function(dt) {
     var speed = 10;
     while (i--) {
       var spark = SparkPrefab.create(this.root);
-      Vec2.set(vel, Math.rand(-speed, speed), Math.rand(-speed, speed))
+      Vec2.set(vel, Math.rand(-speed, speed), Math.rand(-speed, speed));
       Vec2.scale(vel, factor * 25);
       spark.kinetic.applyForce(vel);
       // spark.kinetic.velocity
