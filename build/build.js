@@ -215,7 +215,7 @@ function fallback(fn) {\n\
   setTimeout(fn, ms);\n\
   prev = curr;\n\
 }\n\
-//@ sourceURL=component-raf/index.js"
+//# sourceURL=component-raf/index.js"
 ));
 require.register("acmejs/index.js", Function("exports, require, module",
 "'use strict';\n\
@@ -244,7 +244,7 @@ module.exports = {\n\
   Perlin: require('./lib/labs/perlin'),\n\
   Heightmap: require('./lib/labs/heightmap')\n\
 };\n\
-//@ sourceURL=acmejs/index.js"
+//# sourceURL=acmejs/index.js"
 ));
 require.register("acmejs/lib/core/math-random.js", Function("exports, require, module",
 "'use strict';\n\
@@ -301,7 +301,7 @@ Object.defineProperty(random, 'seed', {\n\
 \n\
 random.seed = null;\n\
 \n\
-module.exports = random;//@ sourceURL=acmejs/lib/core/math-random.js"
+module.exports = random;//# sourceURL=acmejs/lib/core/math-random.js"
 ));
 require.register("acmejs/lib/core/math.js", Function("exports, require, module",
 "'use strict';\n\
@@ -321,14 +321,15 @@ var sqrt = Mth.sqrt;\n\
 var pow = Mth.pow;\n\
 var abs = Mth.abs;\n\
 var atan2 = Mth.atan2;\n\
+var rand = Mth.rand;\n\
 \n\
-const EPSILON = Mth.EPSILON = 0.001;\n\
+var EPSILON = Mth.EPSILON = 0.001;\n\
 \n\
-const PI = Mth.PI;\n\
-const TAU = Mth.TAU = PI * 2;\n\
-const HALF_PI = Mth.HALF_PI = PI / 2;\n\
-const RAD2DEG = Mth.RAD2DEG = 180 / PI;\n\
-const DEG2RAD = Mth.DEG2RAD = PI / 180;\n\
+var PI = Mth.PI;\n\
+var TAU = Mth.TAU = PI * 2;\n\
+var HALF_PI = Mth.HALF_PI = PI / 2;\n\
+var RAD2DEG = Mth.RAD2DEG = 180 / PI;\n\
+var DEG2RAD = Mth.DEG2RAD = PI / 180;\n\
 // Mth.PIRAD = 0.0174532925;\n\
 Mth.UID = 1;\n\
 \n\
@@ -454,7 +455,7 @@ Mth.smoothDamp = function(a, b, velocity, time, maxVelocity, dt) {\n\
 \tdampResult.value = value;\n\
 \tdampResult.velocity = velocity;\n\
 \treturn dampResult;\n\
-}\n\
+};\n\
 \n\
 /**\n\
  * Easing\n\
@@ -502,7 +503,7 @@ Mth.distAng = function(a, b) {\n\
 \tvar l = ab ? (-a - TAU + b) : (b - a);\n\
 \tvar r = ab ? (b - a) : (TAU - a + b);\n\
 \n\
-\treturn (Math.abs(l) > Math.abs(r)) ? r : l;\n\
+\treturn (abs(l) > abs(r)) ? r : l;\n\
 };\n\
 \n\
 /*\n\
@@ -532,7 +533,6 @@ var Vec2 = Mth.Vec2 = function(fromOrX, y) {\n\
 };\n\
 \n\
 Vec2.zero = Vec2.center = Vec2(0, 0);\n\
-Vec2.cache = [Vec2(), Vec2(), Vec2(), Vec2(), Vec2()];\n\
 Vec2.topLeft = Vec2(-1, -1);\n\
 Vec2.topCenter = Vec2(0, -1);\n\
 Vec2.topRight = Vec2(1, -1);\n\
@@ -562,7 +562,7 @@ Vec2.valid = function(a) {\n\
 };\n\
 \n\
 Vec2.toString = function(a) {\n\
-\treturn \"[\" + a[0] + \", \" + a[1] + \"]\";\n\
+\treturn '[' + a[0] + ', ' + a[1] + ']';\n\
 };\n\
 \n\
 var objVecCache = Vec2();\n\
@@ -716,7 +716,7 @@ var radCache = [Vec2(), Vec2()];\n\
 \n\
 Vec2.rad = function(a, b) {\n\
 \tif (!b) {\n\
-\t\treturn Mth.atan2(a[1], a[0]);\n\
+\t\treturn atan2(a[1], a[0]);\n\
 \t}\n\
 \treturn Mth.acos(\n\
 \t\tVec2.dot(Vec2.norm(a, radCache[0]), Vec2.norm(b, radCache[1]))\n\
@@ -747,8 +747,11 @@ Vec2.rotateAxis = function(a, b, theta, result) {\n\
 };\n\
 \n\
 Vec2.rotateTo = function(a, rad, result) {\n\
+\tif (!result) {\n\
+\t\tresult = a;\n\
+\t}\n\
 \tvar len = Vec2.len(a);\n\
-\treturn Vec2.rotate(Vec2.set(a, len, 0), rad);\n\
+\treturn Vec2.rotate(Vec2.set(result, len, 0), rad);\n\
 };\n\
 \n\
 Vec2.lookAt = function(a, b, result) {\n\
@@ -756,7 +759,7 @@ Vec2.lookAt = function(a, b, result) {\n\
 \treturn Vec2.norm(\n\
 \t\tVec2.rotate(\n\
 \t\t\ta,\n\
-\t\t\tMth.atan2(b[0] - a[0], b[1] - a[1]) - Mth.atan2(a[1], a[0]), result || a\n\
+\t\t\tatan2(b[0] - a[0], b[1] - a[1]) - atan2(a[1], a[0]), result || a\n\
 \t\t),\n\
 \t\tnull, len\n\
 \t);\n\
@@ -766,20 +769,20 @@ Vec2.variant = function(a, delta, result) {\n\
 \tif (!result) {\n\
 \t\tresult = a;\n\
 \t}\n\
-\tresult[0] = a[0] + Math.rand(-delta, delta);\n\
-\tresult[1] = a[1] + Math.rand(-delta, delta);\n\
+\tresult[0] = a[0] + rand(-delta, delta);\n\
+\tresult[1] = a[1] + rand(-delta, delta);\n\
 \treturn result;\n\
-}\n\
+};\n\
 \n\
 Vec2.variantRad = function(a, dt, ease, result) {\n\
-\treturn Vec2.rotate(a, Math.rand(-dt, dt, ease), result);\n\
+\treturn Vec2.rotate(a, rand(-dt, dt, ease), result);\n\
 };\n\
 \n\
 Vec2.variantLen = function(a, dt, ease, result) {\n\
-\treturn Vec2.norm(a, result, Vec2.len(a) + Math.rand(-dt, dt, ease));\n\
+\treturn Vec2.norm(a, result, Vec2.len(a) + rand(-dt, dt, ease));\n\
 };\n\
 \n\
-module.exports.Vec2 = Vec2;//@ sourceURL=acmejs/lib/core/math.js"
+module.exports.Vec2 = Vec2;//# sourceURL=acmejs/lib/core/math.js"
 ));
 require.register("acmejs/lib/core/color.js", Function("exports, require, module",
 "'use strict';\n\
@@ -867,7 +870,7 @@ Color.lerp = function(a, b, t, alpha, result) {\n\
 \n\
 Color.lerpList = function(result, list, t, ease) {\n\
   var last = list.length - 1;\n\
-  var t = Math.clamp(t * last, 0, last);\n\
+  t = Math.clamp(t * last, 0, last);\n\
   var start = t | 0;\n\
   var sub = (ease || Math.linear)(t - start);\n\
   if (sub < 0.02) {\n\
@@ -889,14 +892,13 @@ Color.rgba = function(a, alpha) {\n\
     alpha = a[3];\n\
   }\n\
   if (alpha > 0.98) {\n\
-    return \"rgb(\" + (a[0] | 0) + \", \" + (a[1] | 0) + \", \" + (a[2] | 0) + \")\";\n\
-  } else {\n\
-    return \"rgba(\" + (a[0] | 0) + \", \" + (a[1] | 0) + \", \" + (a[2] | 0) + \", \" + alpha + \")\";\n\
+    return 'rgb(' + (a[0] | 0) + ', ' + (a[1] | 0) + ', ' + (a[2] | 0) + ')';\n\
   }\n\
+  return 'rgba(' + (a[0] | 0) + ', ' + (a[1] | 0) + ', ' + (a[2] | 0) + ', ' + alpha + ')';\n\
 };\n\
 \n\
 module.exports = Color;\n\
-//@ sourceURL=acmejs/lib/core/color.js"
+//# sourceURL=acmejs/lib/core/color.js"
 ));
 require.register("acmejs/lib/core/pool.js", Function("exports, require, module",
 "'use strict';\n\
@@ -941,6 +943,7 @@ function Pool(cls) {\n\
 \n\
 \t\tvar types = Pool.typedCalls;\n\
 \t\tvar keys = Object.keys(proto).concat(Object.keys(cls));\n\
+\t\tvar key = '';\n\
 \n\
 \t\tvar fn = '';\n\
 \t\tfor (var i = 0, l = keys.length; i < l; i++) {\n\
@@ -952,10 +955,10 @@ function Pool(cls) {\n\
 \t\t\t\t}\n\
 \t\t\t\tthis.events.push(fn);\n\
 \t\t\t} else if (Pool.regxGetter.test(fn)) {\n\
-\t\t\t\tvar key = fn.substr(3, 1).toLowerCase() + fn.substr(4);\n\
+\t\t\t\tkey = fn.substr(3, 1).toLowerCase() + fn.substr(4);\n\
 \t\t\t\tPool.defineGetter(proto, key, fn);\n\
 \t\t\t} else if (Pool.regxSetter.test(fn)) {\n\
-\t\t\t\tvar key = fn.substr(3, 1).toLowerCase() + fn.substr(4);\n\
+\t\t\t\tkey = fn.substr(3, 1).toLowerCase() + fn.substr(4);\n\
 \t\t\t\tPool.defineSetter(proto, key, fn);\n\
 \t\t\t}\n\
 \t\t}\n\
@@ -980,8 +983,8 @@ Pool.prototype = {\n\
 \t * @return {String}\n\
 \t */\n\
 \ttoString: function() {\n\
-\t\treturn \"Pool \" + this.type +\n\
-\t\t\t\" [\" + this.allocated + \" / \" + this.heap.length + \"]\";\n\
+\t\treturn 'Pool ' + this.type +\n\
+\t\t\t' [' + this.allocated + ' / ' + this.heap.length + ']';\n\
 \t},\n\
 \n\
 \t/**\n\
@@ -1052,7 +1055,7 @@ Pool.prototype = {\n\
 \n\
 \t\t\t// Prepare sorting if needed\n\
 \t\t\tvar calls = this.calls;\n\
-\t\t\tfor (var i = 0, l = calls.length; i < l; i++) {\n\
+\t\t\tfor (i = 0, l = calls.length; i < l; i++) {\n\
 \t\t\t\tvar call = calls[i];\n\
 \t\t\t\tif (Pool.sorted[call] != null) {\n\
 \t\t\t\t\tPool.sorted[call] = true;\n\
@@ -1165,7 +1168,7 @@ Pool.dump = function(flush) {\n\
 \tvar byType = Pool.byType;\n\
 \tfor (var type in byType) {\n\
 \t\tvar pool = byType[type];\n\
-\t\tconsole.log(\"%s: %d/%d in use\", type, pool.allocated, pool.heap.length);\n\
+\t\tconsole.log('%s: %d/%d in use', type, pool.allocated, pool.heap.length);\n\
 \t}\n\
 \tif (flush) {\n\
 \t\tPool.flush();\n\
@@ -1209,7 +1212,7 @@ Pool.flush = function() {\n\
 \t\t\theap.splice(i, 1);\n\
 \t\t\tdealloced++;\n\
 \t\t}\n\
-\t\tconsole.log(\"%s: %d/%d flushed\", type, dealloced, heap.length);\n\
+\t\tconsole.log('%s: %d/%d flushed', type, dealloced, heap.length);\n\
 \t}\n\
 };\n\
 \n\
@@ -1235,7 +1238,7 @@ Pool.sortFn = function(a, b) {\n\
 };\n\
 \n\
 module.exports = Pool;\n\
-//@ sourceURL=acmejs/lib/core/pool.js"
+//# sourceURL=acmejs/lib/core/pool.js"
 ));
 require.register("acmejs/lib/core/engine.js", Function("exports, require, module",
 "'use strict';\n\
@@ -1353,7 +1356,7 @@ Engine.prototype.tick = function(time) {\n\
 \n\
 \t\tif (debug.profile && !debug.profileFrom) {\n\
 \t\t\tdebug.profileFrom = debug.profile;\n\
-\t\t\tconsole.profile(\"Frame \" + debug.profileFrom);\n\
+\t\t\tconsole.profile('Frame ' + debug.profileFrom);\n\
 \t\t}\n\
 \n\
 \t\tvar ping = perf.now();\n\
@@ -1399,7 +1402,7 @@ Engine.prototype.tick = function(time) {\n\
 \t\t}\n\
 \t\tif (debug.profileFrom) {\n\
 \t\t\tif (!--debug.profile) {\n\
-\t\t\t\tconsole.profileEnd(\"Frame \" + debug.profileFrom);\n\
+\t\t\t\tconsole.profileEnd('Frame ' + debug.profileFrom);\n\
 \t\t\t\tdebug.profileFrom = 0;\n\
 \t\t\t}\n\
 \t\t}\n\
@@ -1439,7 +1442,7 @@ var perf = window.performance || {};\n\
 perf.now = perf.now || perf.webkitNow || perf.msNow || perf.mozNow || Date.now;\n\
 \n\
 module.exports = engine;\n\
-//@ sourceURL=acmejs/lib/core/engine.js"
+//# sourceURL=acmejs/lib/core/engine.js"
 ));
 require.register("acmejs/lib/core/entity.js", Function("exports, require, module",
 "'use strict';\n\
@@ -1605,7 +1608,7 @@ Entity.prototype = {\n\
 \t\t\tthis.components[key].enable(state, true);\n\
 \t\t}\n\
 \t\tif (deep) {\n\
-\t\t\tfor (var key in this.children) {\n\
+\t\t\tfor (key in this.children) {\n\
 \t\t\t\tthis.children[key].enable(state, true);\n\
 \t\t\t}\n\
 \t\t}\n\
@@ -1665,7 +1668,7 @@ Entity.prototype = {\n\
 \t\t\tif (entity.enabled && entity.trigger(event, args) === false) {\n\
 \t\t\t\treturn false;\n\
 \t\t\t}\n\
-\t\t} while (entity = entity.parent);\n\
+\t\t} while ((entity = entity.parent));\n\
 \t},\n\
 \n\
 \t/**\n\
@@ -1796,7 +1799,7 @@ Prefab.prototype = {\n\
 Entity.Prefab = Prefab;\n\
 \n\
 module.exports = Entity;\n\
-//@ sourceURL=acmejs/lib/core/entity.js"
+//# sourceURL=acmejs/lib/core/entity.js"
 ));
 require.register("acmejs/lib/core/component.js", Function("exports, require, module",
 "'use strict';\n\
@@ -1847,8 +1850,8 @@ Component.prototype = {\n\
 \t * @return {String}\n\
 \t */\n\
 \ttoString: function() {\n\
-\t\treturn \"Component \" + this.type + \"#\" + this.uid +\n\
-\t\t\t\" [^ \" + this.entity + \"]\";\n\
+\t\treturn 'Component ' + this.type + '#' + this.uid +\n\
+\t\t\t' [^ ' + this.entity + ']';\n\
 \t},\n\
 \n\
 \t/**\n\
@@ -1917,7 +1920,7 @@ Component.prototype = {\n\
 \n\
 };\n\
 \n\
-module.exports = Component;//@ sourceURL=acmejs/lib/core/component.js"
+module.exports = Component;//# sourceURL=acmejs/lib/core/component.js"
 ));
 require.register("acmejs/lib/core/renderer.js", Function("exports, require, module",
 "'use strict';\n\
@@ -1984,8 +1987,8 @@ Renderer.prototype  = {\n\
       Vec2.scale(this.content, this.scale, this.size);\n\
     }\n\
     var offset = Vec2.scale(Vec2.sub(browser, this.size, this.margin), 0.5);\n\
-    var rule = \"translate(\" + offset[0] + \"px, \" +\n\
-      offset[1] + \"px) scale(\" + scale + \")\";\n\
+    var rule = 'translate(' + offset[0] + 'px, ' +\n\
+      offset[1] + 'px) scale(' + scale + ')';\n\
     this.element.style.transform = rule;\n\
     this.element.style.webkitTransform = rule;\n\
   },\n\
@@ -2069,7 +2072,7 @@ Renderer.prototype  = {\n\
 };\n\
 \n\
 module.exports = Renderer;\n\
-//@ sourceURL=acmejs/lib/core/renderer.js"
+//# sourceURL=acmejs/lib/core/renderer.js"
 ));
 require.register("acmejs/lib/core/console.js", Function("exports, require, module",
 "'use strict';\n\
@@ -2184,7 +2187,7 @@ Console.prototype = {\n\
 \t\tvar sectionCss = 'display: block;' +\n\
 \t\t\t'height: 0px;';\n\
 \t\tif (this.fancy) {\n\
-\t\t\tsectionCss += 'background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.25));'\n\
+\t\t\tsectionCss += 'background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.25));';\n\
 \t\t}\n\
 \n\
 \t\tvar i = this.width;\n\
@@ -2234,7 +2237,7 @@ Console.prototype = {\n\
 \t\t\tmargin = -this.height + 20;\n\
 \t\t\tdocument.cookie = 'console_max=; expires=' + (new Date()).toGMTString();\n\
 \t\t} else {\n\
-\t\t\tdocument.cookie = 'console_max=1'\n\
+\t\t\tdocument.cookie = 'console_max=1';\n\
 \t\t}\n\
 \t\tvar style = this.graphSpan.style;\n\
 \t\tstyle.marginTop = '' + margin + 'px';\n\
@@ -2344,7 +2347,7 @@ Console.prototype = {\n\
 \n\
 new Component('console', Console);\n\
 \n\
-module.exports = Console;//@ sourceURL=acmejs/lib/core/console.js"
+module.exports = Console;//# sourceURL=acmejs/lib/core/console.js"
 ));
 require.register("acmejs/lib/core/transform.js", Function("exports, require, module",
 "'use strict';\n\
@@ -2364,99 +2367,111 @@ var Mat2 = require('../math/mat2');\n\
  */\n\
 \n\
 function Transform() {\n\
-  this.position = Vec2();\n\
-  this.scale = Vec2();\n\
-  this._matrix = Mat2();\n\
-  this._matrixWorld = Mat2();\n\
+\tthis.position = Vec2();\n\
+\tthis.scale = Vec2();\n\
+\tthis._matrix = Mat2();\n\
+\tthis._matrixWorld = Mat2();\n\
 }\n\
 \n\
 Transform.prototype = {\n\
 \n\
-  attributes: {\n\
-    position: Vec2(),\n\
-    rotation: 0,\n\
-    scale: Vec2(1, 1),\n\
-    alpha: 1\n\
-  },\n\
+\tattributes: {\n\
+\t\tposition: Vec2(),\n\
+\t\trotation: 0,\n\
+\t\tscale: Vec2(1, 1),\n\
+\t\talpha: 1\n\
+\t},\n\
 \n\
-  create: function(attributes) {\n\
-    Vec2.copy(this.position, attributes.position);\n\
-    this.rotation = attributes.rotation;\n\
-    Vec2.copy(this.scale, attributes.scale);\n\
-    this.alpha = attributes.alpha;\n\
+\tcreate: function(attributes) {\n\
+\t\tVec2.copy(this.position, attributes.position);\n\
+\t\tthis.rotation = attributes.rotation;\n\
+\t\tVec2.copy(this.scale, attributes.scale);\n\
+\t\tthis.alpha = attributes.alpha;\n\
 \n\
-    var parent = this.entity.parent;\n\
-    this.parentTransform = parent ? parent.transform : null;\n\
-    this._dirty = true;\n\
-    this.matrixAutoUpdate = true;\n\
-    this._dirtyWorld = true;\n\
+\t\tvar parent = this.entity.parent;\n\
+\t\tthis.parentTransform = parent ? parent.transform : null;\n\
+\t\tthis._dirty = true;\n\
+\t\tthis.matrixAutoUpdate = true;\n\
+\t\tthis._dirtyWorld = true;\n\
 \n\
-    Vec2.set(this._matrix);\n\
-    Vec2.set(this._matrixWorld);\n\
-  },\n\
+\t\tVec2.set(this._matrix);\n\
+\t\tVec2.set(this._matrixWorld);\n\
+\t},\n\
 \n\
-  set dirty(to) {\n\
-    this._dirty = to;\n\
-  },\n\
+\tget dirty() {\n\
+\t\treturn this._dirty;\n\
+\t},\n\
 \n\
-  get matrix() {\n\
-    var matrix = this._matrix;\n\
-    if (this._dirty || this.matrixAutoUpdate) {\n\
-      Mat2.translate(Mat2.identity, this.position, matrix);\n\
-      Mat2.rotate(matrix, this.rotation);\n\
-      Mat2.scale(matrix, this.scale);\n\
-      this._dirty = false;\n\
-      this._dirtyWorld = true;\n\
-    }\n\
-    return matrix;\n\
-  },\n\
+\tset dirty(to) {\n\
+\t\tthis._dirty = to;\n\
+\t},\n\
 \n\
-  get matrixWorld() {\n\
-    var matrix = this.matrix;\n\
-    var parent = this.parentTransform;\n\
-    if (!parent) {\n\
-      return matrix;\n\
-    }\n\
-    var matrixWorld = this._matrixWorld\n\
-    if (this._dirtyWorld) {\n\
-      Mat2.multiply(parent.matrixWorld, matrix, matrixWorld);\n\
-      this._dirtyWorld = false;\n\
-    }\n\
-    return matrixWorld;\n\
-  },\n\
+\tget matrix() {\n\
+\t\tvar matrix = this._matrix;\n\
+\t\tif (this._dirty || this.matrixAutoUpdate) {\n\
+\t\t\tMat2.translate(Mat2.identity, this.position, matrix);\n\
+\t\t\tMat2.rotate(matrix, this.rotation);\n\
+\t\t\tMat2.scale(matrix, this.scale);\n\
+\t\t\tthis._dirty = false;\n\
+\t\t\tthis._dirtyWorld = true;\n\
+\t\t}\n\
+\t\treturn matrix;\n\
+\t},\n\
 \n\
-  get positionOnly() {\n\
-    var parent = this.parentTransform;\n\
-    return (!parent || parent.positionOnly) && this.rotation == 0 &&\n\
-      this.scale == 1;\n\
-  },\n\
+\tget matrixWorld() {\n\
+\t\tvar matrix = this.matrix;\n\
+\t\tvar parent = this.parentTransform;\n\
+\t\tif (!parent) {\n\
+\t\t\treturn matrix;\n\
+\t\t}\n\
+\t\tvar matrixWorld = this._matrixWorld;\n\
+\t\tif (this._dirtyWorld) {\n\
+\t\t\tMat2.multiply(parent.matrixWorld, matrix, matrixWorld);\n\
+\t\t\tthis._dirtyWorld = false;\n\
+\t\t}\n\
+\t\treturn matrixWorld;\n\
+\t},\n\
 \n\
-  compose: function(position, rotation, scale) {\n\
-    if (position != null) {\n\
-      Vec2.copy(this.position, position);\n\
-    }\n\
-    if (rotation != null) {\n\
-      this.rotation = rotation;\n\
-    }\n\
-    if (scale != null) {\n\
-      Vec2.copy(this.scale, scale);\n\
-    }\n\
-    this._dirty = true;\n\
-  },\n\
+\tget positionOnly() {\n\
+\t\tvar parent = this.parentTransform;\n\
+\t\treturn (!parent || parent.positionOnly) && this.rotation === 0 &&\n\
+\t\t\tthis.scale == 1;\n\
+\t},\n\
 \n\
-  applyMatrix: function(ctx) {\n\
-    var mtx = this.matrixWorld;\n\
-    ctx.setTransform(\n\
-      mtx[0], mtx[1], mtx[2], mtx[3],\n\
-      mtx[4] + 0.5 | 0, mtx[5] + 0.5 | 0\n\
-    );\n\
-  }\n\
+\tset positionOnly(to) {\n\
+\t\tif (to) {\n\
+\t\t\tthis.rotation = 0;\n\
+\t\t\tthis.scale = 1;\n\
+\t\t\tthis.parentTransform.positionOnly = true;\n\
+\t\t}\n\
+\t},\n\
+\n\
+\tcompose: function(position, rotation, scale) {\n\
+\t\tif (position != null) {\n\
+\t\t\tVec2.copy(this.position, position);\n\
+\t\t}\n\
+\t\tif (rotation != null) {\n\
+\t\t\tthis.rotation = rotation;\n\
+\t\t}\n\
+\t\tif (scale != null) {\n\
+\t\t\tVec2.copy(this.scale, scale);\n\
+\t\t}\n\
+\t\tthis._dirty = true;\n\
+\t},\n\
+\n\
+\tapplyMatrix: function(ctx) {\n\
+\t\tvar mtx = this.matrixWorld;\n\
+\t\tctx.setTransform(\n\
+\t\t\tmtx[0], mtx[1], mtx[2], mtx[3],\n\
+\t\t\tmtx[4] + 0.5 | 0, mtx[5] + 0.5 | 0\n\
+\t\t);\n\
+\t}\n\
 \n\
 };\n\
 \n\
 new Component('transform', Transform);\n\
 \n\
-module.exports = Transform;//@ sourceURL=acmejs/lib/core/transform.js"
+module.exports = Transform;//# sourceURL=acmejs/lib/core/transform.js"
 ));
 require.register("acmejs/lib/core/bounds.js", Function("exports, require, module",
 "'use strict';\n\
@@ -2823,7 +2838,7 @@ Bounds.intersectLine = function(a1, a2, b1, b2, result) {\n\
 \t\treturn Vec2.set(result, a1[0] + (t * s1_x), a1[1] + (t * s1_y));\n\
 \t}\n\
 \treturn null;\n\
-}\n\
+};\n\
 \n\
 function ccw(a, b, c) {\n\
 \tvar cw = ((c[1] - a[1]) * (b[0] - a[0])) - ((b[1] - a[1]) * (c[0] - a[0]));\n\
@@ -2890,7 +2905,7 @@ new Component('boundsDebug', BoundsDebug);\n\
 Bounds.Debug = BoundsDebug;\n\
 \n\
 module.exports = Bounds;\n\
-//@ sourceURL=acmejs/lib/core/bounds.js"
+//# sourceURL=acmejs/lib/core/bounds.js"
 ));
 require.register("acmejs/lib/core/input.js", Function("exports, require, module",
 "'use strict';\n\
@@ -3172,7 +3187,7 @@ Input.prototype = {\n\
 new Component('input', Input);\n\
 \n\
 module.exports = Input;\n\
-//@ sourceURL=acmejs/lib/core/input.js"
+//# sourceURL=acmejs/lib/core/input.js"
 ));
 require.register("acmejs/lib/core/sprite.js", Function("exports, require, module",
 "'use strict';\n\
@@ -3234,11 +3249,11 @@ SpriteAsset.prototype = {\n\
 \n\
 \ttoString: function() {\n\
 \t\tvar url = (this.buffer) ? this.buffer.toDataURL() : 'Pending';\n\
-\t\treturn \"SpriteAsset \" + (Vec2.toString(this.size)) + \" \" +\n\
-\t\t\t(Vec2.toString(this.bufferSize)) + \"\\n\
-\" +\n\
-\t\t\t(this.src || this.repaint) + \"\\n\
-\" +\n\
+\t\treturn 'SpriteAsset ' + (Vec2.toString(this.size)) + ' ' +\n\
+\t\t\t(Vec2.toString(this.bufferSize)) + '\\n\
+' +\n\
+\t\t\t(this.src || this.repaint) + '\\n\
+' +\n\
 \t\t\turl;\n\
 \t},\n\
 \n\
@@ -3263,7 +3278,8 @@ SpriteAsset.prototype = {\n\
 \t *\n\
 \t * @param {Object} ctx 2d-canvas context\n\
 \t * @param {Number[]} toPos (optional) Position to draw to.\n\
-\t * @param {Number[]} align (optional) Align draw position, between lower-left [-1, -1] and upper-right [1, 1]\n\
+\t * @param {Number[]} align (optional) Align draw position, between\n\
+\t *   lower-left [-1, -1] and upper-right [1, 1]\n\
 \t * @param {Number[]} size (optional) Target size\n\
 \t * @param {Number[]} fromPos (optional) Source position (for sprites)\n\
 \t * @param {Number[]} scale (optional) Target scaling, applied to size\n\
@@ -3314,8 +3330,8 @@ SpriteAsset.prototype = {\n\
 \t\tfor (var x = 0, w = size[0], h = size[1]; x <= w; x += 1) {\n\
 \t\t\tfor (var y = 0; y <= h; y += 1) {\n\
 \t\t\t\tvar i = (y * size[0] + x) * 4;\n\
-\t\t\t\tbufferCtx.fillStyle = \"rgba(\" + data[i] + \", \" + data[i + 1] + \", \" +\n\
-\t\t\t\t\tdata[i + 2] + \", \" + (data[i + 3] / 255) + \")\";\n\
+\t\t\t\tbufferCtx.fillStyle = 'rgba(' + data[i] + ', ' + data[i + 1] + ', ' +\n\
+\t\t\t\t\tdata[i + 2] + ', ' + (data[i + 3] / 255) + ')';\n\
 \t\t\t\tbufferCtx.fillRect(x * scale, y * scale, scale, scale);\n\
 \t\t\t}\n\
 \t\t}\n\
@@ -3343,7 +3359,8 @@ SpriteAsset.prototype = {\n\
  * Sprite-sheet for animations.\n\
  *\n\
  * @constructor\n\
- * Create new sheet from set of pre-defined frames or automtically determined frames, given sequence size.\n\
+ * Create new sheet from set of pre-defined frames or automtically\n\
+ * determined frames, given sequence size.\n\
  *\n\
  * @param {Object} attributes sprites, frames, speed, size, align, sequences\n\
  */\n\
@@ -3376,7 +3393,7 @@ SpriteSheet.prototype = {\n\
 \t * Sequences are defined as short-form by Array:\n\
 \t *   [frameIndexes, next || null, speed || defaultSpeed || sprite || 0]\n\
 \t * or Object:\n\
-\t *   {frames: [], next: \"id\", speed: seconds, sprite: 0}\n\
+\t *   {frames: [], next: 'id', speed: seconds, sprite: 0}\n\
 \t *\n\
 \t * @param {String} id       Sequence name (walk, jump, etc)\n\
 \t * @param {Array|Object} sequence Array or object\n\
@@ -3420,8 +3437,8 @@ SpriteSheet.prototype = {\n\
 \t\t\tvar defaults = this.defaults;\n\
 \t\t\tvar size = defaults.size;\n\
 \t\t\tvar align = defaults.align;\n\
-\t\t\tfor (var j = 0, l = sprites.length; j < l; j++) {\n\
-\t\t\t\tvar sprite = sprites[j];\n\
+\t\t\tfor (i = 0, l = sprites.length; i < l; i++) {\n\
+\t\t\t\tvar sprite = sprites[i];\n\
 \t\t\t\tvar cols = sprite.size[0] / size[0] | 0;\n\
 \t\t\t\tvar rows = sprite.size[1] / size[1] | 0;\n\
 \t\t\t\t// debugger;\n\
@@ -3491,11 +3508,14 @@ SpriteTween.prototype = {\n\
 \tpreRender: function(dt) {\n\
 \t\tif (this.isSheet && !this.paused) {\n\
 \t\t\tvar dtime = (this.dtime += dt);\n\
+\t\t\tvar frames;\n\
+\t\t\tvar speed;\n\
+\t\t\tvar frameCount;\n\
 \t\t\tif (this.sequence) {\n\
 \t\t\t\tvar sequence = this.asset.sequences[this.sequence];\n\
-\t\t\t\tvar speed = sequence.speed;\n\
-\t\t\t\tvar frames = sequence.frames;\n\
-\t\t\t\tvar frameCount = frames.length;\n\
+\t\t\t\tspeed = sequence.speed;\n\
+\t\t\t\tframes = sequence.frames;\n\
+\t\t\t\tframeCount = frames.length;\n\
 \t\t\t\tif (dtime >= frameCount * speed) {\n\
 \t\t\t\t\tthis.entity.trigger('onSequenceEnd');\n\
 \t\t\t\t\tif (sequence.next) {\n\
@@ -3510,10 +3530,10 @@ SpriteTween.prototype = {\n\
 \t\t\t\t}\n\
 \t\t\t\tthis.frame = frames[dtime / speed | 0];\n\
 \t\t\t} else {\n\
-\t\t\t\tvar frames = this.asset.frames;\n\
-\t\t\t\tvar frameCount = frames.length;\n\
-\t\t\t\tvar speed = this.speed;\n\
-\t\t\t\tvar dtime = dtime % (frameCount * speed);\n\
+\t\t\t\tframes = this.asset.frames;\n\
+\t\t\t\tframeCount = frames.length;\n\
+\t\t\t\tspeed = this.speed;\n\
+\t\t\t\tdtime = dtime % (frameCount * speed);\n\
 \t\t\t\tvar frame = dtime / speed | 0;\n\
 \t\t\t\tif (frame < this.frame) {\n\
 \t\t\t\t\tthis.entity.trigger('onSequenceEnd');\n\
@@ -3568,7 +3588,7 @@ new Component('spriteTween', SpriteTween);\n\
 module.exports.Asset = SpriteAsset;\n\
 module.exports.Tween = SpriteTween;\n\
 module.exports.Sheet = SpriteSheet;\n\
-//@ sourceURL=acmejs/lib/core/sprite.js"
+//# sourceURL=acmejs/lib/core/sprite.js"
 ));
 require.register("acmejs/lib/core/border.js", Function("exports, require, module",
 "'use strict';\n\
@@ -3718,7 +3738,7 @@ Border.simulate = function(dt) {\n\
 new Component('border', Border);\n\
 \n\
 module.exports = Border;\n\
-//@ sourceURL=acmejs/lib/core/border.js"
+//# sourceURL=acmejs/lib/core/border.js"
 ));
 require.register("acmejs/lib/core/collider.js", Function("exports, require, module",
 "'use strict';\n\
@@ -3868,7 +3888,7 @@ var collideEvent = {};\n\
 new Component('collider', Collider);\n\
 \n\
 module.exports = Collider;\n\
-//@ sourceURL=acmejs/lib/core/collider.js"
+//# sourceURL=acmejs/lib/core/collider.js"
 ));
 require.register("acmejs/lib/core/kinetic.js", Function("exports, require, module",
 "'use strict';\n\
@@ -3925,12 +3945,12 @@ Kinetic.prototype = {\n\
 \t\tthis.sleeping = false;\n\
 \t},\n\
 \n\
-\tget direction(rad) {\n\
+\tget direction() {\n\
 \t\treturn Vec2.rad(this.velocity);\n\
 \t},\n\
 \n\
 \tset direction(rad) {\n\
-\t\tVec2.rotateTo(this.velocity, this.speed);\n\
+\t\tVec2.rotateTo(this.velocity, rad);\n\
 \t},\n\
 \n\
 \tget speed() {\n\
@@ -4083,7 +4103,7 @@ var forceCache = Vec2();\n\
 new Component('kinetic', Kinetic);\n\
 \n\
 module.exports = Kinetic;\n\
-//@ sourceURL=acmejs/lib/core/kinetic.js"
+//# sourceURL=acmejs/lib/core/kinetic.js"
 ));
 require.register("acmejs/lib/core/boid.js", Function("exports, require, module",
 "'use strict';\n\
@@ -4214,7 +4234,7 @@ Boid.fixedUpdate = function(dt) {\n\
 \t\t\t\tVec2.scale(imitation, 1 / imitationCount);\n\
 \t\t\t}\n\
 \t\t\tVec2.add(impulse, Vec2.scale(imitation, boid1.imitationMod * mod));\n\
-\t\t\tentity1.kinetic.applyForce()\n\
+\t\t\tentity1.kinetic.applyForce();\n\
 \t\t\tVec2.add(\n\
 \t\t\t\tentity1.kinetic.force,\n\
 \t\t\t\tVec2.sub(impulse, vel)\n\
@@ -4236,7 +4256,7 @@ Boid.fixedUpdate = function(dt) {\n\
 new Component('boid', Boid);\n\
 \n\
 module.exports = Boid;\n\
-//@ sourceURL=acmejs/lib/core/boid.js"
+//# sourceURL=acmejs/lib/core/boid.js"
 ));
 require.register("acmejs/lib/core/jitter.js", Function("exports, require, module",
 "'use strict';\n\
@@ -4273,7 +4293,7 @@ var force = Vec2();\n\
 new Component('jitter', Jitter);\n\
 \n\
 module.exports = Jitter;\n\
-//@ sourceURL=acmejs/lib/core/jitter.js"
+//# sourceURL=acmejs/lib/core/jitter.js"
 ));
 require.register("acmejs/lib/core/particle.js", Function("exports, require, module",
 "'use strict';\n\
@@ -4453,7 +4473,7 @@ Particle.Prefab = new Entity.Prefab('particle', {\n\
 new Pool(Particle);\n\
 \n\
 module.exports = Particle;\n\
-//@ sourceURL=acmejs/lib/core/particle.js"
+//# sourceURL=acmejs/lib/core/particle.js"
 ));
 require.register("acmejs/lib/math/mat2.js", Function("exports, require, module",
 "'use strict';\n\
@@ -4501,11 +4521,13 @@ Mat2.copy = function(result, b) {\n\
 };\n\
 \n\
 Mat2.valid = function(a) {\n\
-\treturn !(isNaN(a[0]) || isNaN(a[1]) || isNaN(a[2]) || isNaN(a[3]) || isNaN(a[4]) || isNaN(a[5]));\n\
+\treturn !(isNaN(a[0]) || isNaN(a[1]) || isNaN(a[2]) ||\n\
+\t\tisNaN(a[3])|| isNaN(a[4]) || isNaN(a[5]));\n\
 };\n\
 \n\
 Mat2.toString = function(a) {\n\
-\treturn \"[\" + a[0] + \", \" + a[1] + \" | \" + a[2] + \", \" + a[3] + \" | \" + a[4] + \", \" + a[5] + \"]\";\n\
+\treturn '[' + a[0] + ', ' + a[1] + ' | ' + a[2] + ', ' + a[3] +\n\
+\t' | ' + a[4] + ', ' + a[5] + ']';\n\
 };\n\
 \n\
 Mat2.multiply = function(a, b, result) {\n\
@@ -4601,7 +4623,7 @@ Mat2.apply = function(a, v, result) {\n\
 };\n\
 \n\
 module.exports = Mat2;\n\
-//@ sourceURL=acmejs/lib/math/mat2.js"
+//# sourceURL=acmejs/lib/math/mat2.js"
 ));
 require.register("acmejs/lib/labs/perlin.js", Function("exports, require, module",
 "'use strict';\n\
@@ -4615,7 +4637,7 @@ require.register("acmejs/lib/labs/perlin.js", Function("exports, require, module
  * https://github.com/louisstow/pixelminer/blob/master/lib/perlin.js\n\
  */\n\
 \n\
-var Perlin = function() {\n\
+function Perlin() {\n\
 \tvar permutation = [];\n\
 \tfor (var i = 0; i <= 255; i++) {\n\
 \t\tpermutation[i] = (Math.random() * 255) | 0;\n\
@@ -4671,18 +4693,19 @@ function grad(hash, x, y, z) {\n\
 \tvar h = hash & 15; // CONVERT LO 4 BITS OF HASH CODE\n\
 \tvar u = h < 8 ? x : y; // INTO 12 GRADIENT DIRECTIONS.\n\
 \tvar v = h < 4 ? y : h == 12 || h == 14 ? x : z;\n\
-\treturn ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);\n\
+\treturn ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);\n\
 }\n\
 \n\
 module.exports = Perlin;\n\
-//@ sourceURL=acmejs/lib/labs/perlin.js"
+//# sourceURL=acmejs/lib/labs/perlin.js"
 ));
 require.register("acmejs/lib/labs/heightmap.js", Function("exports, require, module",
 "'use strict';\n\
 /**\n\
  * Heightmap\n\
  *\n\
- * http://www.float4x4.net/index.php/2010/06/generating-realistic-and-playable-terrain-height-maps/\n\
+ * http://www.float4x4.net/index.php/2010/06/\n\
+ *   generating-realistic-and-playable-terrain-height-maps/\n\
  */\n\
 \n\
 var Perlin = require('./perlin');\n\
@@ -4693,7 +4716,7 @@ var Heightmap = function(size, scale) {\n\
 \n\
 \tthis.perlin = new Perlin();\n\
 \tthis.heights = new Float32Array(size * size);\n\
-}\n\
+};\n\
 \n\
 Heightmap.prototype = {\n\
 \n\
@@ -4715,7 +4738,7 @@ Heightmap.prototype = {\n\
 \t},\n\
 \n\
 \terode: function(smoothness) {\n\
-\t\tvar smoothness = smoothness || 1;\n\
+\t\tsmoothness = smoothness || 1;\n\
 \t\tvar size = this.size;\n\
 \t\tvar heights = this.heights;\n\
 \n\
@@ -4758,7 +4781,7 @@ Heightmap.prototype = {\n\
 \n\
 \t// 3×3 box filter\n\
 \tsmoothen: function(factor) {\n\
-\t\tvar factor = factor || 1;\n\
+\t\tfactor = factor || 1;\n\
 \t\tvar size = this.size;\n\
 \t\tvar heights = this.heights;\n\
 \n\
@@ -4779,7 +4802,7 @@ Heightmap.prototype = {\n\
 \t\t\t\t\t\t\tcontinue;\n\
 \t\t\t\t\t\t}\n\
 \t\t\t\t\t\tvar height = heights[xu * size + yv];\n\
-\t\t\t\t\t\tif (u == 0 && v == 0) {\n\
+\t\t\t\t\t\tif (u === 0 && v === 0) {\n\
 \t\t\t\t\t\t\theight *= factor;\n\
 \t\t\t\t\t\t\tcount += factor;\n\
 \t\t\t\t\t\t} else {\n\
@@ -4799,7 +4822,7 @@ Heightmap.prototype = {\n\
 \n\
 };\n\
 \n\
-module.exports = Heightmap;//@ sourceURL=acmejs/lib/labs/heightmap.js"
+module.exports = Heightmap;//# sourceURL=acmejs/lib/labs/heightmap.js"
 ));
 require.alias("component-raf/index.js", "acmejs/deps/raf/index.js");
 require.alias("component-raf/index.js", "raf/index.js");

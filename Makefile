@@ -1,5 +1,6 @@
 build: components index.js
 	@component build --dev
+	@perl -pi -w -e 's/\/\/@/\/\/#/g;' build/build.js
 
 components: component.json
 	@component install --dev

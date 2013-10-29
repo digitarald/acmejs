@@ -1,8 +1,7 @@
+.git
 node_modules
+components
 build
 test
-lib/vendor/*/
-examples/vendor/*/
+lib/vendor/*/lib
 examples/_*
-components
-.git
