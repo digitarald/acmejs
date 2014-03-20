@@ -1,7 +1,7 @@
 .git
 node_modules
 components
-build
+dist
 test
-lib/vendor/*/lib
+lib/vendor/**/lib/**
 examples/_*

@@ -15,6 +15,7 @@ body {
   height: 100%;
   user-select: none;
   -moz-user-select: none;
+  pointer-events: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: #000;

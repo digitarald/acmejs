@@ -9,6 +9,7 @@ Engine.init(document.getElementById('game-1'));
 var Vec2 = acmejs.Math.Vec2;
 var Renderer = acmejs.Renderer;
 var Color = acmejs.Color;
+var Random = acmejs.Random;
 
 Engine.renderer = new Renderer(
 	Engine.element.getElementsByClassName('game-canvas')[0],
@@ -329,11 +330,11 @@ Projectile.prototype = {
 		var i = Math.rand(15, 25) | 0;
 		while (i--) {
 			var pos = this.transform.position;
-			var direction = Math.chance(0.2) ? -0.2 : 1;
+			var direction = Random.chance(0.2) ? -0.2 : 1;
 			var impulse = Vec2.scale(this.kinetic.velocity, direction * 15, particleVelocity);
 			Vec2.variant(impulse, speed * 2);
 
-			this.root.createChild('particle', {
+			var particle = this.root.createChild('particle', {
 				particle: {
 					lifetime: Math.rand(0.5, 2),
 					alpha: Math.rand(0.7, 1),

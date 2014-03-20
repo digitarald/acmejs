@@ -1,33 +1,41 @@
-build: components index.js
+COMPONENT = node_modules/component/bin/component
+SERVER = node_modules/http-server/bin/http-server
+JSDOC = node_modules/jsdoc/nodejs/bin/jsdoc
+DOCSTRAP = node_modules/ink-docstrap/template
+
+build:
 	@component build --dev
 	@perl -pi -w -e 's/\/\/@/\/\/#/g;' build/build.js
+	@echo "✔ build/build.js"
+
+acme.js: node_modules components
+	@echo "✔ acmejs.js"
+	@$(COMPONENT) build --out . --name acmejs
 
 components: component.json
 	@component install --dev
 
-clean:
-	rm -fr build components
+node_modules: package.json
+	@npm install
 
-server:
-	@echo "Starting test-server: http://localhost:8000"
-	@open http://localhost:8000/examples/
-	@python -m SimpleHTTPServer
+clean:
+	@rm -rf components build node_modules
+
+server: node_modules
+	@echo "Serving http://localhost:8000"
+	@$(SERVER) ./ -p 8000 -s
 
 deploy:
-	@echo "Deploying to gh-pages"
-	# assume there is something to commit
-	# use "git diff --exit-code HEAD" to know if there is something to commit
-	# so two lines: one if no commit, one if something to commit
-	@git commit -a -m "New deploy" && git push -f origin HEAD:gh-pages && git reset HEAD~
-
-deploy-soft:
-	git push -f origin HEAD:gh-pages
+	@echo "✔ Deployed gh-pages"
+	@git push -f origin HEAD:gh-pages
 
 # depends on `watchr`:
-#   gem install watchr
-#   gem install ruby-fsevent
+#   gem install watchr && gem install ruby-fsevent
 watch: build
-	@echo "Watching lib/*"
+	@echo "Watching lib/*.js"
 	@watchr -e "watch('lib/.*\.js') { system 'make build' }"
+
+docs:
+	@$(JSDOC) lib/* -t $(DOCSTRAP) -c $(DOCSTRAP)/jsdoc.conf.json
 
 .PHONY: build

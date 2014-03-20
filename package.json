@@ -1,13 +1,38 @@
 {
-  "name": "acme-js",
-  "version": "0.0.2",
+  "name": "acmejs",
+  "version": "0.0.3",
+  "author": "Harald Kirschner <harald@digitarald.com>",
   "description": "Cross-platform, low-garbage entity/component JavaScript game framework",
-  "main": "/index.js",
+  "license": "MIT",
+  "main": "acmejs.js",
+  "url": "https://acmejs.com",
   "repository": {
     "type": "git",
     "url": "git://github.com/digitarald/acmejs.git"
   },
-  "keywords": ["game", "canvas", "webgl"],
-  "author": "Harald Kirschner <harald@digitarald.com>",
-  "license": "MIT"
+  "keywords": [
+    "acmejs",
+    "game",
+    "canvas",
+    "physics"
+  ],
+  "devDependencies": {
+    "component": "0.19.x",
+    "gulp": "3.5.x",
+    "gulp-rename": "1.2.x",
+    "gulp-concat": "2.1.x",
+    "gulp-jshint": "1.5.x",
+    "gulp-uglify": "0.2.x",
+    "gulp-if": "0.0.x",
+    "gulp-util": "^2.2.x",
+    "gulp-component": "0.1.x",
+    "gulp-notify-growl": "1.0.x",
+    "gulp-livereload": "1.2.x",
+    "tiny-lr": "0.0.x",
+    "express": "3.4.x",
+    "connect-livereload": "0.3.x",
+    "gulp-notify": "1.2.x",
+    "jshint-stylish": "0.1.x",
+    "gulp-jscs": "0.3.x"
+  }
 }

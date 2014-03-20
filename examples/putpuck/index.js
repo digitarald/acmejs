@@ -128,9 +128,9 @@ function Puck() {
 	this.outlineColor = Color();
 }
 
-Puck.prototype = {
+Puck.layer = 1;
 
-	layer: 1,
+Puck.prototype = {
 
 	attributes: {
 		player: 0,

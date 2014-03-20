@@ -2,15 +2,13 @@
 	"name": "acmejs",
 	"repo": "acmejs/core",
 	"description": "Cross-platform, low-garbage, entity/component JavaScript game framework",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"keywords": ["acmejs", "game", "canvas"],
 	"license": "MIT",
-	"dependencies": {
-		"component/raf": "*"
-	},
-	"main": "index.js",
+	"main": "lib/index.js",
 	"scripts": [
-		"index.js",
+		"lib/index.js",
+		"lib/core/shims.js",
 		"lib/core/math-random.js",
 		"lib/core/math.js",
 		"lib/core/color.js",

@@ -1,5 +1,4 @@
 {
-	// Environments
 	"browser": true,
 	"node": true,
 	"devel": true,
@@ -9,9 +8,5 @@
 	"proto": true,
 
 	"quotmark": "single",
-	"trailing": true,
-
-	"globals": {
-		"module": false
-	}
+	"trailing": true
 }
