@@ -1106,7 +1106,6 @@ Pool.prototype = {
 	 */
 	dealloc: function(entity) {
 		entity.allocated = false;
-		entity.uid = 0;
 		entity.root = null;
 		entity.parent = null;
 		this.enabled = (this.allocated--) > 1;
@@ -1172,7 +1171,7 @@ Pool.dump = function(flush) {
 Pool.dealloc = function() {
 	var stack = this.calls.dealloc;
 	for (var i = 0, l = stack.length; i < l; i++) {
-		stack[i].dealloc();
+		stack[i]._dealloc();
 	}
 	stack.length = 0;
 };
@@ -1465,8 +1464,9 @@ var Pool = require('./pool');
  * @property {Number} layer Z-index
  */
 function Entity() {
-	this.children = {};
+	this.firstChild = null;
 	this.components = {};
+	this.componentTypes = {};
 	this.events = {};
 	this.eventRefs = [];
 }
@@ -1481,7 +1481,7 @@ Entity.prototype = {
 	 * @return {String}
 	 */
 	toString: function() {
-		var comps = Object.keys(this.components).join(', ');
+		var comps = Object.keys(this.componentTypes).join(', ');
 		return 'Entity ' + (this.id || '') + '#' + this.uid +
 			' (' + comps + ') [^ ' + this.parent + ']';
 	},
@@ -1494,7 +1494,8 @@ Entity.prototype = {
 	 */
 	alloc: function(attributes) {
 		if (this.parent) {
-			this.parent.children[this.uid] = this;
+			this.next = this.parent.firstChild;
+			this.parent.firstChild = this;
 		}
 
 		if (attributes) {
@@ -1541,15 +1542,17 @@ Entity.prototype = {
 		return Entity.create(this, prefabId);
 	},
 
-	removeComponents: function() {
+	destroyComponents: function() {
 		for (var key in this.components) {
 			this.components[key].destroy();
 		}
 	},
 
-	removeChildren: function() {
-		for (var key in this.children) {
-			this.children[key].destroy();
+	destroyChildren: function() {
+		var child = this.firstChild;
+		while (child) {
+			child.destroy();
+			child = child.next;
 		}
 	},
 
@@ -1558,29 +1561,62 @@ Entity.prototype = {
 	 */
 	destroy: function() {
 		this.pool.destroy(this);
-		this.removeComponents();
-		this.removeChildren();
+		this.destroyComponents();
+		this.destroyChildren();
+	},
+
+	removeChild: function(needle) {
+		var child = this.firstChild;
+		var prev = null;
+		while (child) {
+			if (child == needle) {
+				if (prev == null) {
+					this.firstChild = child.next;
+				} else {
+					prev.next = child.next;
+				}
+				return true;
+			}
+			prev = child;
+			child = child.next;
+		}
+		return false;
+	},
+
+	removeChildren: function() {
+		var child = this.firstChild;
+		this.firstChild = null;
+		var next = null;
+		while (child) {
+			next = child.next;
+			child.next = null;
+			child = next;
+		}
 	},
 
 	/**
 	 * Free destroyed Entity.
 	 * @private
 	 */
-	dealloc: function() {
+	_dealloc: function() {
+		if (this.dealloc) {
+			this.dealloc();
+		}
 		// Remove referenced eventscribers
 		var eventRefs = this.eventRefs;
 		for (var i = 0, l = eventRefs.length; i < l; i++) {
 			eventRefs[i].off(this);
 		}
 		eventRefs.length = 0;
-
 		// Remove own eventscribers
 		var events = this.events;
 		for (var event in events) {
 			events[event].length = 0;
 		}
+		// Eager dealloc
+		this.removeChildren();
 		if (this.parent) {
-			delete this.parent.children[this.uid];
+			this.parent.removeChild(this);
 		}
 		this.pool.dealloc(this);
 	},
@@ -1614,8 +1650,10 @@ Entity.prototype = {
 			this.components[key].enable(state, true);
 		}
 		if (deep) {
-			for (key in this.children) {
-				this.children[key].enable(state, true);
+			var child = this.firstChild;
+			while (child) {
+				child.enable(state, true);
+				child = child.next;
 			}
 		}
 	},
@@ -1899,7 +1937,10 @@ Component.prototype = {
 	 *
 	 * @private
 	 */
-	dealloc: function() {
+	_dealloc: function() {
+		if (this.dealloc) {
+			this.dealloc();
+		}
 		// BAILOUT_ShapeGuard
 		delete this.entity.components[this.type];
 		this.entity[this.type] = null;
@@ -2253,7 +2294,6 @@ Console.prototype = {
 		this.wrap.removeEventListener('click', this);
 		this.wrap = null;
 		this.container = null;
-		Component.prototype.dealloc.call(this);
 	},
 
 	onTimeEnd: function(samples) {

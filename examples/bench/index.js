@@ -38,7 +38,6 @@ WhiteScene.prototype = {
 	dealloc: function() {
 		Engine.sceneController.gui.remove(this.gui);
 		this.gui = null;
-		Component.prototype.dealloc.call(this);
 	},
 
 	update: function(dt) {
@@ -63,7 +62,6 @@ WhiteScene.prototype = {
 };
 
 new Component('whiteScene', WhiteScene);
-
 
 var SparkPrefab = new Entity.Prefab({
 	transform: null,
@@ -101,16 +99,11 @@ FireScene.prototype = {
 
 	dealloc: function() {
 		this.gui.destroy();
-		Component.prototype.dealloc.call(this);
-	},
-
-	update: function(dt) {
 	}
 
 };
 
 new Component('fireScene', FireScene);
-
 
 function SceneController() {}
 
@@ -154,4 +147,3 @@ new Component('sceneController', SceneController);
 
 // Attaching the controller starts the first scene
 Engine.createComponent('sceneController');
-
