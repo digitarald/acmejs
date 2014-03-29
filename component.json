@@ -11,6 +11,7 @@
 		"lib/core/shims.js",
 		"lib/core/math-random.js",
 		"lib/core/math.js",
+		"lib/core/fmath.js",
 		"lib/core/color.js",
 		"lib/core/pool.js",
 		"lib/core/engine.js",
