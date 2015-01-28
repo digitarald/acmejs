@@ -14,8 +14,10 @@
 			if (!expr) throw new Error(msg || 'failed');
 		}
 	</script>
-	<script src="core.build.js"></script>
+	<script src="../dist/acme.js"></script>
+	<script src="vec2.test.js"></script>
 	<script src="pool.test.js"></script>
+	<script src="prefab.test.js"></script>
 	<script>
 		var runner = mocha.run();
 		cloud(runner);

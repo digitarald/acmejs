@@ -8,5 +8,7 @@
 	"proto": true,
 
 	"quotmark": "single",
-	"trailing": true
+	"trailing": true,
+
+	"esnext": true
 }

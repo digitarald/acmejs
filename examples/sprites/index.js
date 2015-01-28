@@ -6,7 +6,7 @@ var Engine = acmejs.Engine;
 Engine.init(document.getElementById('game-1'));
 
 var Renderer = acmejs.Renderer;
-var Vec2 = acmejs.Math.Vec2;
+var Vec2 = acmejs.Vec2;
 Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
 
 var Entity = acmejs.Entity;
@@ -86,7 +86,7 @@ var agentSheet = new Sprite.Sheet({
   ],
   size: Vec2(64, 64),
   speed: 0.09,
-  align: Vec2.bottomCenter,
+  anchor: Vec2.bottomCenter,
   sequences: {
     walkN: [1, 8, 'walkW', null],
     walkW: [10, 17, 'walkS', null],

@@ -1,71 +1,153 @@
 'use strict';
 
 var gulp = require('gulp');
-var gutil = require('gulp-util');
-var jshint = require('gulp-jshint');
-var jscs = require('gulp-jscs');
-var rename = require('gulp-rename');
-var concat = require('gulp-concat');
-var component = require('gulp-component');
-var notify = require('gulp-notify');
-var livereload = require('gulp-livereload');
-
-var SCRIPTS = ['lib/*/*.js', '!lib/vendor/**/lib/**'];
-var debug = false;
-
+var plugins = require('gulp-load-plugins')({
+	lazy: false
+});
 var server = require('tiny-lr')();
 
+var pkg = require('./package.json');
+
+var SCRIPTS = ['lib/*/**.js', '!lib/vendor/**/lib/**'];
+var TESTS = 'test/**.test.js';
+var WATCH = SCRIPTS.concat(TESTS);
+var debug = false;
+
 gulp.task('jshint', function() {
-	gulp.src(SCRIPTS)
-		.pipe(jshint())
-		.pipe(jshint.reporter('jshint-stylish'))
-		.on('error', notify.onError('jscs error: <%= error.message %>'));
+	return gulp.src(SCRIPTS)
+		.pipe(plugins.jshint())
+		.pipe(plugins.jshint.reporter('jshint-stylish'))
+		.on('error', function handleError(err) {
+			this.emit('end');
+		});
 });
 
-gulp.task('jscs', function() {
-	gulp.src(SCRIPTS)
-		.pipe(jscs())
-		.on('error', notify.onError('jshint error: <%= error.message %>'));
+gulp.task('jsxcs', function() {
+	return gulp.src(SCRIPTS)
+		.pipe(plugins.jsxcs({
+			esnext: true
+		}))
+		.on('error', function handleError(err) {
+			console.log(err.message);
+			this.emit('end');
+		});
 });
 
-gulp.task('lint', ['jshint', 'jscs']);
+gulp.task('typecheck', function() {
+	return gulp.src(SCRIPTS)
+		.pipe(plugins.flowtype({
+			all: false,
+			weak: false,
+			killFlow: true,
+			beep: false
+		}));
+});
+
+gulp.task('lint', ['typecheck', 'jsxcs']);
+
+gulp.task('test', ['build'], function() {
+	return gulp.src(['test/*.test.js'], {
+			read: false
+		})
+		.pipe(plugins.mocha({
+			reporter: 'spec'
+		}))
+		.on('error', function handleError(err) {
+			this.emit('end');
+		});
+});
+
+gulp.task('docs', function() {
+	return gulp.src(SCRIPTS)
+		.pipe(plugins.jsdoc.parser({
+			name: pkg.name,
+			description: pkg.description,
+			version: pkg.version,
+			licenses: pkg.licenses || [pkg.license]
+		}))
+		.pipe(plugins.jsdoc.generator('./docs', {
+			// path: 'ink-docstrap',
+			// systemName: pkg.name,
+			// footer: 'Generated with gulp',
+			// copyright: 'Copyright Harald Kirschner 2014',
+			// navType: 'inline',
+			// theme: 'united',
+			// linenums: true,
+			// collapseSymbols: false,
+			// inverseNav: false
+		}, {
+			'private': true,
+			monospaceLinks: true,
+			cleverLinks: true,
+			outputSourceFiles: true
+		}));
+});
 
 // Production build
 gulp.task('build', ['lint'], function() {
-	gulp.src('component.json')
-		.pipe(component.scripts({
+	return gulp.src('lib/index.js')
+		.pipe(plugins.webpack({
+			devtool: 'source-map',
+			debug: debug,
+			output: {
+				filename: 'acme.js',
+				library: 'acmejs',
+				libraryTarget: 'var'
+			},
+			module: {
+				loaders: [{
+					test: /\.js$/,
+					loader: '6to5-loader'
+				}]
+			}
+		}))
+		.on('error', plugins.notify.onError('build error: <%= error.message %>'))
+		// .pipe(plugins.concat('acme.js'))
+		// .pipe(plugins.if(!debug, plugins.stripDebug(), plugins.uglify()))
+		.pipe(gulp.dest('dist'))
+		// .pipe(plugins.livereload(server))
+		.pipe(plugins.notify('✔ dist/acme.js'));
+	/*
+	return gulp.src('component.json')
+		.pipe(plugins.component.scripts({
 			dev: debug,
 			name: 'acmejs'
 		}))
-		.on('error', notify.onError('build error: <%= error.message %>'))
-		.pipe(concat('acme.js'))
+		.on('error', plugins.notify.onError('build error: <%= error.message %>'))
+		.pipe(plugins.concat('acme.js'))
+		// .pipe(plugins.if(!debug, plugins.stripDebug(), plugins.uglify()))
 		.pipe(gulp.dest('dist'))
-		.pipe(livereload(server))
-		.pipe(notify('✔ dist/acmejs.js'));
+		// .pipe(plugins.livereload(server))
+		.pipe(plugins.notify('✔ dist/acmejs.js'));
+	*/
 });
 
 gulp.task('debug', function() {
 	debug = true;
 });
 
-gulp.task('livereload', function() {
-	server.listen(35729, function() {
-		gutil.log('[livereload]', 'Listening');
+// gulp.task('livereload', function() {
+// 	livereload.listen();
+// 	server.listen(35729, function() {
+// 		// plugins.util.log('Livereload listening');
+// 	});
+// });
+
+gulp.task('server', function() {
+	require('portfinder').getPort(function(err, port) {
+		var app = require('express')();
+		app
+		// .use(require('connect-livereload')())
+			.use(require('serve-static')(__dirname))
+			.use(require('serve-index')(__dirname))
+			.listen(port, function() {
+				plugins.util.log('Listening http://localhost:' + port);
+			});
 	});
 });
 
-gulp.task('server', function() {
-	var express = require('express');
-	var app = express();
-	app.use(require('connect-livereload')())
-		.use(express.static(__dirname))
-		.listen(8080, function() {
-			gutil.log('[server]', 'Listening http://localhost:8080');
-		});
-});
-
-gulp.task('watch', ['server', 'livereload', 'build'], function() {
-	gulp.watch(SCRIPTS, ['build']);
+gulp.task('watch', ['server', 'test'], function() {
+	gulp.watch(WATCH, ['test']);
 });
 
 gulp.task('default', ['build']);

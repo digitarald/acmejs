@@ -15,7 +15,6 @@ body {
   height: 100%;
   user-select: none;
   -moz-user-select: none;
-  pointer-events: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: #000;
@@ -34,6 +33,8 @@ body {
   -webkit-filter: grayscale(0.5) contrast(2);
 }
 .game .game-canvas canvas {
+  width: 100%;
+  height: 100%;
   image-rendering: crisp-edges;
   image-rendering: -moz-crisp-edges;
   image-rendering: -webkit-optimize-contrast;

@@ -1,23 +1,17 @@
 'use strict';
 
-var acmejs = require('acmejs');
-
 var Engine = acmejs.Engine;
 
 Engine.init(document.getElementById('game-1'));
 
-var Vec2 = acmejs.Math.Vec2;
+var Vec2 = acmejs.Vec2;
 var Renderer = acmejs.Renderer;
 var Color = acmejs.Color;
 var Random = acmejs.Random;
-
-Engine.renderer = new Renderer(
-	Engine.element.getElementsByClassName('game-canvas')[0],
-	Vec2(480, 320)
-);
-Engine.renderer.color = Color.black;
-
+var Tweens = acmejs.Tweens;
 var Entity = acmejs.Entity;
+var Prefab = acmejs.Prefab;
+var Prefab = acmejs.Prefab;
 var Component = acmejs.Component;
 var Pool = acmejs.Pool;
 var Sprite = acmejs.Sprite;
@@ -26,11 +20,19 @@ var Collider = acmejs.Collider;
 var Kinetic = acmejs.Kinetic;
 var Particle = acmejs.Particle;
 
+Engine.renderer = new Renderer(
+	Engine.element.getElementsByClassName('game-canvas')[0],
+	Vec2(480, 320)
+);
+Engine.renderer.color = Color.black;
+Engine.createComponent('spriteCanvasRenderer');
 
-function GameController() {}
+function GameController() {
+	Component.call(this);
+	this.cooldown = 0.0;
+}
 
 GameController.prototype = {
-
 	create: function() {
 		this.root.createChild('hero', {
 			transform: {
@@ -41,20 +43,20 @@ GameController.prototype = {
 	},
 
 	postUpdate: function(dt) {
-		if ((this.cooldown -= dt) > 0) {
+		this.cooldown -= dt;
+		if (this.cooldown > 0 || Enemy.prototype.pool.allocated > 40) {
 			return;
 		}
-		this.cooldown = Math.rand(2.5, 4.5);
+		this.cooldown = Random.rand(0.2, 1.5);
 		var enemy = this.root.createChild('enemy', {
 			transform: {
-				position: Vec2(475, Math.rand(50, 270))
+				position: Vec2(475, Random.rand(50, 270))
 			}
 		});
 	}
-
 };
 
-new Component('gameController', GameController);
+Component.create(GameController, 'gameController');
 
 /**
  * Component: Hero
@@ -63,11 +65,11 @@ new Component('gameController', GameController);
  */
 
 function Hero() {
+	Component.call(this);
 	this.aimNormal = Vec2();
 }
 
 Hero.prototype = {
-
 	create: function() {
 		this.cooldown = 0;
 		this.laserLength = 200;
@@ -76,8 +78,8 @@ Hero.prototype = {
 
 	fixedUpdate: function() {
 		var axis, pos, speed;
-		axis = Engine.input.axis;
-		pos = this.transform.position;
+		axis = Engine.components.input.axis;
+		pos = this.components.transform.position;
 		speed = 1;
 		if (axis[1] < 0) {
 			pos[1] -= speed;
@@ -92,12 +94,12 @@ Hero.prototype = {
 	},
 
 	update: function(dt) {
-		var input = Engine.input;
-		Vec2.sub(input.position, this.transform.position, this.aimNormal);
+		var input = Engine.components.input;
+		Vec2.sub(input.position, this.components.transform.position, this.aimNormal);
 		var axis = input.axis;
 
 		// Walk animation
-		var spriteTween = this.spriteTween;
+		var spriteTween = this.components.spriteTween;
 		if (Vec2.len(axis) > 0) {
 			spriteTween.goto('walkE').play();
 		} else if (!spriteTween.paused) {
@@ -120,45 +122,26 @@ Hero.prototype = {
 		Vec2.variantLen(vel, 10);
 		Vec2.variantRad(vel, Math.PI / 64);
 
-		var projectile = Entity.Prefab.create('projectile', this.root);
-		Vec2.copy(projectile.transform.position, this.transform.position);
-		Vec2.copy(projectile.kinetic.velocity, vel);
+		var projectile = Prefab.create('projectile', this.root);
+		projectile.components.transform.compose(this.components.transform.position);
+		projectile.components.kinetic.velocity = vel;
+		debugger;
 
 		this.cooldown = 0.05;
 
 		/*
-		var projectile = Entity.Prefab.create('projectile', this.root, {
-			transform: {
-				position: this.transform.position
-			},
-			kinetic: {
-				velocity: vel
-			}
-		});
-		*/
+	var projectile = Prefab.create('projectile', this.root, {
+		transform: {
+			position: this.transform.position
+		},
+		kinetic: {
+			velocity: vel
+		}
+	});
+	*/
 		return true;
 	}
-
-	/*
-	render: function(ctx) {
-		var pos = this.transform.position;
-		var target = Vec2();
-
-		Vec2.norm(this.aimNormal, null, this.laserLength);
-		Vec2.add(pos, this.aimNormal, target);
-		Vec2.add(pos, this.aimNormal, target);
-
-		ctx.save();
-		ctx.strokeStyle = Color.rgba(this.laserColor);
-		ctx.beginPath();
-		ctx.moveTo(pos[0] | 0, pos[1] | 0);
-		ctx.lineTo(target[0] | 0, target[1] | 0);
-		ctx.stroke();
-		ctx.restore();
-	}
-	*/
 };
-
 
 var defaultSequence = {
 	walkS: {
@@ -186,9 +169,10 @@ Hero.sheet = new Sprite.Sheet({
 	sequences: defaultSequence
 });
 
-new Component('hero', Hero);
 
-new Entity.Prefab('hero', {
+Component.create(Hero, 'hero');
+
+new Prefab('hero', {
 	transform: null,
 	spriteTween: {
 		asset: Hero.sheet,
@@ -207,54 +191,87 @@ new Entity.Prefab('hero', {
  * Component: Health
  */
 
-function Health() {}
+function Health() {
+	Component.call(this);
+}
+
+var damageEvent = {
+	damage: 0.0
+};
+var particleVelocity = Vec2();
 
 Health.prototype = {
-
 	attributes: {
 		health: 100,
 		current: 100
 	},
 
-	create: function(attributes) {
-		this.health = attributes.health;
-		this.current = attributes.current;
-	},
+	hit: function(entity, amount) {
+		var velocity = entity.components.kinetic.velocity;
+		var speed = Vec2.len(velocity);
 
-	hit: function(source, amount) {
-		this.entity.trigger('onDamage', amount);
+		var i = Random.rand(15, 25) | 0;
+		while (i--) {
+			var pos = entity.components.transform.position;
+			var direction = Random.chance(0.2) ? -0.2 : 1;
+			var impulse = Vec2.scale(velocity, direction * 15, particleVelocity);
+			Vec2.variant(impulse, speed * 2);
+
+			var particle = this.root.createChild('particle', {
+				particle: {
+					lifetime: Random.rand(0.5, 2),
+					alpha: Random.rand(0.7, 1),
+					radius: Random.rand(1, 4),
+					shrink: Tweens.quadIn,
+					fade: null
+				},
+				spriteTween: {
+					asset: particleHit
+				},
+				kinetic: {
+					force: impulse
+				},
+				transform: {
+					position: pos
+				}
+			});
+		}
+
+		damageEvent.damage = amount;
+		this.entity.emit('onHealthDamage', damageEvent);
 		if ((this.current -= amount) < 0) {
-			this.entity.trigger('onDead');
-			this.entity.destroy();
+			this.entity.emit('onDead');
 		}
 	}
-
 };
 
-new Component('health', Health);
+Component.create(Health, 'health');
 
 /**
  * Component: Enemy
  */
 
-function Enemy() {}
+function Enemy() {
+	Component.call(this);
+}
 
-Enemy.prototype = {
+Enemy.prototype = Object.create(Component.prototype);
 
-	update: function() {
-		if (this.transform.position[0] < 25) {
-			this.transform.position[0] = 550;
-		}
-	},
+Enemy.prototype.type = 'enemy';
 
-	onDamage: function() {
-		this.kinetic.applyForce(Vec2(-500, 0));
-	},
-
-	onDead: function() {
-		this.entity.destroy();
+Enemy.prototype.update = function() {
+	var transform = this.components.transform;
+	if (transform.position[0] < 25) {
+		transform.position[0] = 550;
 	}
+};
 
+Enemy.prototype.onHealthDamage = function() {
+	this.components.kinetic.applyForce(Vec2(Random.rand(300, 700), 0));
+};
+
+Enemy.prototype.onDead = function() {
+	this.entity.destroy();
 };
 
 Enemy.sheet = new Sprite.Sheet({
@@ -264,9 +281,9 @@ Enemy.sheet = new Sprite.Sheet({
 	sequences: defaultSequence
 });
 
-new Component('enemy', Enemy);
+Enemy.prototype.pool = new Pool(Enemy);
 
-new Entity.Prefab('enemy', {
+new Prefab('enemy', {
 	transform: null,
 	bounds: {
 		radius: 14,
@@ -277,16 +294,19 @@ new Entity.Prefab('enemy', {
 	},
 	kinetic: {
 		mass: 1,
-		drag: 1,
+		drag: 0.999,
 		friction: 0,
-		force: Vec2(-100, 0)
+		continuousForce: Vec2(-50, 0),
+		maxVelocity: 60,
+		maxForce: 0
 	},
 	boundsDebug: null,
 	health: null,
 	spriteTween: {
 		asset: Enemy.sheet,
 		sequence: 'walkW'
-	}
+	},
+	enemy: null
 });
 
 /**
@@ -294,77 +314,53 @@ new Entity.Prefab('enemy', {
  */
 
 function Projectile() {
+	Component.call(this);
 	this.lastPos = Vec2();
+	this.color = Color.rgba(Color.white);
+	debugger;
 }
 
-Projectile.prototype = {
+Projectile.prototype = Object.create(Component.prototype);
 
-	create: function() {
-		Vec2.copy(this.lastPos, this.transform.position);
-	},
+Projectile.prototype.type = 'projectile';
 
-	render: function(ctx) {
-		var pos = this.transform.position;
-		if (Vec2.eq(this.lastPos, Vec2.zero)) {
-			Vec2.copy(this.lastPos, this.transform.position);
-			return;
-		}
-		ctx.save();
-		ctx.strokeStyle = Color.rgba(Color.white);
-		ctx.lineWidth = 2;
-		ctx.lineCap = 'butt';
-		ctx.beginPath();
-		ctx.moveTo(this.lastPos[0] | 0, this.lastPos[1] | 0);
-		ctx.lineTo(pos[0] | 0, pos[1] | 0);
-		ctx.stroke();
-		ctx.restore();
-		Vec2.copy(this.lastPos, pos);
-	},
-
-	onTrigger: function(data) {
-		data.entity.health.hit(this.entity, Math.rand(10, 15));
-		this.entity.destroy();
-
-		var speed = Vec2.len(this.kinetic.velocity);
-
-		var i = Math.rand(15, 25) | 0;
-		while (i--) {
-			var pos = this.transform.position;
-			var direction = Random.chance(0.2) ? -0.2 : 1;
-			var impulse = Vec2.scale(this.kinetic.velocity, direction * 15, particleVelocity);
-			Vec2.variant(impulse, speed * 2);
-
-			var particle = this.root.createChild('particle', {
-				particle: {
-					lifetime: Math.rand(0.5, 2),
-					alpha: Math.rand(0.7, 1),
-					radius: Math.rand(1, 4),
-					shrink: Math.quadIn,
-					fade: null,
-					sprite: Projectile.particleHit
-				},
-				kinetic: {
-					force: impulse
-				},
-				transform: {
-					position: pos
-				}
-			});
-		}
-	}
-
+Projectile.prototype.create = function() {
+	Vec2.copy(this.lastPos, this.components.transform.position);
 };
 
-var particleVelocity = Vec2();
-Projectile.particleHit = Particle.generateSprite({
+Projectile.prototype.render = function(ctx) {
+	var transform = this.components.transform;
+	var pos = transform.position;
+	if (Vec2.isZero(this.lastPos, Vec2.zero)) {
+		Vec2.copy(this.lastPos, transform.position);
+		return;
+	}
+	ctx.save();
+	ctx.strokeStyle = this.color;
+	ctx.lineWidth = 2;
+	ctx.lineCap = 'butt';
+	ctx.beginPath();
+	ctx.moveTo(this.lastPos[0] | 0, this.lastPos[1] | 0);
+	ctx.lineTo(pos[0] | 0, pos[1] | 0);
+	ctx.stroke();
+	ctx.restore();
+	Vec2.copy(this.lastPos, pos);
+};
+
+Projectile.prototype.onTrigger = function(event) {
+	event.entity.components.health.hit(this.entity, Random.rand(10, 15));
+	this.entity.destroy();
+};
+
+var particleHit = Particle.generateSpriteSheet({
 	color: Color(220, 20, 60),
 	shape: 'rect',
 	center: 1
 });
 
-new Component('projectile', Projectile);
+Projectile.prototype.pool = new Pool(Projectile);
 
-new Entity.Prefab('projectile', {
+new Prefab('projectile', {
 	transform: null,
 	bounds: {
 		shape: 'circle',

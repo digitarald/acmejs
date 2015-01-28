@@ -1,0 +1,15 @@
+{
+	"name": "ACME Demo",
+	"launch_path": "/mgame-js/examples/bench/",
+	"description": "A demo",
+	"version": "1.0",
+	"developer": {
+		"name": "Harald",
+		"url": "http://digitarald.com"
+	},
+	"icons": {
+		"128": "https://cdn1.iconfinder.com/data/icons/supermario/PNG/Retro%20Mushroom%20-%20Super%20%282%29.png"
+	},
+	"fullscreen": "true",
+	"orientation": "landscape"
+}

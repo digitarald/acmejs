@@ -1,12 +1,13 @@
 # ACME.js
 
-Cross-platform, low-garbage entity/component JavaScript game framework
+Cross-platform, low-garbage entity-component JavaScript game framework.
 
 ## Installation
 
 Dependencies:
-	$ make install
+
+	$ npm install
 
 ## Quick Start
 
-	$ make build
+	$ gulp watch
