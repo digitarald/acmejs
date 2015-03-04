@@ -1,24 +1,24 @@
 'use strict';
 
-var Engine = require('../../lib/core/engine');
+var Context = require('../../lib/core/context');
 
-Engine.init(document.getElementById('game-1'));
+Context.init(document.getElementById('game-1'));
 
 var Renderer = require('../../lib/core/renderer');
 var Vec2 = require('../../lib/core/math').Vec2;
 
-Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
+Context.renderer = new Renderer(Context.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
 
 var Entity = require('../../lib/core/entity');
 var Component = require('../../lib/core/component');
-var Pool = require('../../lib/core/pool');
+var Registry = require('../../lib/core/registry');
 var Color = require('../../lib/core/color');
 var Sprite = require('../../lib/core/sprite');
 var Transform = require('../../lib/core/transform');
 var Bounds = require('../../lib/core/bounds');
 var Border = require('../../lib/core/border');
 var Collider = require('../../lib/core/collider');
-var Kinetic = require('../../lib/core/kinetic');
+var Body = require('../../lib/core/body');
 
 /**
  * Game
@@ -36,8 +36,8 @@ GameController.prototype.create = function() {
   ];
   this.root.gravity = Vec2(0, 500);
   this.spawnBodies(25);
-  if (!Engine.input.support.orientation) {
-    Engine.debug.warn = 'No devicemotion';
+  if (!Context.input.support.orientation) {
+    Context.debug.warn = 'No devicemotion';
   }
 };
 
@@ -52,7 +52,7 @@ GameController.prototype.spawnBodies = function(count) {
       bounds: {
         radius: radius
       },
-      kinetic: {
+      body: {
         mass: radius
       },
       body: {
@@ -64,7 +64,7 @@ GameController.prototype.spawnBodies = function(count) {
 
 /*
 GameController.prototype.update = function(dt) {
-  var input = Engine.input;
+  var input = Context.input;
   if (input.support.orientation) {
     // Vec2.scale(input.orientation, 100, this.root.gravity);
   }
@@ -78,8 +78,6 @@ function Body() {
   this.color = Color();
   this.stroke = Color(Color.white);
 }
-
-Body.prototype.layer = 1;
 
 Body.prototype.attributes = {
   color: Color()
@@ -112,7 +110,7 @@ new Entity.Prefab('body', {
     shape: 'circle',
     radius: 15
   },
-  kinetic: {
+  body: {
     mass: 1,
     drag: 0.998,
     friction: 0.1,
@@ -128,8 +126,8 @@ new Entity.Prefab('body', {
  * Init
  */
 
-Engine.gameScene = Entity.create(null, {
+Context.gameScene = Entity.create(null, {
   gameController: null
 });
 
-Engine.play(Engine.gameScene);
+Context.play(Context.gameScene);

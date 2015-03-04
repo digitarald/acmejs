@@ -3,18 +3,18 @@
 var acmejs = require('acmejs');
 
 Vec2 = require('../../lib/core/math').Vec2;
-Engine = require('../../lib/core/engine');
-Engine.init(document.getElementById('game-1'));
+Context = require('../../lib/core/context');
+Context.init(document.getElementById('game-1'));
 
 Renderer = require('../../lib/core/renderer');
 
-Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 290));
+Context.renderer = new Renderer(Context.element.getElementsByClassName('game-canvas')[0], Vec2(480, 290));
 
 Entity = require('../../lib/core/entity');
 
 Component = require('../../lib/core/component');
 
-Pool = require('../../lib/core/pool');
+Registry = require('../../lib/core/registry');
 
 Color = require('../../lib/core/color');
 
@@ -121,7 +121,7 @@ GameController = (function(_super) {
 
   GameController.prototype.update = function() {
     var input;
-    input = Engine.input;
+    input = Context.input;
     if (input.touchState === 'began') {
       Explosion.Prefab.create(this.root, {
         transform: {
@@ -139,7 +139,7 @@ GameController = (function(_super) {
 
 })(Component);
 
-new Pool(GameController);
+new Registry(GameController);
 
 Box = (function(_super) {
 
@@ -159,7 +159,7 @@ Box = (function(_super) {
 
 })(Component);
 
-new Pool(Box);
+new Registry(Box);
 
 Box.Prefab = new Entity.Prefab({
   transform: null,
@@ -224,7 +224,7 @@ Explosion = (function(_super) {
     maxSize = this.maxSize, impulse = this.impulse;
     pos = this.transform.position;
     maxSizeSq = maxSize * maxSize;
-    _ref = Body.pool.heap;
+    _ref = Body.pool.instances;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       body = _ref[_i];
       if (!(body.enabled && !body.fixed)) {
@@ -274,7 +274,7 @@ Explosion = (function(_super) {
 
 })(Component);
 
-new Pool(Explosion);
+new Registry(Explosion);
 
 Explosion.Prefab = new Entity.Prefab({
   transform: null,
@@ -325,7 +325,7 @@ Spark = (function(_super) {
 
 })(Component);
 
-new Pool(Spark);
+new Registry(Spark);
 
 Spark.Prefab = new Entity.Prefab({
   transform: null,
@@ -344,10 +344,10 @@ Spark.Prefab = new Entity.Prefab({
   }
 });
 
-Engine.gameScene = Entity.create(null, {
+Context.gameScene = Entity.create(null, {
   gameController: null
 });
 
-Engine.debug.stats = true;
+Context.debug.stats = true;
 
-Engine.play(Engine.gameScene);
+Context.play(Context.gameScene);

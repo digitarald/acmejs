@@ -1,5 +1,13 @@
 'use strict';
 
+var argv = require('yargs')
+	.boolean('verbose')
+	.alias('v', 'verbose')
+	.boolean('debug')
+	.alias('d', 'debug')
+	.boolean('production')
+	.alias('p', 'production')
+	.argv;
 var gulp = require('gulp');
 var plugins = require('gulp-load-plugins')({
 	lazy: false
@@ -8,53 +16,57 @@ var server = require('tiny-lr')();
 
 var pkg = require('./package.json');
 
-var SCRIPTS = ['lib/*/**.js', '!lib/vendor/**/lib/**'];
-var TESTS = 'test/**.test.js';
+var ENTRY = 'lib/index.js';
+var SCRIPTS = [ENTRY, 'lib/*/**.js', 'lib/vendor/*/**.js', '!lib/vendor/**/lib/**'];
+var TESTS = 'test/*/**.test.js';
 var WATCH = SCRIPTS.concat(TESTS);
-var debug = false;
+
+require('babel/register')({
+	modules: 'common',
+	sourceMap: 'inline'
+});
+
+function handleError(err) {
+	console.error(argv.debug ? err.toString() : err.message);
+	this.emit('end');
+}
 
 gulp.task('jshint', function() {
 	return gulp.src(SCRIPTS)
 		.pipe(plugins.jshint())
 		.pipe(plugins.jshint.reporter('jshint-stylish'))
-		.on('error', function handleError(err) {
-			this.emit('end');
-		});
+		.on('error', handleError);
 });
 
-gulp.task('jsxcs', function() {
+gulp.task('jscs', function() {
 	return gulp.src(SCRIPTS)
-		.pipe(plugins.jsxcs({
+		.pipe(plugins.jscs({
 			esnext: true
 		}))
-		.on('error', function handleError(err) {
-			console.log(err.message);
-			this.emit('end');
-		});
+		.on('error', handleError);
 });
 
-gulp.task('typecheck', function() {
-	return gulp.src(SCRIPTS)
-		.pipe(plugins.flowtype({
-			all: false,
-			weak: false,
-			killFlow: true,
-			beep: false
-		}));
-});
+// gulp.task('typecheck', function() {
+// 	return gulp.src(SCRIPTS)
+// 		.pipe(plugins.flowtype({
+// 			all: false,
+// 			weak: false,
+// 			killFlow: true,
+// 			beep: false
+// 		}));
+// });
 
-gulp.task('lint', ['typecheck', 'jsxcs']);
+gulp.task('lint', ['jscs']); // 'typecheck',
 
-gulp.task('test', ['build'], function() {
-	return gulp.src(['test/*.test.js'], {
+gulp.task('test', function() { // , ['lint']
+	return gulp.src(TESTS, {
 			read: false
 		})
 		.pipe(plugins.mocha({
-			reporter: 'spec'
+			reporter: argv.verbose ? 'spec' : 'dot',
+			bail: true
 		}))
-		.on('error', function handleError(err) {
-			this.emit('end');
-		});
+		.on('error', handleError);
 });
 
 gulp.task('docs', function() {
@@ -83,61 +95,52 @@ gulp.task('docs', function() {
 		}));
 });
 
-// Production build
-gulp.task('build', ['lint'], function() {
-	return gulp.src('lib/index.js')
+gulp.task('build-all', ['test'], function() {
+	return gulp.src(ENTRY)
 		.pipe(plugins.webpack({
-			devtool: 'source-map',
-			debug: debug,
+			devtool: argv.production ? null : 'source-map',
+			debug: argv.debug,
+			cache: true,
 			output: {
-				filename: 'acme.js',
+				filename: 'acme-all.js',
 				library: 'acmejs',
 				libraryTarget: 'var'
 			},
 			module: {
 				loaders: [{
 					test: /\.js$/,
-					loader: '6to5-loader'
+					loader: 'babel-loader?modules=common&experimental' // &optional=runtime
 				}]
 			}
 		}))
 		.on('error', plugins.notify.onError('build error: <%= error.message %>'))
-		// .pipe(plugins.concat('acme.js'))
-		// .pipe(plugins.if(!debug, plugins.stripDebug(), plugins.uglify()))
 		.pipe(gulp.dest('dist'))
-		// .pipe(plugins.livereload(server))
 		.pipe(plugins.notify('✔ dist/acme.js'));
-	/*
-	return gulp.src('component.json')
-		.pipe(plugins.component.scripts({
-			dev: debug,
-			name: 'acmejs'
+});
+
+// Production build
+gulp.task('build-umd', ['build-all'], function() {
+	plugins.livereload.reload();
+	return gulp.src(SCRIPTS)
+		.pipe(plugins.sourcemaps.init())
+		.pipe(plugins['babel']({
+			modules: 'umd'
 		}))
-		.on('error', plugins.notify.onError('build error: <%= error.message %>'))
+		.on('error', handleError)
 		.pipe(plugins.concat('acme.js'))
-		// .pipe(plugins.if(!debug, plugins.stripDebug(), plugins.uglify()))
-		.pipe(gulp.dest('dist'))
-		// .pipe(plugins.livereload(server))
-		.pipe(plugins.notify('✔ dist/acmejs.js'));
-	*/
+		.pipe(plugins.sourcemaps.write('.'))
+		.pipe(gulp.dest('dist'));
 });
 
-gulp.task('debug', function() {
-	debug = true;
-});
-
-// gulp.task('livereload', function() {
-// 	livereload.listen();
-// 	server.listen(35729, function() {
-// 		// plugins.util.log('Livereload listening');
-// 	});
-// });
+gulp.task('build', ['build-umd']);
 
 gulp.task('server', function() {
+	plugins.livereload.listen({
+		// quiet: true
+	});
 	require('portfinder').getPort(function(err, port) {
 		var app = require('express')();
 		app
-		// .use(require('connect-livereload')())
 			.use(require('serve-static')(__dirname))
 			.use(require('serve-index')(__dirname))
 			.listen(port, function() {
@@ -146,8 +149,8 @@ gulp.task('server', function() {
 	});
 });
 
-gulp.task('watch', ['server', 'test'], function() {
-	gulp.watch(WATCH, ['test']);
+gulp.task('watch', ['server', 'build'], function() {
+	gulp.watch(WATCH, ['build']);
 });
 
 gulp.task('default', ['build']);

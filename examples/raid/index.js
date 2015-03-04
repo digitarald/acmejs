@@ -1,31 +1,30 @@
-'use strict';
+var Context = acmejs.Context;
 
-var Engine = acmejs.Engine;
-
-Engine.init(document.getElementById('game-1'));
+Context.init(document.getElementById('game-1'));
 
 var Vec2 = acmejs.Vec2;
 var Renderer = acmejs.Renderer;
 var Color = acmejs.Color;
-var Random = acmejs.Random;
+var random = acmejs.random;
+var chance = acmejs.chance;
 var Tweens = acmejs.Tweens;
 var Entity = acmejs.Entity;
-var Prefab = acmejs.Prefab;
-var Prefab = acmejs.Prefab;
 var Component = acmejs.Component;
-var Pool = acmejs.Pool;
-var Sprite = acmejs.Sprite;
+var Registry = acmejs.Registry;
+var SpriteAsset = acmejs.SpriteAsset;
+var SpriteSheet = acmejs.SpriteSheet;
 var Border = acmejs.Border;
 var Collider = acmejs.Collider;
-var Kinetic = acmejs.Kinetic;
+var Body = acmejs.Body;
 var Particle = acmejs.Particle;
 
-Engine.renderer = new Renderer(
-	Engine.element.getElementsByClassName('game-canvas')[0],
+Context.renderer = new Renderer(
+	Context.element.getElementsByClassName('game-canvas')[0],
 	Vec2(480, 320)
 );
-Engine.renderer.color = Color.black;
-Engine.createComponent('spriteCanvasRenderer');
+Context.renderer.color = Color.black;
+Context.renderer.noContext = true;
+Context.createComponent('pixiSpriteSystem');
 
 function GameController() {
 	Component.call(this);
@@ -44,13 +43,13 @@ GameController.prototype = {
 
 	postUpdate: function(dt) {
 		this.cooldown -= dt;
-		if (this.cooldown > 0 || Enemy.prototype.pool.allocated > 40) {
+		if (this.cooldown > 0 || Enemy.prototype.registry.allocated > 250) {
 			return;
 		}
-		this.cooldown = Random.rand(0.2, 1.5);
+		this.cooldown = random(0.15, 1.2) / 4;
 		var enemy = this.root.createChild('enemy', {
 			transform: {
-				position: Vec2(475, Random.rand(50, 270))
+				position: Vec2(475, random(50, 270))
 			}
 		});
 	}
@@ -77,10 +76,9 @@ Hero.prototype = {
 	},
 
 	fixedUpdate: function() {
-		var axis, pos, speed;
-		axis = Engine.components.input.axis;
-		pos = this.components.transform.position;
-		speed = 1;
+		var axis = Context.$input.axis;
+		var pos = this.$transform.position;
+		var speed = 1;
 		if (axis[1] < 0) {
 			pos[1] -= speed;
 		} else if (axis[1] > 0) {
@@ -94,12 +92,12 @@ Hero.prototype = {
 	},
 
 	update: function(dt) {
-		var input = Engine.components.input;
-		Vec2.sub(input.position, this.components.transform.position, this.aimNormal);
+		var input = Context.$input;
+		Vec2.sub(input.position, this.$transform.position, this.aimNormal);
 		var axis = input.axis;
 
 		// Walk animation
-		var spriteTween = this.components.spriteTween;
+		var spriteTween = this.$spriteTween;
 		if (Vec2.len(axis) > 0) {
 			spriteTween.goto('walkE').play();
 		} else if (!spriteTween.paused) {
@@ -115,31 +113,18 @@ Hero.prototype = {
 
 	fire: function() {
 		if (this.cooldown > 0) {
-			return false;
+			return;
 		}
 		var angle = Vec2.rad(this.aimNormal);
-		var vel = Vec2.rotate(Vec2(400, 0), angle);
-		Vec2.variantLen(vel, 10);
-		Vec2.variantRad(vel, Math.PI / 64);
+		var velocity = Vec2.rotate(Vec2(400, 0), angle);
+		Vec2.variantLen(velocity, 10);
+		Vec2.variantRad(velocity, Math.PI / 64);
 
-		var projectile = Prefab.create('projectile', this.root);
-		projectile.components.transform.compose(this.components.transform.position);
-		projectile.components.kinetic.velocity = vel;
-		debugger;
+		var projectile = this.root.createChild('projectile');
+		projectile.$transform.translateTo(this.$transform.position);
+		projectile.$body.velocity = velocity;
 
 		this.cooldown = 0.05;
-
-		/*
-	var projectile = Prefab.create('projectile', this.root, {
-		transform: {
-			position: this.transform.position
-		},
-		kinetic: {
-			velocity: vel
-		}
-	});
-	*/
-		return true;
 	}
 };
 
@@ -162,17 +147,16 @@ var defaultSequence = {
 	}
 };
 
-Hero.sheet = new Sprite.Sheet({
-	sprites: new Sprite.Asset('./assets/hero.png'),
+Hero.sheet = new SpriteSheet({
+	sprites: new SpriteAsset('./assets/hero.png'),
 	size: Vec2(32, 32),
 	speed: 0.15,
 	sequences: defaultSequence
 });
 
-
 Component.create(Hero, 'hero');
 
-new Prefab('hero', {
+Entity.createPrefab('hero', {
 	transform: null,
 	spriteTween: {
 		asset: Hero.sheet,
@@ -185,7 +169,6 @@ new Prefab('hero', {
 	border: null,
 	hero: null
 });
-
 
 /**
  * Component: Health
@@ -207,32 +190,31 @@ Health.prototype = {
 	},
 
 	hit: function(entity, amount) {
-		var velocity = entity.components.kinetic.velocity;
+		var position = entity ? entity.$transform.position : this.$transform.position;
+		var velocity = entity ? entity.$body.velocity : Vec2(100, 0);
 		var speed = Vec2.len(velocity);
 
-		var i = Random.rand(15, 25) | 0;
+		var i = random(15, 25) | 0;
 		while (i--) {
-			var pos = entity.components.transform.position;
-			var direction = Random.chance(0.2) ? -0.2 : 1;
+			var direction = chance(0.3) ? -0.2 : 1;
 			var impulse = Vec2.scale(velocity, direction * 15, particleVelocity);
-			Vec2.variant(impulse, speed * 2);
+			Vec2.variantCirc(impulse, speed * 10);
 
 			var particle = this.root.createChild('particle', {
 				particle: {
-					lifetime: Random.rand(0.5, 2),
-					alpha: Random.rand(0.7, 1),
-					radius: Random.rand(1, 4),
-					shrink: Tweens.quadIn,
-					fade: null
+					lifetime: random(0.5, 2),
+					alpha: random(0.7, 1),
+					radius: random(1, 4),
+					shrink: Tweens.quadIn
 				},
 				spriteTween: {
 					asset: particleHit
 				},
-				kinetic: {
+				body: {
 					force: impulse
 				},
 				transform: {
-					position: pos
+					position: position
 				}
 			});
 		}
@@ -255,44 +237,44 @@ function Enemy() {
 	Component.call(this);
 }
 
-Enemy.prototype = Object.create(Component.prototype);
-
-Enemy.prototype.type = 'enemy';
-
 Enemy.prototype.update = function() {
-	var transform = this.components.transform;
+	var transform = this.$transform;
+	if (chance(0.01)) {
+		this.components.health.hit(null, 10);
+	}
 	if (transform.position[0] < 25) {
 		transform.position[0] = 550;
 	}
 };
 
 Enemy.prototype.onHealthDamage = function() {
-	this.components.kinetic.applyForce(Vec2(Random.rand(300, 700), 0));
+	this.$body.applyForce(Vec2(random(300, 700), 0));
 };
 
 Enemy.prototype.onDead = function() {
 	this.entity.destroy();
 };
 
-Enemy.sheet = new Sprite.Sheet({
-	sprites: new Sprite.Asset('./assets/skeleton.png'),
+Enemy.sheet = new SpriteSheet({
+	sprites: new SpriteAsset('./assets/skeleton.png'),
 	size: Vec2(32, 32),
 	speed: 0.15,
 	sequences: defaultSequence
 });
 
-Enemy.prototype.pool = new Pool(Enemy);
+Component.create(Enemy, 'enemy');
 
-new Prefab('enemy', {
+Entity.createPrefab('enemy', {
 	transform: null,
 	bounds: {
 		radius: 14,
 		shape: 'circle'
 	},
 	collider: {
+		include: 'projectile',
 		trigger: true
 	},
-	kinetic: {
+	body: {
 		mass: 1,
 		drag: 0.999,
 		friction: 0,
@@ -315,58 +297,28 @@ new Prefab('enemy', {
 
 function Projectile() {
 	Component.call(this);
-	this.lastPos = Vec2();
-	this.color = Color.rgba(Color.white);
-	debugger;
 }
 
-Projectile.prototype = Object.create(Component.prototype);
-
-Projectile.prototype.type = 'projectile';
-
-Projectile.prototype.create = function() {
-	Vec2.copy(this.lastPos, this.components.transform.position);
-};
-
-Projectile.prototype.render = function(ctx) {
-	var transform = this.components.transform;
-	var pos = transform.position;
-	if (Vec2.isZero(this.lastPos, Vec2.zero)) {
-		Vec2.copy(this.lastPos, transform.position);
-		return;
-	}
-	ctx.save();
-	ctx.strokeStyle = this.color;
-	ctx.lineWidth = 2;
-	ctx.lineCap = 'butt';
-	ctx.beginPath();
-	ctx.moveTo(this.lastPos[0] | 0, this.lastPos[1] | 0);
-	ctx.lineTo(pos[0] | 0, pos[1] | 0);
-	ctx.stroke();
-	ctx.restore();
-	Vec2.copy(this.lastPos, pos);
-};
-
 Projectile.prototype.onTrigger = function(event) {
-	event.entity.components.health.hit(this.entity, Random.rand(10, 15));
+	event.other.$health.hit(this.entity, random(10, 15));
 	this.entity.destroy();
 };
 
 var particleHit = Particle.generateSpriteSheet({
-	color: Color(220, 20, 60),
-	shape: 'rect',
-	center: 1
+	shape: 'circle',
+	center: 1,
+	color: Color(255, 0, 0)
 });
 
-Projectile.prototype.pool = new Pool(Projectile);
+Component.create(Projectile, 'projectile');
 
-new Prefab('projectile', {
+Entity.createPrefab('projectile', {
 	transform: null,
 	bounds: {
 		shape: 'circle',
 		radius: 2
 	},
-	kinetic: {
+	body: {
 		mass: 0.1,
 		drag: 1,
 		friction: 0,
@@ -384,8 +336,8 @@ new Prefab('projectile', {
 	projectile: null
 });
 
-Engine.gameScene = Entity.create(null, {
+Context.gameScene = Entity.create(null, {
 	gameController: null
 });
 
-Engine.play(Engine.gameScene);
+Context.play(Context.gameScene);

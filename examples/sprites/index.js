@@ -2,12 +2,12 @@
 
 var acmejs = require('acmejs');
 
-var Engine = acmejs.Engine;
-Engine.init(document.getElementById('game-1'));
+var Context = acmejs.Context;
+Context.init(document.getElementById('game-1'));
 
 var Renderer = acmejs.Renderer;
 var Vec2 = acmejs.Vec2;
-Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
+Context.renderer = new Renderer(Context.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
 
 var Entity = acmejs.Entity;
 var Component = acmejs.Component;
@@ -24,7 +24,7 @@ GameController.prototype.create = function() {
 };
 
 GameController.prototype.update = function() {
-  var input = Engine.input;
+  var input = Context.input;
   if (input.keys.space) {
     this.root.createChild('explosion', {
       transform: {
@@ -107,8 +107,8 @@ new Entity.Prefab('agent', {
   }
 });
 
-Engine.gameScene = Entity.create(null, {
+Context.gameScene = Entity.create(null, {
   gameController: null
 });
 
-Engine.play(Engine.gameScene);
+Context.play(Context.gameScene);

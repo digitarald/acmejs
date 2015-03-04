@@ -1,45 +1,75 @@
 'use strict';
 
-var Engine = acmejs.Engine;
+var Context = acmejs.Context;
 
-Engine.init(document.getElementById('game-1'));
+Context.init(document.getElementById('game-1'));
 
 var Renderer = acmejs.Renderer;
 var Vec2 = acmejs.Vec2;
-var Mathf = acmejs.Mathf;
-var Random = acmejs.Random;
 var Entity = acmejs.Entity;
-var Prefab = acmejs.Prefab;
 var Component = acmejs.Component;
-var Pool = acmejs.Pool;
+var Registry = acmejs.Registry;
 var Color = acmejs.Color;
-var Sprite = acmejs.Sprite;
+var SpriteAsset = acmejs.SpriteAsset;
+var SpriteSheet = acmejs.SpriteSheet;
 var Transform = acmejs.Transform;
 var Bounds = acmejs.Bounds;
 var Border = acmejs.Border;
 var Particle = acmejs.Particle;
 var Collider = acmejs.Collider;
-var Kinetic = acmejs.Kinetic;
+var Body = acmejs.Body;
 
-Engine.renderer = new Renderer(
-	Engine.element.getElementsByClassName('game-canvas')[0],
+var TAU = acmejs.TAU;
+var random = acmejs.random;
+var values = acmejs.values;
+var valuesKey = acmejs.valuesKey;
+
+Context.renderer = new Renderer(
+	Context.element.getElementsByClassName('game-canvas')[0],
 	Vec2(320, 480)
 );
-Engine.createComponent('spriteCanvasRenderer');
+Context.renderer.color = Color.white;
+Context.renderer.noContext = true;
+Context.createComponent('pixiSpriteSystem');
 
 var Config = {
 	colors: [{
 		mid: Color(78, 205, 196)
 	}, {
-		mid: Color(255, 107, 107)
-	}]
+		mid: Color(305, 107, 107)
+	}],
+	sizes: [10, 15, 20, 25]
 };
 Config.colors.forEach(function(entry) {
 	entry.high = Color.lerp(entry.mid, Color.white, 0.85, false, Color());
-	entry.fieldAsset = new Sprite.Asset(function(ctx) {
+	entry.fieldAsset = new SpriteAsset(function(ctx) {
 		ctx.fillStyle = Color.rgba(entry.high);
-		ctx.fillRect(0, 0, 320, 80);
-	}, Vec2(320, 80));
+		ctx.fillRect(0, 0, 320, 160);
+	}, Vec2(320, 160));
+	entry.puckAsset = new SpriteAsset(function(ctx) {
+		Config.sizes.forEach(function(radius, i) {
+			let top = 30 + i * 30 * 2;
+			ctx.fillStyle = Color.rgba(entry.mid);
+			ctx.strokeStyle = Color.rgba(entry.mid, 0.3);
+
+			ctx.beginPath();
+			ctx.arc(30, top, radius, 0, TAU);
+			ctx.closePath();
+			ctx.fill();
+
+			ctx.beginPath();
+			ctx.arc(90, top, radius, 0, TAU);
+			ctx.closePath();
+			ctx.lineWidth = 5;
+			ctx.fill();
+			ctx.stroke();
+		});
+	}, Vec2(120, 120 * 4));
+	entry.puckSheet = new SpriteSheet({
+		sprites: entry.puckAsset,
+		size: Vec2(60, 60),
+		speed: 0
+	});
 });
 
 /**
@@ -47,11 +77,11 @@ Config.colors.forEach(function(entry) {
  */
 function GameController() {
 	Component.call(this);
+	this.puck = null;
 };
 
 GameController.prototype = {
 	create: function() {
-		// console.log('Create');
 		this.player = 0;
 		this.inField1 = this.entity.createChild('field', {
 			transform: {
@@ -109,26 +139,37 @@ GameController.prototype = {
 	},
 
 	setupPuck: function() {
-		// console.log('setupPuck');
 		this.player = this.player ? 0 : 1;
-		var radius = Random.rand(12, 25) | 0;
-		var puck1 = this.entity.createChild('puck', {
+		var radiusKey = random(Config.sizes.length) | 0;
+		var radius = Config.sizes[radiusKey];
+		this.puck = this.entity.createChild('puck', {
 			transform: {
 				position: Vec2(160, this.player ? 40 : 440)
 			},
 			bounds: {
 				radius: radius
 			},
-			kinetic: {
+			body: {
 				mass: radius
+			},
+			spriteTween: {
+				asset: Config.colors[this.player].puckSheet,
+				frame: radiusKey * 2
 			},
 			puck: {
 				player: this.player,
-				color: Config.colors[this.player].mid,
 				field: this.player ? this.outField1 : this.outField2
 			}
 		});
-		puck1.on(this, 'onFlip', 'setupPuck');
+		this.puck.on(this, 'onFlip', 'setupPuck');
+	},
+
+	onKeyBegan: function(event) {
+		if (event.key == 'space') {
+			if (this.puck) {
+				this.puck.components.puck.flip(Vec2.variantCirc(Vec2(), 1000));
+			}
+		}
 	}
 };
 
@@ -139,8 +180,6 @@ Component.create(GameController, 'gameController');
  */
 function Puck() {
 	Component.call(this);
-	this._color = Color();
-	this.outlineColor = Color();
 }
 
 Puck.layer = 1;
@@ -150,15 +189,12 @@ var posCache = Vec2();
 Puck.prototype = {
 	attributes: {
 		player: 0,
-		color: Color(),
 		field: null
 	},
 
 	create: function() {
-		// console.log('Puck.create', this, attributes);
-		Color.lerp(this.color, Color.black, 0.2, false, this.outlineColor);
-		this.outlineColor[3] = 0.3;
-		this.components.kinetic.enable(false);
+		this.components.body.enable(false);
+		// this.components.boid.enable(false);
 		this.components.collider.enable(false);
 		this.state = 'ready';
 		this.treshold = 1;
@@ -166,7 +202,7 @@ Puck.prototype = {
 
 	update: function(dt) {
 		var pos = this.components.transform.position;
-		var input = Engine.components.input;
+		var input = Context.components.input;
 		switch (this.state) {
 			case 'ready':
 				if (input.touchState !== 'began' || !this.components.bounds.contains(input.position)) {
@@ -177,22 +213,11 @@ Puck.prototype = {
 			case 'dragging':
 				if (input.touchState == 'moved') {
 					if (this.player) {
-						console.log(this.field.components.bounds.bottom);
 						if (input.position[1] > this.field.components.bounds.bottom) {
-							console.log(
-								'bottom',
-								input.position[1],
-								this.field.components.bounds.bottom
-							);
 							this.state = 'draggingEnd';
 						}
 					} else {
 						if (input.position[1] < this.field.components.bounds.top) {
-							console.log(
-								'top',
-								input.position[1],
-								this.field.components.bounds.top
-							);
 							this.state = 'draggingEnd';
 						}
 					}
@@ -206,7 +231,7 @@ Puck.prototype = {
 					} else {
 						this.avgSpeed = Vec2(speed);
 					}
-					Vec2.copy(this.components.transform.position, input.position);
+					this.components.transform.translateTo(input.position);
 					break;
 				}
 				if (input.touchState == 'ended') {
@@ -219,16 +244,21 @@ Puck.prototype = {
 					this.state = 'ready';
 					break;
 				}
-				this.state = 'flipped';
-				this.components.kinetic.enable(true);
-				this.components.collider.enable(true);
-				Vec2.copy(this.components.kinetic.velocity, this.avgSpeed);
-				this.entity.emit('onFlip', this);
+				this.flip(this.avgSpeed);
 				this.avgSpeed = null;
 				break;
 			case 'flipped':
 				break;
 		}
+	},
+
+	flip: function(speed) {
+		this.state = 'flipped';
+		this.components.body.enable(true);
+		this.components.collider.enable(true);
+		// this.components.boid.enable(true);
+		this.components.body.velocity = speed;
+		this.emit('onFlip', speed);
 	},
 
 	onCollide: function() {
@@ -242,7 +272,7 @@ Puck.prototype = {
 
 			var impulse = Vec2.copy(velocityCache, pos);
 			Vec2.add(Vec2.norm(pos, null, bounds.radius), this.components.transform.position);
-			Vec2.scale(impulse, Random.rand(0, Vec2.len(this.components.kinetic.velocity) / 2));
+			Vec2.scale(impulse, Random.rand(0, Vec2.len(this.components.body.velocity) / 2));
 
 			this.root.createChild('particle', {
 				particle: {
@@ -251,7 +281,7 @@ Puck.prototype = {
 					radius: Random.rand(1, 5),
 					shrink: null
 				},
-				kinetic: {
+				body: {
 					force: impulse
 				},
 				transform: {
@@ -261,20 +291,14 @@ Puck.prototype = {
 		}
 	},
 
-	render: function(ctx) {
-		ctx.save();
-		var pos = this.components.transform.position;
-		ctx.beginPath();
-		ctx.arc(pos[0] | 0, pos[1] | 0, this.components.bounds.radius | 0, 0, Mathf.TAU);
-		ctx.closePath();
-		ctx.fillStyle = Color.rgba(this.color);
-		ctx.fill();
-		if (this.state == 'ready' || this.components.kinetic.sleeping) {
-			ctx.lineWidth = 4;
-			ctx.strokeStyle = Color.rgba(this.outlineColor);
-			ctx.stroke();
-		}
-		ctx.restore();
+	onBodySleep: function() {
+		var tween = this.$spriteTween;
+		tween.goto(tween.frame + 1);
+	},
+
+	onBodyWake: function() {
+		var tween = this.$spriteTween;
+		tween.goto(tween.frame - 1);
 	},
 
 	free: function() {
@@ -282,24 +306,23 @@ Puck.prototype = {
 	}
 };
 
-Color.defineProperty(Puck, 'color');
-
 // Puck.particleFlipSprite = Particle.generateSprite(Color(199, 244, 100));
 // Puck.particleSmokeSprite = Particle.generateSprite(Color(128, 128, 128), 0.5);
 
 Component.create(Puck, 'puck');
 
-new Prefab('puck', {
+Entity.createPrefab('puck', {
 	transform: null,
 	bounds: {
 		shape: 'circle',
 		radius: 15
 	},
-	kinetic: {
+	body: {
 		mass: 1,
 		drag: 0.995,
 		maxVelocity: 900
 	},
+	// boid: null,
 	collider: null,
 	border: {
 		bounce: true,
@@ -322,23 +345,24 @@ Field.prototype = {
 	},
 
 	create: function(attributes) {
-		this.root.on(this, 'onKineticSleep');
+		if (this.out) {
+			this.root.on(this, 'onBodySleep', 'rootOnBodySleep');
+		}
 	},
 
-	onKineticSleep: function(kinetic) {
-		if (!this.components.bounds.contains(kinetic.components.transform.position)) {
+	rootOnBodySleep: function(event) {
+		var body = event.component;
+		var transform = body.components.transform;
+		if (!this.$bounds.contains(transform.position)) {
 			return;
 		}
-		if (this.out) {
-			kinetic.entity.destroy();
-		}
-		return false;
+		body.entity.destroy();
 	}
 };
 
 Component.create(Field, 'field');
 
-new Prefab('field', {
+Entity.createPrefab('field', {
 	transform: null,
 	bounds: {
 		shape: 'rect'
@@ -346,8 +370,8 @@ new Prefab('field', {
 	field: null
 });
 
-Engine.gameScene = Entity.create(null, {
+Context.gameScene = Entity.create(null, {
 	gameController: null
 });
 
-Engine.play(Engine.gameScene);
+Context.play(Context.gameScene);

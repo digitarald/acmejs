@@ -1,24 +1,20 @@
 'use strict';
 
 var Vec2 = acmejs.Vec2;
-var Random = acmejs.Random;
-var Mathf = acmejs.Mathf;
-var Tweens = acmejs.Tweens;
+var random = acmejs.random;
 var Color = acmejs.Color;
-var Engine = acmejs.Engine;
+var Context = acmejs.Context;
 var Entity = acmejs.Entity;
-var Prefab = acmejs.Prefab;
 var Component = acmejs.Component;
-var Pool = acmejs.Pool;
-var Sprite = acmejs.Sprite;
+var Registry = acmejs.Registry;
 var Particle = acmejs.Particle;
 
-Engine.init(document.getElementById('game-1'));
+Context.init(document.getElementById('game-1'));
 
 var Renderer = acmejs.Renderer;
-Engine.renderer = new Renderer(Engine.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
-Engine.renderer.color = Color.black;
-Engine.createComponent('spriteCanvasRenderer');
+Context.renderer = new Renderer(Context.element.getElementsByClassName('game-canvas')[0], Vec2(480, 320));
+Context.renderer.color = Color.black;
+Context.createComponent('spriteCanvasRenderer');
 
 /**
  * WhiteScene
@@ -39,7 +35,7 @@ WhiteScene.prototype = {
 		this.velocity = 25;
 		this.position = 10;
 		this.grow = true;
-		var gui = Engine.components.sceneController.gui.addFolder('whiteScene');
+		var gui = Context.components.sceneController.gui.addFolder('whiteScene');
 		gui.add(this, 'velocity', 0, 100);
 		gui.add(this, 'position', 0, 100);
 		gui.add(this, 'grow');
@@ -47,12 +43,13 @@ WhiteScene.prototype = {
 	},
 
 	dealloc: function() {
-		Engine.sceneController.gui.remove(this.gui);
+		Context.sceneController.gui.remove(this.gui);
 		this.gui = null;
 	},
 
 	update: function(dt) {
-		var input = Engine.components.input;
+		var input = Context.components.input;
+		// console.log(input.touchState);
 		if (input.touchState == 'began') {
 			var emitter = this.entity.createChild('particleEmitter', {
 				transform: {
@@ -70,10 +67,10 @@ WhiteScene.prototype = {
 		// 	while (i--) {
 		// 		var spark = Prefab.create(this.entity, 'spark');
 		// 		Vec2.variantCirc(Vec2.zero, speed * factor * this.velocity, impulse);
-		// 		spark.components.kinetic.applyForce(impulse);
+		// 		spark.components.body.applyForce(impulse);
 		// 		Vec2.variantCirc(input.position, this.position,
 		// 			spark.components.transform.position);
-		// 		spark.components.particle.radius = Random.rand(2, 15);
+		// 		spark.components.particle.radius = random(2, 15);
 		// 	}
 		// } else if (this.started) {
 		// 	this.started = 0;
@@ -83,9 +80,9 @@ WhiteScene.prototype = {
 
 Component.create(WhiteScene, 'whiteScene');
 
-new Prefab('spark', {
+Entity.createPrefab('spark', {
 	transform: null,
-	kinetic: {
+	body: {
 		mass: 0.1,
 		fast: true,
 		maxVelocity: 200,
@@ -122,7 +119,7 @@ function ParticleEmitter() {
 ParticleEmitter.prototype = {
 	attributes: {
 		amount: 100,
-		lifetime: 5,
+		lifetime: 2,
 		prefab: 'particle',
 		positionVariance: 10,
 		force: 10,
@@ -149,18 +146,18 @@ ParticleEmitter.prototype = {
 		for (var i = 0; i < l; i++) {
 			var particle = this.entity.createChild(this.prefab);
 			Vec2.variantCirc(Vec2.zero, this.force, force);
-			particle.components.kinetic.applyForce(force);
+			particle.components.body.applyForce(force);
 			Vec2.variantCirc(Vec2.zero, this.positionVariance,
 				particle.components.transform.position);
 			particle.components.particle.radius = this.radius +
-				Random.rand(-this.radiusVariance, this.radiusVariance);
+				random(-this.radiusVariance, this.radiusVariance);
 		}
 	}
 };
 
 Component.create(ParticleEmitter, 'particleEmitter');
 
-new Prefab('particleEmitter', {
+Entity.createPrefab('particleEmitter', {
 	transform: null,
 	particleEmitter: null
 });
@@ -175,13 +172,13 @@ function FireScene() {
 FireScene.prototype = {
 	create: function() {
 		this.velocity = 25;
-		var gui = Engine.components.sceneController.gui.addFolder('fireScene');
+		var gui = Context.components.sceneController.gui.addFolder('fireScene');
 		gui.add(this, 'velocity', 0, 100);
 		this.gui = gui;
 	},
 
 	dealloc: function() {
-		Engine.sceneController.gui.remove(this.gui);
+		Context.sceneController.gui.remove(this.gui);
 		this.gui = null;
 	}
 };
@@ -208,9 +205,9 @@ SceneController.prototype = {
 		});
 		gui.add(this, 'running').onFinishChange(function(running) {
 			if (running) {
-				Engine.start();
+				Context.start();
 			} else {
-				Engine.pause();
+				Context.pause();
 			}
 		});
 		gui.close();
@@ -225,12 +222,11 @@ SceneController.prototype = {
 		attributes[component] = null;
 
 		var entity = Entity.create(this.root, attributes);
-		console.log(entity);
-		Engine.play(entity);
+		Context.play(entity);
 	}
 };
 
 Component.create(SceneController, 'sceneController');
 
 // Attaching the controller starts the first scene
-Engine.createComponent('sceneController');
+Context.createComponent('sceneController');
