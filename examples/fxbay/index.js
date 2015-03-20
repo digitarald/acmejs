@@ -40,7 +40,7 @@ GameController.prototype = {
 				position: Vec2.variantCirc(Vec2(400, 300), 300)
 			}
 		});
-		enemy.$body.applyForce(Vec2.variantCirc(Vec2(0, 0), 1000));
+		enemy.components.body.applyForce(Vec2.variantCirc(Vec2(0, 0), 1000));
 	}
 };
 

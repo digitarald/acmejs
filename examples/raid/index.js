@@ -7,6 +7,7 @@ var Renderer = acmejs.Renderer;
 var Color = acmejs.Color;
 var random = acmejs.random;
 var chance = acmejs.chance;
+var TAU = acmejs.TAU;
 var Tweens = acmejs.Tweens;
 var Entity = acmejs.Entity;
 var Component = acmejs.Component;
@@ -17,6 +18,7 @@ var Border = acmejs.Border;
 var Collider = acmejs.Collider;
 var Body = acmejs.Body;
 var Particle = acmejs.Particle;
+var Event = acmejs.Event;
 
 Context.renderer = new Renderer(
 	Context.element.getElementsByClassName('game-canvas')[0],
@@ -25,6 +27,7 @@ Context.renderer = new Renderer(
 Context.renderer.color = Color.black;
 Context.renderer.noContext = true;
 Context.createComponent('pixiSpriteSystem');
+Context.createComponent('physics');
 
 function GameController() {
 	Component.call(this);
@@ -76,8 +79,8 @@ Hero.prototype = {
 	},
 
 	fixedUpdate: function() {
-		var axis = Context.$input.axis;
-		var pos = this.$transform.position;
+		var axis = Context.components.input.axis;
+		var pos = this.components.transform.position;
 		var speed = 1;
 		if (axis[1] < 0) {
 			pos[1] -= speed;
@@ -92,12 +95,12 @@ Hero.prototype = {
 	},
 
 	update: function(dt) {
-		var input = Context.$input;
-		Vec2.sub(input.position, this.$transform.position, this.aimNormal);
+		var input = Context.components.input;
+		Vec2.sub(input.position, this.components.transform.position, this.aimNormal);
 		var axis = input.axis;
 
 		// Walk animation
-		var spriteTween = this.$spriteTween;
+		var spriteTween = this.components.spriteTween;
 		if (Vec2.len(axis) > 0) {
 			spriteTween.goto('walkE').play();
 		} else if (!spriteTween.paused) {
@@ -121,8 +124,8 @@ Hero.prototype = {
 		Vec2.variantRad(velocity, Math.PI / 64);
 
 		var projectile = this.root.createChild('projectile');
-		projectile.$transform.translateTo(this.$transform.position);
-		projectile.$body.velocity = velocity;
+		projectile.components.transform.translateTo(this.components.transform.position);
+		projectile.components.body.velocity = velocity;
 
 		this.cooldown = 0.05;
 	}
@@ -178,9 +181,6 @@ function Health() {
 	Component.call(this);
 }
 
-var damageEvent = {
-	damage: 0.0
-};
 var particleVelocity = Vec2();
 
 Health.prototype = {
@@ -189,9 +189,9 @@ Health.prototype = {
 		current: 100
 	},
 
-	hit: function(entity, amount) {
-		var position = entity ? entity.$transform.position : this.$transform.position;
-		var velocity = entity ? entity.$body.velocity : Vec2(100, 0);
+	hit: function(entity, damage) {
+		var position = entity ? entity.components.transform.position : this.components.transform.position;
+		var velocity = entity ? entity.components.body.velocity : Vec2(100, 0);
 		var speed = Vec2.len(velocity);
 
 		var i = random(15, 25) | 0;
@@ -219,10 +219,9 @@ Health.prototype = {
 			});
 		}
 
-		damageEvent.damage = amount;
-		this.entity.emit('onHealthDamage', damageEvent);
-		if ((this.current -= amount) < 0) {
-			this.entity.emit('onDead');
+		this.emit(Event.create('healthDamage'), damage);
+		if ((this.current -= damage) < 0) {
+			this.entity.emit(Event.create('dead'));
 		}
 	}
 };
@@ -238,7 +237,7 @@ function Enemy() {
 }
 
 Enemy.prototype.update = function() {
-	var transform = this.$transform;
+	var transform = this.components.transform;
 	if (chance(0.01)) {
 		this.components.health.hit(null, 10);
 	}
@@ -248,7 +247,7 @@ Enemy.prototype.update = function() {
 };
 
 Enemy.prototype.onHealthDamage = function() {
-	this.$body.applyForce(Vec2(random(300, 700), 0));
+	this.components.body.applyForce(Vec2(random(300, 700), 0));
 };
 
 Enemy.prototype.onDead = function() {
@@ -300,7 +299,7 @@ function Projectile() {
 }
 
 Projectile.prototype.onTrigger = function(event) {
-	event.other.$health.hit(this.entity, random(10, 15));
+	event.other.components.health.hit(this.entity, random(10, 15));
 	this.entity.destroy();
 };
 
@@ -312,8 +311,19 @@ var particleHit = Particle.generateSpriteSheet({
 
 Component.create(Projectile, 'projectile');
 
+Projectile.asset = new SpriteAsset(function(ctx) {
+	ctx.fillStyle = Color.rgba(Color.black);
+	ctx.beginPath();
+	ctx.arc(1, 1, 1, 0, TAU, true);
+	ctx.closePath();
+	ctx.fill();
+}, Vec2(3, 3))
+
 Entity.createPrefab('projectile', {
 	transform: null,
+	spriteTween: {
+		asset: Projectile.asset
+	},
 	bounds: {
 		shape: 'circle',
 		radius: 2

@@ -98,7 +98,7 @@ gulp.task('docs', function() {
 gulp.task('build-all', ['test'], function() {
 	return gulp.src(ENTRY)
 		.pipe(plugins.webpack({
-			devtool: argv.production ? null : 'source-map',
+			devtool: argv.production ? null : '#eval-source-map',
 			debug: argv.debug,
 			cache: true,
 			output: {
@@ -109,7 +109,8 @@ gulp.task('build-all', ['test'], function() {
 			module: {
 				loaders: [{
 					test: /\.js$/,
-					loader: 'babel-loader?modules=common&experimental' // &optional=runtime
+					loader: 'babel-loader?modules=common&optional=runtime'
+					// blacklist[]=es6.forOf
 				}]
 			}
 		}))

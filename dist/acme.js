@@ -1,10 +1,10 @@
 (function (factory) {
 	if (typeof define === "function" && define.amd) {
-		define(["exports", "./math/mathf", "./math/random", "./core/sprite", "./vendor/pixi", "./physics/body", "./physics/boid", "./physics/border", "./core/bounds", "./physics/collider", "./math/color", "./core/component", "./debug/console", "./core/context", "./core/entity", "./core/input", "./physics/jitter", "./math/mat2", "./physics/particle", "./physics/physics", "./core/registry", "./core/renderer", "./core/shims", "./core/transform", "./math/tweens", "./math/vec2"], factory);
+		define(["exports", "./math/mathf", "./math/random", "./core/sprite", "./vendor/pixi", "./physics/body", "./physics/boid", "./physics/border", "./core/bounds", "./physics/collider", "./math/color", "./core/component", "./debug/console", "./core/context", "./core/entity", "./core/event", "./core/input", "./physics/jitter", "./math/mat2", "./physics/particle", "./physics/physics", "./core/registry", "./core/renderer", "./core/shims", "./core/transform", "./math/tweens", "./math/vec2"], factory);
 	} else if (typeof exports !== "undefined") {
-		factory(exports, require("./math/mathf"), require("./math/random"), require("./core/sprite"), require("./vendor/pixi"), require("./physics/body"), require("./physics/boid"), require("./physics/border"), require("./core/bounds"), require("./physics/collider"), require("./math/color"), require("./core/component"), require("./debug/console"), require("./core/context"), require("./core/entity"), require("./core/input"), require("./physics/jitter"), require("./math/mat2"), require("./physics/particle"), require("./physics/physics"), require("./core/registry"), require("./core/renderer"), require("./core/shims"), require("./core/transform"), require("./math/tweens"), require("./math/vec2"));
+		factory(exports, require("./math/mathf"), require("./math/random"), require("./core/sprite"), require("./vendor/pixi"), require("./physics/body"), require("./physics/boid"), require("./physics/border"), require("./core/bounds"), require("./physics/collider"), require("./math/color"), require("./core/component"), require("./debug/console"), require("./core/context"), require("./core/entity"), require("./core/event"), require("./core/input"), require("./physics/jitter"), require("./math/mat2"), require("./physics/particle"), require("./physics/physics"), require("./core/registry"), require("./core/renderer"), require("./core/shims"), require("./core/transform"), require("./math/tweens"), require("./math/vec2"));
 	}
-})(function (exports, _mathMathf, _mathRandom, _coreSprite, _vendorPixi, _physicsBody, _physicsBoid, _physicsBorder, _coreBounds, _physicsCollider, _mathColor, _coreComponent, _debugConsole, _coreContext, _coreEntity, _coreInput, _physicsJitter, _mathMat2, _physicsParticle, _physicsPhysics, _coreRegistry, _coreRenderer, _coreShims, _coreTransform, _mathTweens, _mathVec2) {
+})(function (exports, _mathMathf, _mathRandom, _coreSprite, _vendorPixi, _physicsBody, _physicsBoid, _physicsBorder, _coreBounds, _physicsCollider, _mathColor, _coreComponent, _debugConsole, _coreContext, _coreEntity, _coreEvent, _coreInput, _physicsJitter, _mathMat2, _physicsParticle, _physicsPhysics, _coreRegistry, _coreRenderer, _coreShims, _coreTransform, _mathTweens, _mathVec2) {
 	"use strict";
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
@@ -43,6 +43,8 @@
 
 	var Entity = _interopRequire(_coreEntity);
 
+	var Event = _interopRequire(_coreEvent);
+
 	var Input = _interopRequire(_coreInput);
 
 	var Jitter = _interopRequire(_physicsJitter);
@@ -75,6 +77,7 @@
 	exports.Console = Console;
 	exports.Context = Context;
 	exports.Entity = Entity;
+	exports.Event = Event;
 	exports.Input = Input;
 	exports.Jitter = Jitter;
 	exports.Mat2 = Mat2;
@@ -220,7 +223,7 @@
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -324,7 +327,7 @@
   * @property {Number[]} size Rect size
   */
 
-	var Bounds = (function (Component) {
+	var Bounds = (function (_Component) {
 		function Bounds() {
 			_classCallCheck(this, Bounds);
 
@@ -338,15 +341,13 @@
 			this._position = _position;
 		}
 
-		_inherits(Bounds, Component);
+		_inherits(Bounds, _Component);
 
-		_prototypeProperties(Bounds, null, {
+		_createClass(Bounds, {
 			create: {
 				value: function create() {
-					this._position = this.$transform.position;
-				},
-				writable: true,
-				configurable: true
+					this._position = this.components.transform.position;
+				}
 			},
 			attributes: {
 				get: function () {
@@ -356,8 +357,7 @@
 						size: Vec2(),
 						anchor: Vec2.center
 					};
-				},
-				configurable: true
+				}
 			},
 			intersectLine: {
 				value: function intersectLine(a1, a2, result) {
@@ -365,9 +365,7 @@
 						return intersectLineCircle(a1, a2, this._position, this.radius, result);
 					}
 					return false;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			contains: {
 				value: function contains(point) {
@@ -375,9 +373,7 @@
 						return circleContains(this._position, this.radius, point);
 					}
 					return rectangleContains(this.topLeft, this._size, point);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			intersectRect: {
 				value: function intersectRect(topLeft, size) {
@@ -385,9 +381,7 @@
 						return intersectCircleRectangle(topLeft, size, this._position, this.radius);
 					}
 					return intersectRectangle(this.topLeft, this._size, topLeft, size);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			top: {
 				get: function () {
@@ -395,8 +389,7 @@
 						return this._position[1] - this.radius;
 					}
 					return this._position[1] - this._size[1] * this._anchor[1];
-				},
-				configurable: true
+				}
 			},
 			bottom: {
 				get: function () {
@@ -404,8 +397,7 @@
 						return this._position[1] + this.radius;
 					}
 					return this._position[1] + this._size[1] * this._anchor[1];
-				},
-				configurable: true
+				}
 			},
 			left: {
 				get: function () {
@@ -413,8 +405,7 @@
 						return this._position[0] - this.radius;
 					}
 					return this._position[0] - this._size[0] * this._anchor[0];
-				},
-				configurable: true
+				}
 			},
 			right: {
 				get: function () {
@@ -422,8 +413,7 @@
 						return this._position[0] + this.radius;
 					}
 					return this._position[0] + this._size[0] * this._anchor[0];
-				},
-				configurable: true
+				}
 			},
 			width: {
 				get: function () {
@@ -431,8 +421,7 @@
 						return this.radius * 2;
 					}
 					return this._size[0];
-				},
-				configurable: true
+				}
 			},
 			height: {
 				get: function () {
@@ -440,20 +429,17 @@
 						return this.radius * 2;
 					}
 					return this._size[1];
-				},
-				configurable: true
+				}
 			},
 			topLeft: {
 				get: function () {
 					return Vec2.sub(this._position, Vec2.mul(this._size, this._anchor, this._topLeft), this._topLeft);
-				},
-				configurable: true
+				}
 			},
 			bottomRight: {
 				get: function () {
 					return Vec2.add(this._position, Vec2.mul(this._size, this._anchor, this._bottomRight), this._topLeft);
-				},
-				configurable: true
+				}
 			}
 		});
 
@@ -668,7 +654,7 @@
   * @extends Component
   */
 
-	var BoundsDebug = (function (Component) {
+	var BoundsDebug = (function (_Component2) {
 		function BoundsDebug() {
 			_classCallCheck(this, BoundsDebug);
 
@@ -676,9 +662,9 @@
 			this._color = Color();
 		}
 
-		_inherits(BoundsDebug, Component);
+		_inherits(BoundsDebug, _Component2);
 
-		_prototypeProperties(BoundsDebug, null, {
+		_createClass(BoundsDebug, {
 			attributes: {
 				get: function () {
 					return {
@@ -686,8 +672,7 @@
 						opacity: 0.5,
 						fill: false
 					};
-				},
-				configurable: true
+				}
 			}
 		});
 
@@ -743,7 +728,7 @@
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
@@ -782,10 +767,138 @@
 			this.parent = emptyEntity;
 			this.root = emptyEntity;
 			this.components = emptyComponentMap;
-			this.listenersRef = [];
+			this.listenersRef = new Set();
 		}
 
-		_prototypeProperties(Component, {
+		_createClass(Component, {
+			toString: {
+
+				/**
+     * Brief summary.
+     * @private
+     * @return {String}
+     */
+
+				value: function toString() {
+					return "" + this.type + " #" + this.uid + " [^ " + this.entity + "]";
+				}
+			},
+			allocate: {
+
+				/**
+     * Allocate Component.
+     * @private
+     */
+
+				value: function allocate() {
+					var entity = this.parent;
+					var components = entity.components;
+					if (components.types.has(this.type)) {
+						throw new Error("Component " + this.type + " already allocated for " + entity);
+					}
+					components[this.type] = this;
+					components.types.add(this.type);
+					this.components = components;
+					this.entity = entity;
+					this.create();
+					var event = Event.create(this.type + "Create");
+					event.aggregate = true;
+					event.cancelable = true;
+					this.emit(event);
+				}
+			},
+			destroy: {
+
+				/**
+     * Destroy Component, removes it from {@link Entity}.
+     */
+
+				value: function destroy() {
+					if (this.destroyed) {
+						return;
+					}
+					this.destroyed = true;
+					var event = Event.create(this.type + "Destroy");
+					event.aggregate = true;
+					event.cancelable = false;
+					this.emit(event);
+					this.enabled = false;
+					this.registry.destroy(this);
+				}
+			},
+			deallocate: {
+
+				/**
+     * Free destroyed Component.
+     * @private
+     */
+
+				value: function deallocate() {
+					if (!this.allocated) {
+						throw new Error("Component already deallocated");
+					}
+					this.allocated = false;
+					this.destroyed = false;
+					this.free();
+					var refs = this.listenersRef;
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = refs[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var ref = _step.value;
+
+							if (ref.allocated) {
+								ref.off(this);
+							}
+						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
+						}
+					}
+
+					refs.clear();
+					this.components[this.type] = null;
+					this.components.types["delete"](this.type);
+					// Clear reference to entity.components
+					this.components = emptyComponentMap;
+					this.entity = emptyEntity;
+					this.root = emptyEntity;
+					this.parent = emptyEntity;
+				}
+			},
+			free: {
+				value: function free() {}
+			},
+			create: {
+				value: function create() {}
+			},
+			enable: {
+				value: function enable(state) {
+					if (state == null) {
+						state = !this.enabled;
+					}
+					this.emit(Event.create("component" + (state ? "Enable" : "Disable")));
+					this.enabled = state;
+				}
+			},
+			emit: {
+				value: function emit(event, detail) {
+					return this.entity.emit(event, this, detail);
+				}
+			}
+		}, {
 			create: {
 				value: function create(cls, type) {
 					var proto = cls.prototype;
@@ -808,139 +921,9 @@
 					} else {
 						type = proto.type;
 					}
-					ComponentMap.prototype[proto.type] = null;
-					var getter = {
-						get: function get() {
-							return this.components[type];
-						}
-					};
-					Object.defineProperty(Component.prototype, "$" + type, getter);
-					Object.defineProperty(Entity.prototype, "$" + type, getter);
+					ComponentMap.types.add(proto.type);
 					Registry.create(cls);
-				},
-				writable: true,
-				configurable: true
-			}
-		}, {
-			toString: {
-
-				/**
-     * Brief summary.
-     * @private
-     * @return {String}
-     */
-
-				value: function toString() {
-					return "" + this.type + " #" + this.uid + " [^ " + this.entity + "]";
-				},
-				writable: true,
-				configurable: true
-			},
-			allocate: {
-
-				/**
-     * Allocate Component.
-     * @private
-     */
-
-				value: function allocate() {
-					var entity = this.parent;
-					this.entity = entity;
-					var components = entity.components;
-					if (components[this.type] != null) {
-						throw new Error("Component " + this.type + " already allocated for " + entity);
-					}
-					components[this.type] = this;
-					this.components = components; // Bailout_Normal after setprop
-					entity.componentKeys.push(this.type);
-					this.create();
-					var event = Event.create(this.type + "Create");
-					event.aggregate = true;
-					event.cancelable = true;
-					this.emit(event);
-				},
-				writable: true,
-				configurable: true
-			},
-			destroy: {
-
-				/**
-     * Destroy Component, removes it from {@link Entity}.
-     */
-
-				value: function destroy() {
-					if (this.destroyed) {
-						return;
-					}
-					this.destroyed = true;
-					var event = Event.create(this.type + "Destroy");
-					event.aggregate = true;
-					event.cancelable = true;
-					this.emit(event);
-					this.enabled = false;
-					this.registry.destroy(this);
-				},
-				writable: true,
-				configurable: true
-			},
-			deallocate: {
-
-				/**
-     * Free destroyed Component.
-     * @private
-     */
-
-				value: function deallocate() {
-					if (!this.allocated) {
-						throw new Error("Component already deallocated");
-					}
-					this.allocated = false;
-					this.destroyed = false;
-					this.free();
-					if (this.listenersRef.length) {
-						var refs = this.listenersRef;
-						for (var i = 0, l = refs.length; i < l; i++) {
-							refs[i].off(this);
-						}
-						refs.length = 0;
-					}
-					this.components[this.type] = null;
-					// Clear reference to entity.components
-					this.components = emptyComponentMap;
-					this.entity = emptyEntity;
-					this.root = emptyEntity;
-					this.parent = emptyEntity;
-				},
-				writable: true,
-				configurable: true
-			},
-			free: {
-				value: function free() {},
-				writable: true,
-				configurable: true
-			},
-			create: {
-				value: function create() {},
-				writable: true,
-				configurable: true
-			},
-			enable: {
-				value: function enable(state) {
-					if (state == null) {
-						state = !this.enabled;
-					}
-					this.emit("onComponent" + (state ? "Enable" : "Disable"));
-					this.enabled = state;
-				},
-				writable: true,
-				configurable: true
-			},
-			emit: {
-				value: function emit(event, detail) {
-					return this.entity.emit(event, this, detail);
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -966,7 +949,7 @@
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -987,7 +970,7 @@
   * @extends Entity
   */
 
-	var Context = (function (Entity) {
+	var Context = (function (_Entity) {
 		function Context() {
 			_classCallCheck(this, Context);
 
@@ -1027,17 +1010,15 @@
 			this.scene = null;
 		}
 
-		_inherits(Context, Entity);
+		_inherits(Context, _Entity);
 
-		_prototypeProperties(Context, null, {
+		_createClass(Context, {
 			init: {
 				value: function init(element) {
 					this.element = element;
 					this.createComponent("input");
 					this.createComponent("console");
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			play: {
 
@@ -1048,20 +1029,21 @@
      */
 
 				value: function play(scene, soft) {
-					if (this.scene) {
-						this.emit("sceneEnd");
+					var prev = this.scene;
+					if (prev) {
+						prev.emit(Event.create("sceneEnd", scene));
+						prev.root = null;
 						if (soft) {
-							this.scene.enable(false, true);
+							prev.enable(false, true);
 						} else {
-							this.scene.destroy();
+							prev.destroy();
 						}
 					}
+					scene.root = this;
 					this.scene = scene;
-					this.emit("sceneStart");
+					this.scene.emit(Event.create("sceneStart", prev));
 					this.start();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			start: {
 
@@ -1074,22 +1056,18 @@
 						return;
 					}
 					this.running = true;
-					this.emit("contextStart");
+					this.emit(Event.create("contextStart"));
 					raFrame(this.tickBound);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			pause: {
 				value: function pause() {
 					if (!this.running) {
 						return;
 					}
-					this.emit("contextPause");
+					this.emit(Event.create("contextPause"));
 					this.running = false;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			tick: {
 
@@ -1169,6 +1147,7 @@
 						}
 
 						Registry.free();
+						Vec2.sweep();
 
 						// Invoke postUpdate
 						var postUpdates = Registry.methods.postUpdate;
@@ -1233,9 +1212,7 @@
 							perf.nextTick(this.tickBound);
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -1281,7 +1258,7 @@
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
@@ -1316,38 +1293,14 @@
 			this.parent = null;
 			this.root = null;
 			this.components = new ComponentMap();
-			this.componentKeys = [];
-			this.listeners = {};
-			this.listenersRef = [];
-			this.listenersIndex = [];
+			this.listeners = new Map();
+			this.listenersRef = new Set();
 			this.prefab = "";
 			this.next = null;
 			this.firstChild = null;
 		}
 
-		_prototypeProperties(Entity, {
-			create: {
-				value: function create(parent, attributes) {
-					return Entity.registry.allocate(parent, attributes);
-				},
-				writable: true,
-				configurable: true
-			},
-			createPrefab: {
-				value: function createPrefab(id, components) {
-					return new Prefab(id, components);
-				},
-				writable: true,
-				configurable: true
-			},
-			reset: {
-				value: function reset() {
-					Prefab.byId = {};
-				},
-				writable: true,
-				configurable: true
-			}
-		}, {
+		_createClass(Entity, {
 			toString: {
 
 				/**
@@ -1360,9 +1313,7 @@
 					var comps = this.componentKeys.join(", ");
 					var parent = this.parent ? " [^ " + this.parent + "]" : "";
 					return "Entity " + this.prefab + " #" + this.uid + " (" + comps + ")" + parent;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			allocate: {
 
@@ -1385,13 +1336,11 @@
 					}
 					this.prefab = "";
 					if (attributes != null) {
-						for (var _type in attributes) {
-							this.createComponent(_type, attributes[_type]);
+						for (var type in attributes) {
+							this.createComponent(type, attributes[type]);
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			createComponent: {
 
@@ -1408,9 +1357,7 @@
 						throw new Error("Unknown component \"" + type + "\" for " + this);
 					}
 					return registry.allocate(this, attributes);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			createChild: {
 
@@ -1426,9 +1373,7 @@
 						return Prefab.create(prefabId, this, attributes);
 					}
 					return Entity.create(this, prefabId);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			hasComponent: {
 
@@ -1439,29 +1384,40 @@
      */
 
 				value: function hasComponent(selector) {
-					var components = this.components;
-					if (components[selector] != null) {
-						return true;
-					}
-					return false;
-				},
-				writable: true,
-				configurable: true
+					return this.components.types.has(selector);
+				}
 			},
 			hasComponents: {
-				value: function hasComponents(selector, any) {
-					for (var i = 0, l = selector.length; i < l; i++) {
-						if (components[selector[i]]) {
-							return true;
+				value: function hasComponents(selectors) {
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = selectors[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var selector = _step.value;
+
+							if (!this.components.types.has(selector[i])) {
+								return false;
+							}
 						}
-						if (!any) {
-							return false;
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
 						}
 					}
-					return false;
-				},
-				writable: true,
-				configurable: true
+
+					return true;
+				}
 			},
 			lastChild: {
 				get: function () {
@@ -1472,8 +1428,7 @@
 						}
 					}
 					return previous;
-				},
-				configurable: true
+				}
 			},
 			destroy: {
 
@@ -1482,24 +1437,44 @@
      */
 
 				value: function destroy() {
+					if (this.destroyed) {
+						return;
+					}
+					this.destroyed = true;
 					this.enabled = false;
 					this.registry.destroy(this);
-					var keys = this.componentKeys;
-					for (var i = 0, l = keys.length; i < l; i++) {
-						var key = keys[i];
-						if (this.components[key] != null) {
-							this.components[key].destroy();
+					var types = this.components.types;
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = types[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var type = _step.value;
+
+							this.components[type].destroy();
+						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
 						}
 					}
-					keys.length = 0;
+
 					var child = this.firstChild;
 					while (child) {
 						child.destroy();
 						child = child.next;
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			removeChild: {
 				value: function removeChild(entity) {
@@ -1520,9 +1495,7 @@
 						child = child.next;
 					}
 					return false;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			deallocate: {
 
@@ -1534,15 +1507,37 @@
 				value: function deallocate() {
 					// Remove referenced subscribers
 					var refs = this.listenersRef;
-					for (var i = 0, l = refs.length; i < l; i++) {
-						refs[i].off(this);
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = refs[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var ref = _step.value;
+
+							if (ref.allocated) {
+								ref.off(this);
+							}
+						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
+						}
 					}
-					refs.length = 0;
+
+					refs.clear();
+
 					// Remove own subscribers
-					var listeners = this.listeners;
-					for (var _event in listeners) {
-						listeners[_event].length = 0;
-					}
+					this.listeners.clear();
 
 					// Eager deallocate
 					var child = this.firstChild;
@@ -1559,11 +1554,10 @@
 						parent.removeChild(this);
 					}
 					this.allocated = false;
+					this.destroyed = false;
 					this.root = null;
 					this.parent = null;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			enable: {
 				value: function enable(state, deep) {
@@ -1572,13 +1566,31 @@
 					}
 					this.emit(Event.create(state ? "enable" : "disable"));
 					this.enabled = state;
-					var keys = this.componentKeys;
-					for (var i = 0, l = keys.length; i < l; i++) {
-						var key = keys[i];
-						if (this.components[key] != null) {
-							this.components[key].enable(state, true);
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = this.components.types[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var type = _step.value;
+
+							this.components[type].enable(state, true);
+						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
 						}
 					}
+
 					if (deep) {
 						var child = this.firstChild;
 						while (child != null) {
@@ -1586,9 +1598,7 @@
 							child = child.next;
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			hasEvent: {
 
@@ -1598,11 +1608,8 @@
      */
 
 				value: function hasEvent(name) {
-					var listeners = this.listeners[name];
-					return listeners && listeners.length > 0;
-				},
-				writable: true,
-				configurable: true
+					return this.listeners.has(name);
+				}
 			},
 			on: {
 
@@ -1617,19 +1624,14 @@
 					if (scope == null) {
 						scope = this;
 					}
-					var listeners = this.listeners;
-					if (listeners[name] == null) {
-						listeners[name] = [];
-						this.listenersIndex.push(name);
+					if (!this.listeners.has(name)) {
+						this.listeners.set(name, []);
 					}
-					var items = listeners[name];
-					items.push(scope, method);
+					this.listeners.get(name).push(scope, method);
 					if (scope != this) {
-						scope.listenersRef.push(this);
+						scope.listenersRef.add(this);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			emit: {
 
@@ -1653,16 +1655,14 @@
 						Registry.call(handler, event);
 					} else {
 						do {
-							if (entity.enabled) {
+							if (entity.enabled && entity.listeners.has(handler)) {
 								// Invoke
-								var _listeners = entity.listeners[handler];
-								if (_listeners != null) {
-									var i = _listeners.length;
-									while ((i -= 2) >= 0) {
-										var listener = _listeners[i];
-										if (listener != null && listener.enabled) {
-											listener[_listeners[i + 1] || handler](event);
-										}
+								var listeners = entity.listeners.get(handler);
+								var _i = listeners.length;
+								while ((_i -= 2) >= 0) {
+									var listener = listeners[_i];
+									if (listener != null && listener.enabled) {
+										listener[listeners[_i + 1] || handler](event);
 									}
 								}
 								if (event.stopped) {
@@ -1672,55 +1672,74 @@
 							if (!event.bubbles) {
 								break;
 							}
-							entity = entity.parent;
+							entity = entity.parent || entity.root; // Context.scene has .root
 						} while (entity);
 					}
 					var canceled = event.canceled;
 					event.destroy();
-					return canceled;
-				},
-				writable: true,
-				configurable: true
+					return !canceled;
+				}
 			},
 			off: {
 
 				/**
      * Unsubscribe scope from event
      * @param {Entity|Component} unscope (optional) Subscriber scope to remove
-     * @param {String|null} handle (optional) Event to remove
      */
 
-				value: function off(unscope, handle) {
-					var index = this.listenersIndex;
+				value: function off(unscope) {
 					var listeners = this.listeners;
-					var i = 0;
-					for (var j = 0, l = index.length; j < l; j++) {
-						var _name = index[j];
-						if (handle != null && handle === _name) {
-							continue;
-						}
-						var items = listeners[_name];
-						if (items == null) {
-							continue;
-						}
-						var _i = items.length;
-						if (_i == 0) {
-							continue;
-						}
-						var _length = _i / 2;
-						while ((_i -= 2) >= 0) {
-							if (items[_i] != null && (!unscope || unscope === items[_i])) {
-								items[_i] = null;
-								_length--;
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = listeners[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var items = _step.value;
+
+							var _i = items.length;
+							var _length = _i / 2;
+							while ((_i -= 2) >= 0) {
+								if (items[_i] != null && (!unscope || unscope === items[_i])) {
+									items[_i] = null;
+									_length--;
+								}
+							}
+							if (_length === 0) {
+								listeners["delete"](name);
 							}
 						}
-						if (_length === 0) {
-							items.length = 0;
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
+			}
+		}, {
+			create: {
+				value: function create(parent, attributes) {
+					return Entity.registry.allocate(parent, attributes);
+				}
+			},
+			createPrefab: {
+				value: function createPrefab(id, components) {
+					return new Prefab(id, components);
+				}
+			},
+			reset: {
+				value: function reset() {
+					Prefab.byId = {};
+				}
 			}
 		});
 
@@ -1746,18 +1765,119 @@
 			this.id = id;
 			Prefab.byId[this.id] = this;
 			this.components = components;
-			this.types = [];
+			this.types = new Set();
 			this.subKeys = {};
-			for (var _type in components) {
-				this.types.push(_type);
-				if (components[_type] == null) {
-					components[_type] = {};
+			for (var type in components) {
+				this.types.add(type);
+				if (components[type] == null) {
+					components[type] = {};
 				}
-				this.subKeys[_type] = Object.keys(components[_type]);
+				this.subKeys[type] = Object.keys(components[type]);
 			}
 		}
 
-		_prototypeProperties(Prefab, {
+		_createClass(Prefab, {
+			create: {
+
+				/**
+     * Allocate {@link Entity} from Prefab
+     * @param {Entity} parent Parent entity
+     * @param {Object} components Override prefab components
+     * @return {Entity}
+     */
+
+				value: function create(parent, components) {
+					var entity = Entity.create(parent, components == null ? this.components : null);
+					entity.prefab = this.id;
+					if (components != null) {
+						var keys = Object.getOwnPropertyNames(components);
+						var types = this.types;
+						var _iteratorNormalCompletion = true;
+						var _didIteratorError = false;
+						var _iteratorError = undefined;
+
+						try {
+							for (var _iterator = types[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+								var type = _step.value;
+
+								var defaults = this.components[type];
+								var overrides = defaults;
+								var idx = keys.indexOf(type);
+								if (idx != -1) {
+									keys[idx] = null;
+									overrides = components[type];
+									var subKeys = this.subKeys[type];
+									var k = subKeys.length;
+									if (k > 0) {
+										for (var j = 0; j < k; j++) {
+											var subKey = subKeys[j];
+											if (overrides[subKey] === undefined) {
+												overrides[subKey] = defaults[subKey];
+											}
+										}
+									}
+								}
+								entity.createComponent(type, overrides);
+							}
+						} catch (err) {
+							_didIteratorError = true;
+							_iteratorError = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion && _iterator["return"]) {
+									_iterator["return"]();
+								}
+							} finally {
+								if (_didIteratorError) {
+									throw _iteratorError;
+								}
+							}
+						}
+
+						var _iteratorNormalCompletion2 = true;
+						var _didIteratorError2 = false;
+						var _iteratorError2 = undefined;
+
+						try {
+							for (var _iterator2 = keys[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+								var key = _step2.value;
+
+								if (key != null) {
+									entity.createComponent(key, components[key]);
+								}
+							}
+						} catch (err) {
+							_didIteratorError2 = true;
+							_iteratorError2 = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion2 && _iterator2["return"]) {
+									_iterator2["return"]();
+								}
+							} finally {
+								if (_didIteratorError2) {
+									throw _iteratorError2;
+								}
+							}
+						}
+					}
+					return entity;
+				}
+			},
+			toString: {
+
+				/**
+     * Brief summary
+     * @private
+     * @return {String}
+     */
+
+				value: function toString() {
+					var comps = Object.keys(this.components).join(", ");
+					return "Prefab #" + this.id;
+				}
+			}
+		}, {
 			create: {
 
 				/**
@@ -1775,70 +1895,7 @@
 						throw new Error("Prefab \"" + id + "\" not found");
 					}
 					return prefab.create(parent, components);
-				},
-				writable: true,
-				configurable: true
-			}
-		}, {
-			create: {
-
-				/**
-     * Allocate {@link Entity} from Prefab
-     * @param {Entity} parent Parent entity
-     * @param {Object} components Override prefab components
-     * @return {Entity}
-     */
-
-				value: function create(parent, components) {
-					var entity = Entity.create(parent, components == null ? this.components : null);
-					entity.prefab = this.id;
-					if (components != null) {
-						var _types = this.types;
-						var _type = "";
-						for (var i = 0, l = _types.length; i < l; i++) {
-							_type = _types[i];
-							var defaults = this.components[_type];
-							var overrides = components[_type];
-							if (overrides != null) {
-								delete components[_type];
-								var _subKeys = this.subKeys[_type];
-								var k = _subKeys.length;
-								if (k > 0) {
-									for (var j = 0; j < k; j++) {
-										var subKey = _subKeys[j];
-										if (overrides[subKey] === undefined) {
-											overrides[subKey] = defaults[subKey];
-										}
-									}
-								}
-							} else {
-								overrides = defaults;
-							}
-							entity.createComponent(_type, overrides);
-						}
-						for (_type in components) {
-							entity.createComponent(_type, components[_type]);
-						}
-					}
-					return entity;
-				},
-				writable: true,
-				configurable: true
-			},
-			toString: {
-
-				/**
-     * Brief summary
-     * @private
-     * @return {String}
-     */
-
-				value: function toString() {
-					var comps = Object.keys(this.components).join(", ");
-					return "Prefab #" + this.id;
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -1849,16 +1906,53 @@
 
 	Entity.reset();
 
-	var ComponentMap = exports.ComponentMap = function ComponentMap() {
-		_classCallCheck(this, ComponentMap);
-	};
+	var ComponentMap = exports.ComponentMap = (function () {
+		function ComponentMap() {
+			_classCallCheck(this, ComponentMap);
 
+			this.types = new Set();
+			var _iteratorNormalCompletion = true;
+			var _didIteratorError = false;
+			var _iteratorError = undefined;
+
+			try {
+				for (var _iterator = ComponentMap.types[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					var type = _step.value;
+
+					this[type] = null;
+				}
+			} catch (err) {
+				_didIteratorError = true;
+				_iteratorError = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion && _iterator["return"]) {
+						_iterator["return"]();
+					}
+				} finally {
+					if (_didIteratorError) {
+						throw _iteratorError;
+					}
+				}
+			}
+		}
+
+		_createClass(ComponentMap, {
+			get: {
+				value: function get(type) {
+					return this[type];
+				}
+			}
+		});
+
+		return ComponentMap;
+	})();
+
+	ComponentMap.types = new Set();
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 });
-
-// {[key:string]: Array<Entity|string>};
 (function (factory) {
 	if (typeof define === "function" && define.amd) {
 		define(["exports", "../math/mathf"], factory);
@@ -1870,29 +1964,55 @@
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
 	var uid = _mathMathf.uid;
 
 	var Event = (function () {
-		function Event() {
+		function Event(cancelable, aggregate) {
 			_classCallCheck(this, Event);
 
 			this.entity = null;
 			this.component = null;
 			this.uid = uid();
 			this.bubbles = true;
-			this.aggregate = false;
-			this.cancelable = true;
+			this.aggregate = aggregate ? true : false;
+			this.cancelable = cancelable ? true : false;
 			this.timeStamp = Date.now();
 			this.canceled = false;
 			this.stopped = false;
 			this.detail = null;
 		}
 
-		_prototypeProperties(Event, {
+		_createClass(Event, {
+			toString: {
+				value: function toString() {
+					return "Event " + this.type + " [" + this.component + " on " + this.entity + "]";
+				}
+			},
+			destroy: {
+				value: function destroy() {
+					this.entity = null;
+					this.component = null;
+					this.detail = null;
+					this.registry.destroy(this);
+				}
+			},
+			cancel: {
+				value: function cancel() {
+					if (this.cancelable) {
+						this.cancel = true;
+					}
+				}
+			},
+			stop: {
+				value: function stop() {
+					this.stopped = true;
+				}
+			}
+		}, {
 			create: {
 				value: function create(type, detail) {
 					var event = Registry.create(Event.toType(type));
@@ -1900,9 +2020,7 @@
 						event.detail = detail;
 					}
 					return event;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			register: {
 				value: function register(cls, type) {
@@ -1911,28 +2029,24 @@
 					cls.prototype.type = type;
 					cls.prototype.handler = Event.toHandler(type);
 					return new Registry(cls);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			registerTypeOnly: {
 				value: function registerTypeOnly(type) {
-					var CustomEvent = (function (Event) {
+					var CustomEvent = (function (_Event) {
 						function CustomEvent() {
 							_classCallCheck(this, CustomEvent);
 
 							Event.call(this);
 						}
 
-						_inherits(CustomEvent, Event);
+						_inherits(CustomEvent, _Event);
 
 						return CustomEvent;
 					})(Event);
 
 					return Event.register(CustomEvent, type);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			toHandler: {
 				value: function toHandler(str) {
@@ -1940,9 +2054,7 @@
 						return str;
 					}
 					return "on" + str.charAt(0).toUpperCase() + str.slice(1);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			toType: {
 				value: function toType(str) {
@@ -1950,43 +2062,7 @@
 						return str;
 					}
 					return str.charAt(2).toLowerCase() + str.slice(3);
-				},
-				writable: true,
-				configurable: true
-			}
-		}, {
-			toString: {
-				value: function toString() {
-					return "Event " + this.type + " [" + this.component + " on " + this.entity + "]";
-				},
-				writable: true,
-				configurable: true
-			},
-			destroy: {
-				value: function destroy() {
-					this.entity = null;
-					this.component = null;
-					this.detail = null;
-					this.registry.destroy(this);
-				},
-				writable: true,
-				configurable: true
-			},
-			cancel: {
-				value: function cancel() {
-					if (this.cancelable) {
-						this.cancel = true;
-					}
-				},
-				writable: true,
-				configurable: true
-			},
-			stop: {
-				value: function stop() {
-					this.stopped = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -2014,33 +2090,7 @@
 			this.length = 0;
 		}
 
-		_prototypeProperties(Registry, {
-			create: {
-				value: function create(type) {
-					var registry = Registry.types[type];
-					if (registry == null) {
-						// console.warn(`Event '${type}' created on demand`);
-						registry = Event.registerTypeOnly(type);
-					}
-					return registry.create();
-				},
-				writable: true,
-				configurable: true
-			},
-			dump: {
-				value: function dump() {
-					var types = Registry.types;
-					console.group("Events.dump");
-					for (var type in types) {
-						var registry = types[type];
-						console.log("%s: %d/%d allocated", type, registry.length - registry.allocated, registry.length);
-					}
-					console.groupEnd("Events.dump");
-				},
-				writable: true,
-				configurable: true
-			}
-		}, {
+		_createClass(Registry, {
 			create: {
 				value: function create() {
 					if (this.allocated == 0) {
@@ -2051,17 +2101,35 @@
 					var instance = this.pool.pop();
 					this.cls.call(instance);
 					return instance;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			destroy: {
 				value: function destroy(instance) {
 					this.allocated++;
 					this.pool.push(instance);
-				},
-				writable: true,
-				configurable: true
+				}
+			}
+		}, {
+			create: {
+				value: function create(type) {
+					var registry = Registry.types[type];
+					if (registry == null) {
+						// console.warn(`Event '${type}' created on demand`);
+						registry = Event.registerTypeOnly(type);
+					}
+					return registry.create();
+				}
+			},
+			dump: {
+				value: function dump() {
+					var types = Registry.types;
+					console.group("Events.dump");
+					for (var type in types) {
+						var registry = types[type];
+						console.log("%s: %d/%d allocated", type, registry.length - registry.allocated, registry.length);
+					}
+					console.groupEnd("Events.dump");
+				}
 			}
 		});
 
@@ -2094,7 +2162,7 @@
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -2108,64 +2176,60 @@
 
 	var Event = _interopRequire(_event);
 
-	var onKeyBegan = (function (Event) {
+	var onKeyBegan = (function (_Event) {
 		function onKeyBegan() {
 			_classCallCheck(this, onKeyBegan);
 
-			Event.call(this);
-			this.aggregate = true;
+			Event.call(this, true, true);
 			this.key = "";
 		}
 
-		_inherits(onKeyBegan, Event);
+		_inherits(onKeyBegan, _Event);
 
 		return onKeyBegan;
 	})(Event);
 
 	Event.register(onKeyBegan, "keyBegan");
 
-	var onKeyEnded = (function (Event) {
+	var onKeyEnded = (function (_Event2) {
 		function onKeyEnded() {
 			_classCallCheck(this, onKeyEnded);
 
-			Event.call(this);
-			this.aggregate = true;
+			Event.call(this, true, true);
 			this.key = "";
 		}
 
-		_inherits(onKeyEnded, Event);
+		_inherits(onKeyEnded, _Event2);
 
 		return onKeyEnded;
 	})(Event);
 
 	Event.register(onKeyEnded, "keyEnded");
 
-	var onTouchBegan = (function (Event) {
+	var onTouchBegan = (function (_Event3) {
 		function onTouchBegan() {
 			_classCallCheck(this, onTouchBegan);
 
-			Event.call(this);
-			this.aggregate = true;
+			Event.call(this, true, true);
 			this.index = 0;
 		}
 
-		_inherits(onTouchBegan, Event);
+		_inherits(onTouchBegan, _Event3);
 
 		return onTouchBegan;
 	})(Event);
 
 	Event.register(onTouchBegan, "touchBegan");
 
-	var onTouchEnded = (function (Event) {
+	var onTouchEnded = (function (_Event4) {
 		function onTouchEnded() {
 			_classCallCheck(this, onTouchEnded);
 
-			Event.call(this);
-			this.aggregate = true;
+			Event.call(this, true, true);
 			this.index = 0;
 		}
 
-		_inherits(onTouchEnded, Event);
+		_inherits(onTouchEnded, _Event4);
 
 		return onTouchEnded;
 	})(Event);
@@ -2179,7 +2243,7 @@
   * @extends Component
   */
 
-	var Input = (function (Component) {
+	var Input = (function (_Component) {
 		function Input() {
 			_classCallCheck(this, Input);
 
@@ -2253,9 +2317,9 @@
 			this.events.deviceorientation = "deviceOrientation";
 		}
 
-		_inherits(Input, Component);
+		_inherits(Input, _Component);
 
-		_prototypeProperties(Input, null, {
+		_createClass(Input, {
 			attach: {
 				value: function attach() {
 					if (this.attached) {
@@ -2269,9 +2333,7 @@
 						window.addEventListener(type, this, false);
 					}
 					this.queue.length = 0;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			detach: {
 				value: function detach() {
@@ -2282,9 +2344,7 @@
 					for (var type in this.events) {
 						window.removeEventListener(type, this, false);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			handleEvent: {
 				value: function handleEvent(event) {
@@ -2299,9 +2359,7 @@
 					}
 					this.lastEvent = type;
 					this.queue.push(event);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			keyStart: {
 				value: function keyStart(keyEvent) {
@@ -2310,15 +2368,13 @@
 						if (!this.lock("key-" + key)) {
 							return false;
 						}
-						this.keys[key] = "began";
-						this.updateAxis(key);
 						var _event = Event.create("keyBegan");
 						_event.key = key;
 						this.emit(_event);
+						this.keys[key] = "began";
+						this.updateAxis(key);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			keyEnd: {
 				value: function keyEnd(keyEvent) {
@@ -2327,15 +2383,13 @@
 						if (!this.lock("key-" + key)) {
 							return false;
 						}
-						this.keys[key] = "ended";
-						this.updateAxis(key, true);
 						var _event = Event.create("keyEnded");
 						_event.key = key;
 						this.emit(_event);
+						this.keys[key] = "ended";
+						this.updateAxis(key, true);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			startTouch: {
 				value: function startTouch(touchEvent) {
@@ -2348,9 +2402,7 @@
 						var _event = Event.create("touchBegan");
 						this.emit(_event);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			moveTouch: {
 				value: function moveTouch(touchEvent) {
@@ -2362,9 +2414,7 @@
 					if (state && state !== "ended" && state !== "moved") {
 						this.touchState = "moved";
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			endTouch: {
 				value: function endTouch(touchEvent) {
@@ -2377,9 +2427,7 @@
 						var _event = Event.create("touchEnded");
 						this.emit(_event);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			updateAxis: {
 				value: function updateAxis(key, ended) {
@@ -2391,9 +2439,7 @@
 							this.axis[axis[0]] += axis[1];
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			blur: {
 				value: function blur() {
@@ -2409,18 +2455,14 @@
 							this.updateAxis(key, true);
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			calibrateOrientation: {
 				value: function calibrateOrientation() {
 					this.baseOrientationTime = this.orientationTime;
 					Vec2.copy(this.baseOrientation, this.orientation);
 					Vec2.set(this.orientation);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			deviceOrientation: {
 				value: function deviceOrientation(event) {
@@ -2430,9 +2472,7 @@
 					if (!this.baseOrientationTime) {
 						this.calibrateOrientation();
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			resolve: {
 				value: function resolve(event) {
@@ -2446,9 +2486,7 @@
 						return true;
 					}
 					return false;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			lock: {
 				value: function lock(key) {
@@ -2457,9 +2495,7 @@
 					}
 					this.locks[key] = this.frame;
 					return true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			postUpdate: {
 				value: function postUpdate() {
@@ -2500,23 +2536,17 @@
 					if (!queue.length) {
 						this.lastEvent = "";
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			onContextPause: {
 				value: function onContextPause() {
 					this.detach();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			onContextStart: {
 				value: function onContextStart() {
 					this.attach();
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -2542,7 +2572,7 @@
 })(function (exports, module, _mathMathf) {
 	"use strict";
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
@@ -2577,7 +2607,7 @@
 				console.warn("Registry \"%s\" was overridden with ", type, cls);
 			}
 			Registry.types[type] = this;
-			typeIndex.push(type);
+			typeIndex.add(type);
 
 			this.events = [];
 			this.methods = [];
@@ -2591,7 +2621,6 @@
 					this.attributes = _attributes;
 					this.attributeKeys = Object.keys(_attributes);
 				}
-				var types = methodsIndex;
 				var keys = Object.getOwnPropertyNames(proto).concat(Object.keys(cls));
 				var fn = "";
 				var i = 0;
@@ -2599,15 +2628,15 @@
 				for (l = keys.length; i < l; i++) {
 					fn = keys[i];
 					if (/^on[A-Z]/.test(fn)) {
-						if (! ~types.indexOf(fn)) {
-							types.push(fn);
+						if (methodsIndex.indexOf(fn) === -1) {
+							methodsIndex.push(fn);
 							Registry.methods[fn] = [];
 						}
 						this.events.push(fn);
 					}
 				}
-				for (i = 0, l = types.length; i < l; i++) {
-					fn = types[i];
+				for (i = 0, l = methodsIndex.length; i < l; i++) {
+					fn = methodsIndex[i];
 					if (cls[fn] != null) {
 						Registry.methods[fn].push(cls);
 					} else if (proto[fn] != null) {
@@ -2620,118 +2649,7 @@
 			proto.registry = this;
 		}
 
-		_prototypeProperties(Registry, {
-			reset: {
-
-				// Create call array
-
-				value: function reset() {
-					Registry.methods = {};
-					for (var i = 0, l = methodsIndex.length; i < l; i++) {
-						Registry.methods[methodsIndex[i]] = [];
-					}
-					Registry.types = {};
-				},
-				writable: true,
-				configurable: true
-			},
-			dump: {
-
-				/**
-     * Dump debugging details and optionally flush freed objects.
-     *
-     * @param {Boolean} flush (optional) Flush after debug.
-     */
-
-				value: function dump(flush) {
-					var types = Registry.types;
-					console.group("Registry.dump");
-					for (var _type in types) {
-						var registry = types[_type];
-						console.log("%s: %d/%d allocated", _type, registry.allocated, registry.instantiated);
-					}
-					console.groupEnd("Registry.dump");
-					if (flush) {
-						Registry.flush();
-					}
-				},
-				writable: true,
-				configurable: true
-			},
-			free: {
-				value: function free() {
-					for (var i = 0, l = deallocateQueue.length; i < l; i++) {
-						deallocateQueue[i].deallocate();
-						deallocateQueue[i].registry.deallocate();
-					}
-					deallocateQueue.length = 0;
-					if (instantiated > Registry.flushMin && allocated / instantiated < Registry.flushRatio) {
-						Registry.flush();
-					}
-				},
-				writable: true,
-				configurable: true
-			},
-			flush: {
-				value: function flush() {
-					// console.group('Registry.flush');
-					var collectedSum = 0;
-					for (var i = 0; i < typeIndex.length; i++) {
-						var _type = typeIndex[i];
-						var registry = Registry.types[_type];
-						if (registry.instantiated == registry.allocated) {
-							continue;
-						}
-						var collected = 0;
-						var _instances = registry.instances;
-						var j = _instances.length;
-						while (j--) {
-							var instance = _instances[j];
-							if (instance.allocated) {
-								continue;
-							}
-							registry.deinstantiate(instance);
-							_instances.splice(j, 1);
-							collected++;
-						}
-						collectedSum += collected;
-						registry.instantiated -= collected;
-						// console.log('%s: %d flushed/%d remaining', type, collected, registry.instantiated);
-					}
-					instantiated -= collectedSum;
-					console.log("%d flushed/%d remaining", collectedSum, instantiated);
-					// console.groupEnd('Registry.flush');
-				},
-				writable: true,
-				configurable: true
-			},
-			call: {
-				value: function call(fn, arg) {
-					var methods = this.methods[fn];
-					if (methods == null) {
-						return;
-					}
-					var i = methods.length;
-					if (i === 0) {
-						return;
-					}
-					while (i--) {
-						if (methods[i].enabled) {
-							methods[i][fn](arg);
-						}
-					}
-				},
-				writable: true,
-				configurable: true
-			},
-			create: {
-				value: function create(cls) {
-					new Registry(cls);
-				},
-				writable: true,
-				configurable: true
-			}
-		}, {
+		_createClass(Registry, {
 			toString: {
 
 				/**
@@ -2742,9 +2660,7 @@
 
 				value: function toString() {
 					return "Registry " + this.type + " [" + this.allocated + "/" + this.instantiated + "]";
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			push: {
 				value: function push() {
@@ -2758,9 +2674,7 @@
 						Registry.methods[methods[i]].push(instance);
 					}
 					return instance;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			deinstantiate: {
 				value: function deinstantiate(instance) {
@@ -2769,9 +2683,7 @@
 						var list = Registry.methods[methods[i]];
 						list.splice(list.indexOf(instance), 1);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			pop: {
 				value: function pop() {
@@ -2785,9 +2697,7 @@
 							return instances[i];
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			allocate: {
 
@@ -2847,9 +2757,7 @@
 						instance.allocate(attributes);
 					}
 					return instance;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			destroy: {
 
@@ -2859,10 +2767,8 @@
      */
 
 				value: function destroy(instance) {
-					deallocateQueue.push(instance);
-				},
-				writable: true,
-				configurable: true
+					deallocateQueue.add(instance);
+				}
 			},
 			deallocate: {
 
@@ -2876,9 +2782,7 @@
 						this.enabled = false;
 						this.cls.enabled = false;
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			call: {
 
@@ -2896,9 +2800,171 @@
 							instances[i][fn](payload);
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
+			}
+		}, {
+			reset: {
+
+				// Create call array
+
+				value: function reset() {
+					Registry.methods = {};
+					for (var i = 0, l = methodsIndex.length; i < l; i++) {
+						Registry.methods[methodsIndex[i]] = [];
+					}
+					Registry.types = {};
+				}
+			},
+			dump: {
+
+				/**
+     * Dump debugging details and optionally flush freed objects.
+     *
+     * @param {Boolean} flush (optional) Flush after debug.
+     */
+
+				value: function dump(flush) {
+					var types = Registry.types;
+					console.group("Registry.dump");
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = typeIndex[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var _type = _step.value;
+
+							var registry = types[_type];
+							console.log("%s: %d/%d allocated", _type, registry.allocated, registry.instantiated);
+						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
+						}
+					}
+
+					console.groupEnd("Registry.dump");
+					if (flush) {
+						Registry.flush();
+					}
+				}
+			},
+			free: {
+				value: function free() {
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = deallocateQueue[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var instance = _step.value;
+
+							instance.deallocate();
+							instance.registry.deallocate();
+						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
+						}
+					}
+
+					deallocateQueue.clear();
+					if (instantiated > Registry.flushMin && allocated / instantiated < Registry.flushRatio) {
+						Registry.flush();
+					}
+				}
+			},
+			flush: {
+				value: function flush() {
+					// console.group('Registry.flush');
+					var collectedSum = 0;
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
+
+					try {
+						for (var _iterator = typeIndex[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var _type = _step.value;
+
+							var registry = Registry.types[_type];
+							if (registry.instantiated == registry.allocated) {
+								continue;
+							}
+							var collected = 0;
+							var _instances = registry.instances;
+							var j = _instances.length;
+							while (j--) {
+								var instance = _instances[j];
+								if (instance.allocated) {
+									continue;
+								}
+								registry.deinstantiate(instance);
+								_instances.splice(j, 1);
+								collected++;
+							}
+							collectedSum += collected;
+							registry.instantiated -= collected;
+							// console.log('%s: %d flushed/%d remaining', type, collected, registry.instantiated);
+						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion && _iterator["return"]) {
+								_iterator["return"]();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
+						}
+					}
+
+					instantiated -= collectedSum;
+					console.log("%d flushed/%d remaining", collectedSum, instantiated);
+					// console.groupEnd('Registry.flush');
+				}
+			},
+			call: {
+				value: function call(fn, arg) {
+					var methods = this.methods[fn];
+					if (methods == null) {
+						return;
+					}
+					var i = methods.length;
+					if (i === 0) {
+						return;
+					}
+					while (i--) {
+						if (methods[i].enabled) {
+							methods[i][fn](arg);
+						}
+					}
+				}
+			},
+			create: {
+				value: function create(cls) {
+					new Registry(cls);
+				}
 			}
 		});
 
@@ -2908,8 +2974,8 @@
 	module.exports = Registry;
 
 	var methodsIndex = ["fixedUpdate", "simulate", "update", "postUpdate", "preRender", "render"];
-	var deallocateQueue = [];
-	var typeIndex = [];
+	var deallocateQueue = new Set();
+	var typeIndex = new Set();
 	var allocated = 0;
 	var instantiated = 0;
 
@@ -2949,7 +3015,7 @@
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
@@ -3020,13 +3086,11 @@
 			this.reflow();
 		}
 
-		_prototypeProperties(Renderer, null, {
+		_createClass(Renderer, {
 			handleEvent: {
 				value: function handleEvent(evt) {
 					this.reflow();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			reflow: {
 				value: function reflow() {
@@ -3039,9 +3103,7 @@
 					}
 					var offset = Vec2.scale(Vec2.sub(browser, this.size, this.margin), 0.5);
 					this.element.style[this.transformProp] = "translate(" + (offset[0] | 0) + "px, " + (offset[1] | 0) + "px) scale(" + scale + ")";
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			save: {
 				value: function save() {
@@ -3061,9 +3123,7 @@
 					}
 					ctx.scale(this.ratio, this.ratio);
 					return ctx;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			restore: {
 				value: function restore() {
@@ -3071,9 +3131,7 @@
 						return null;
 					}
 					this.ctx.restore();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			requestFullscreen: {
 				value: function requestFullscreen() {
@@ -3085,21 +3143,17 @@
 					} else if (target.mozRequestFullScreen != null) {
 						target.mozRequestFullScreen();
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			topLeft: {
 				get: function () {
 					return Vec2.sub(Vec2.scale(this.content, 0.5, topLeft), this.projection);
-				},
-				configurable: true
+				}
 			},
 			bottomRight: {
 				get: function () {
 					return Vec2.add(Vec2.scale(this.content, 0.5, bottomRight), this.projection);
-				},
-				configurable: true
+				}
 			}
 		});
 
@@ -3175,18 +3229,18 @@
 });
 (function (factory) {
 	if (typeof define === "function" && define.amd) {
-		define(["exports", "../math/vec2", "./component", "./context"], factory);
+		define(["exports", "../math/vec2", "./component", "./context", "./event"], factory);
 	} else if (typeof exports !== "undefined") {
-		factory(exports, require("../math/vec2"), require("./component"), require("./context"));
+		factory(exports, require("../math/vec2"), require("./component"), require("./context"), require("./event"));
 	}
-})(function (exports, _mathVec2, _component, _context) {
+})(function (exports, _mathVec2, _component, _context, _event) {
 	"use strict";
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
@@ -3199,6 +3253,8 @@
 	var Component = _interopRequire(_component);
 
 	var Context = _interopRequire(_context);
+
+	var Event = _interopRequire(_event);
 
 	/**
   * Loads and paints a single image file. Either loaded from source or drawn via callback, created from given width/height.
@@ -3237,7 +3293,7 @@
 					img.addEventListener("load", this);
 					this.loading = true;
 					img.src = srcOrRepaint;
-					Context.emit("spriteAssetWillLoad", this);
+					Context.emit(Event.create("spriteAssetWillLoad", this));
 					if (this.loading && img.width && img.height) {
 						this.handleEvent();
 					}
@@ -3253,7 +3309,7 @@
 			}
 		}
 
-		_prototypeProperties(SpriteAsset, null, {
+		_createClass(SpriteAsset, {
 			toString: {
 				value: function toString() {
 					var url = this.buffer ? this.buffer.toDataURL() : "Pending";
@@ -3261,16 +3317,12 @@
 					var bufferSize = Vec2.toString(this.bufferSize);
 					var src = this.src || this.repaint;
 					return "SpriteAsset " + size + " " + bufferSize + "\n" + src + "\n" + url;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			repaintOnComponent: {
 				value: function repaintOnComponent() {
 					this.repaintSrc.onRepaint(this.bufferCtx, this);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			handleEvent: {
 				value: function handleEvent() {
@@ -3280,11 +3332,9 @@
 					}
 					this.loading = false;
 					Vec2.set(this.size, this.img.width, this.img.height);
-					Context.emit("assetDidLoad", this);
+					Context.emit(Event.create("assetDidLoad", this));
 					this.refresh();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			draw: {
 
@@ -3319,9 +3369,7 @@
 						scale = this.defaultScale;
 					}
 					ctx.drawImage(this.buffer, fromPos[0] | 0, fromPos[1] | 0, size[0], size[1], toPos[0] - size[0] * anchor[0] + 0.5 | 0, toPos[1] - size[1] * anchor[1] + 0.5 | 0, size[0] * scale[0], size[1] * scale[1]);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			repaint: {
 				value: function repaint() {
@@ -3330,9 +3378,7 @@
 					this.buffer.height = size[1];
 					this.bufferCtx.drawImage(this.img, 0, 0, size[0], size[1]);
 					this.sample();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			sample: {
 				value: function sample() {
@@ -3349,9 +3395,7 @@
 							bufferCtx.fillRect(x * scale, y * scale, scale, scale);
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			refresh: {
 				value: function refresh(scale) {
@@ -3372,10 +3416,8 @@
 						this.repaint();
 					}
 					this.ready = true;
-					Context.emit("spriteAssetRefresh", this);
-				},
-				writable: true,
-				configurable: true
+					Context.emit(Event.create("spriteAssetRefresh", this));
+				}
 			}
 		});
 
@@ -3410,13 +3452,13 @@
 			};
 			this.sequences = {};
 			var sequences = attributes.sequences || {};
-			Context.emit("spriteSheetCreate", this);
+			Context.emit(Event.create("spriteSheetCreate", this));
 			for (var id in sequences) {
 				this.addSequence(id, sequences[id]);
 			}
 		}
 
-		_prototypeProperties(SpriteSheet, null, {
+		_createClass(SpriteSheet, {
 			addSequence: {
 
 				/**
@@ -3452,13 +3494,11 @@
 					}
 
 					this.sequences[id] = sequence;
-					Context.emit("spriteSheetSequence", this);
+					Context.emit(Event.create("spriteSheetSequence", this));
 					if (!this.defaultSequence) {
 						this.defaultSequence = id;
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			prepare: {
 				value: function prepare() {
@@ -3492,11 +3532,9 @@
 						}
 					}
 					this.ready = true;
-					Context.emit("spriteSheetReady", this);
+					Context.emit(Event.create("spriteSheetReady", this));
 					return true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			draw: {
 				value: function draw(ctx, idx) {
@@ -3505,9 +3543,7 @@
 					}
 					var frame = this.frames[idx || 0];
 					frame.sprite.draw(ctx, null, frame.anchor, frame.size, frame.position);
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -3522,7 +3558,7 @@
   * @extends Component
   */
 
-	var SpriteTween = exports.SpriteTween = (function (Component) {
+	var SpriteTween = exports.SpriteTween = (function (_Component) {
 		function SpriteTween() {
 			_classCallCheck(this, SpriteTween);
 
@@ -3537,9 +3573,9 @@
 			this.frame = 0;
 		}
 
-		_inherits(SpriteTween, Component);
+		_inherits(SpriteTween, _Component);
 
-		_prototypeProperties(SpriteTween, null, {
+		_createClass(SpriteTween, {
 			attributes: {
 				get: function () {
 					return {
@@ -3549,8 +3585,7 @@
 						offset: 0,
 						frame: 0
 					};
-				},
-				configurable: true
+				}
 			},
 			create: {
 				value: function create() {
@@ -3568,9 +3603,7 @@
 						}
 					}
 					this.paused = !this.speed;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			preRender: {
 				value: function preRender(dt) {
@@ -3588,7 +3621,7 @@
 						frames = sequence.frames;
 						frameCount = frames.length;
 						if (dtime >= frameCount * speed) {
-							this.emit("sequenceEnd", sequence);
+							this.emit(Event.create("sequenceEnd", sequence));
 							if (sequence.next) {
 								if (sequence.next !== this.sequence) {
 									this.goto(sequence.next);
@@ -3608,33 +3641,27 @@
 						dtime = dtime % (frameCount * speed);
 						var frame = dtime / speed | 0;
 						if (frame < this.frame) {
-							this.emit("sequenceEnd");
+							this.emit(Event.create("frameEnd", this.frame));
 						}
 						nextFrame = dtime / speed | 0;
 					}
 					if (nextFrame != this.frame) {
 						this.frame = nextFrame;
-						this.emit("frameNext", nextFrame);
+						this.emit(Event.create("frameNext", nextFrame));
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			pause: {
 				value: function pause() {
 					this.paused = true;
 					return this;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			play: {
 				value: function play() {
 					this.paused = false;
 					return this;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			goto: {
 				value: function goto(id) {
@@ -3651,14 +3678,12 @@
 					} else {
 						this.sequence = null;
 						if (this.frame != id) {
-							this.emit("frameNext", id);
+							this.emit(Event.create("frameNext", id));
 							this.frame = id;
 						}
 					}
 					return this;
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -3679,18 +3704,18 @@
 	var alphaLevels = {};
 	alphaLevels[0] = 1;
 
-	var SpriteCanvasRenderer = exports.SpriteCanvasRenderer = (function (Component) {
+	var SpriteCanvasRenderer = exports.SpriteCanvasRenderer = (function (_Component2) {
 		function SpriteCanvasRenderer() {
 			_classCallCheck(this, SpriteCanvasRenderer);
 
-			if (Component != null) {
-				Component.apply(this, arguments);
+			if (_Component2 != null) {
+				_Component2.apply(this, arguments);
 			}
 		}
 
-		_inherits(SpriteCanvasRenderer, Component);
+		_inherits(SpriteCanvasRenderer, _Component2);
 
-		_prototypeProperties(SpriteCanvasRenderer, null, {
+		_createClass(SpriteCanvasRenderer, {
 			render: {
 				value: function render(ctx) {
 					var scene = this.entity.scene;
@@ -3733,9 +3758,7 @@
 						}
 					}
 					ctx.restore();
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -3760,7 +3783,7 @@
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -3781,7 +3804,7 @@
   * @class
   */
 
-	var Transform = (function (Component) {
+	var Transform = (function (_Component) {
 		function Transform() {
 			_classCallCheck(this, Transform);
 
@@ -3800,9 +3823,9 @@
 			this.parentTransform = null;
 		}
 
-		_inherits(Transform, Component);
+		_inherits(Transform, _Component);
 
-		_prototypeProperties(Transform, null, {
+		_createClass(Transform, {
 			attributes: {
 				get: function () {
 					return {
@@ -3812,8 +3835,7 @@
 						alpha: 1,
 						composite: "source-over"
 					};
-				},
-				configurable: true
+				}
 			},
 			create: {
 				value: function create() {
@@ -3822,9 +3844,7 @@
 					this.matrixAutoUpdate = true;
 					var parent = this.entity.parent;
 					this.parentTransform = parent ? parent.components.transform : null;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			matrix: {
 				get: function () {
@@ -3837,8 +3857,7 @@
 						this.dirtyParent = true;
 					}
 					return matrix;
-				},
-				configurable: true
+				}
 			},
 			matrixWorld: {
 				get: function () {
@@ -3853,8 +3872,7 @@
 						this._dirtyParent = false;
 					}
 					return matrixWorld;
-				},
-				configurable: true
+				}
 			},
 			alphaWorld: {
 				get: function () {
@@ -3867,8 +3885,7 @@
 						return alpha;
 					}
 					return parent.alphaWorld * alpha;
-				},
-				configurable: true
+				}
 			},
 			globalPosition: {
 				get: function () {
@@ -3878,8 +3895,7 @@
 						return position;
 					}
 					return Vec2.add(position, parent.globalPosition, this._globalPosition);
-				},
-				configurable: true
+				}
 			},
 			positionOnly: {
 				get: function () {
@@ -3892,15 +3908,12 @@
 						this.scale = Vec2.one;
 						this.parentTransform.positionOnly = true;
 					}
-				},
-				configurable: true
+				}
 			},
 			dealloc: {
 				value: function dealloc() {
 					this.parentTransform = null;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			dirty: {
 				set: function (to) {
@@ -3911,8 +3924,7 @@
 					if (to && Transform.enableTree) {
 						this.dirtyParent = true;
 					}
-				},
-				configurable: true
+				}
 			},
 			dirtyParent: {
 				set: function (to) {
@@ -3936,8 +3948,7 @@
 						}
 						child = child.next;
 					}
-				},
-				configurable: true
+				}
 			},
 			compose: {
 				value: function compose(position, rotation, scale) {
@@ -3951,133 +3962,101 @@
 						this.scale = scale;
 					}
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			translateBy: {
 				value: function translateBy(by) {
 					this._position[0] += by[0];
 					this._position[1] += by[1];
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			translateTo: {
 				value: function translateTo(to) {
 					this._position[0] = to[0];
 					this._position[1] = to[1];
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			translateXBy: {
 				value: function translateXBy(by) {
 					this._position[0] += by;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			translateXTo: {
 				value: function translateXTo(to) {
 					this._position[0] = to;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			translateYBy: {
 				value: function translateYBy(by) {
 					this._position[1] += by;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			translateYTo: {
 				value: function translateYTo(to) {
 					this._position[1] = to;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			scaleBy: {
 				value: function scaleBy(by) {
 					this._scale[0] += by[0];
 					this._scale[1] += by[1];
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			scaleTo: {
 				value: function scaleTo(to) {
 					this._scale[0] = to[0];
 					this._scale[1] = to[1];
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			scaleXBy: {
 				value: function scaleXBy(by) {
 					this._scale[0] += by;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			scaleXTo: {
 				value: function scaleXTo(to) {
 					this._scale[0] = to;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			scaleYBy: {
 				value: function scaleYBy(by) {
 					this._scale[1] += by;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			scaleYTo: {
 				value: function scaleYTo(to) {
 					this._scale[1] = to;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			rotateBy: {
 				value: function rotateBy(by) {
 					this.rotation += by;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			rotateTo: {
 				value: function rotateTo(to) {
 					this.rotation = to;
 					this.dirty = true;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			applyMatrixWorld: {
 				value: function applyMatrixWorld(ctx) {
 					var mtx = this.matrixWorld;
 					ctx.setTransform(mtx[0], mtx[1], mtx[2], mtx[3], mtx[4] + 0.5 | 0, mtx[5] + 0.5 | 0);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			applyMatrix: {
 				value: function applyMatrix(ctx) {
@@ -4087,9 +4066,7 @@
 						var mtx = this.matrix;
 						ctx.transform(mtx[0], mtx[1], mtx[2], mtx[3], mtx[4] + 0.5 | 0, mtx[5] + 0.5 | 0);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -4112,7 +4089,7 @@
 })(function (exports, module) {
 	"use strict";
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -4122,7 +4099,7 @@
 
 	var Component = require("../core/component");
 
-	var Console = (function (Component) {
+	var Console = (function (_Component) {
 		function Console() {
 			_classCallCheck(this, Console);
 
@@ -4136,9 +4113,9 @@
 			this.resolution = 0;
 		}
 
-		_inherits(Console, Component);
+		_inherits(Console, _Component);
 
-		_prototypeProperties(Console, null, {
+		_createClass(Console, {
 			attributes: {
 				get: function () {
 					return {
@@ -4150,8 +4127,7 @@
 						cap: 50,
 						resolution: 0.2
 					};
-				},
-				configurable: true
+				}
 			},
 			create: {
 				value: function create() {
@@ -4237,9 +4213,7 @@
 
 					this.maximized = ! ~(document.cookie || "").indexOf("console_max");
 					this.toggle();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			handleEvent: {
 				value: function handleEvent(evt) {
@@ -4250,9 +4224,7 @@
 					this.lastClick = time;
 					this.toggle();
 					return false;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			toggle: {
 				value: function toggle() {
@@ -4272,9 +4244,7 @@
 					var style = this.graphSpan.style;
 					style.marginTop = margin + "px";
 					style.opacity = opacity;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			free: {
 				value: function free() {
@@ -4282,9 +4252,7 @@
 					this.wrap.removeEventListener("click", this);
 					this.wrap = null;
 					this.container = null;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			onTimeEnd: {
 				value: function onTimeEnd(event) {
@@ -4310,9 +4278,7 @@
 					if (this.dtSum >= this.resolution) {
 						this.renderGraph();
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			renderGraph: {
 				value: function renderGraph() {
@@ -4372,9 +4338,7 @@
 					this.fpsSpan2.textContent = Math.round(fpsSD || 0);
 
 					this.reset();
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			reset: {
 				value: function reset() {
@@ -4389,9 +4353,7 @@
 					this.updateSum = 0;
 					this.renderSum = 0;
 					this.frames = 0;
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -5850,12 +5812,39 @@ velocity.mult(0.999);
 	var TAU = _mathMathf.TAU;
 	var random = _mathRandom.random;
 
+	var freeStack = [];
+	var sweepStack = [];
 	function Vec2(fromOrX, y) {
+		var a = freeStack.pop() || new Float32Array(2);
 		if (y != null) {
-			return new Float32Array([fromOrX, y]);
+			a[0] = fromOrX;
+			a[1] = y;
+		} else if (fromOrX != null) {
+			a[0] = fromOrX[0];
+			a[1] = fromOrX[1];
+		} else {
+			a[0] = 0;
+			a[1] = 0;
 		}
-		return new Float32Array(fromOrX || 2);
+		return a;
 	}
+
+	Vec2.marked = function () {
+		var a = Vec2();
+		sweepStack.push(a);
+		return a;
+	};
+
+	Vec2.sweep = function () {
+		if (sweepStack.length > 0) {
+			freeStack.push.apply(freeStack, sweepStack);
+			sweepStack.length = 0;
+		}
+	};
+
+	Vec2.destroy = function (a) {
+		freeStack.push(a);
+	};
 
 	Vec2.zero = Vec2(0, 0);
 	Vec2.one = Vec2(1, 1);
@@ -6130,11 +6119,6 @@ velocity.mult(0.999);
 		return Vec2.norm(a, result, Vec2.len(a) + random(-delta, delta));
 	};
 
-	var Vec2Property = {};
-	for (var prop in Vec2) {
-		if (typeof prop == "function") {}
-	}
-
 	Vec2.defineProperty = function (cls, name, options) {
 		if (options == null) {
 			options = {};
@@ -6178,7 +6162,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -6204,7 +6188,7 @@ velocity.mult(0.999);
   * @extends Component
   */
 
-	var Body = (function (Component) {
+	var Body = (function (_Component) {
 		function Body() {
 			_classCallCheck(this, Body);
 
@@ -6237,9 +6221,9 @@ velocity.mult(0.999);
 			this._continuousForce = Vec2();
 		}
 
-		_inherits(Body, Component);
+		_inherits(Body, _Component);
 
-		_prototypeProperties(Body, null, {
+		_createClass(Body, {
 			attributes: {
 				get: function () {
 					return {
@@ -6269,8 +6253,7 @@ velocity.mult(0.999);
 						awake: true,
 						allowSleep: true
 					};
-				},
-				configurable: true
+				}
 			},
 			direction: {
 				get: function () {
@@ -6278,8 +6261,7 @@ velocity.mult(0.999);
 				},
 				set: function (rad) {
 					Vec2.rotateTo(this._velocity, rad);
-				},
-				configurable: true
+				}
 			},
 			speed: {
 				get: function () {
@@ -6287,22 +6269,17 @@ velocity.mult(0.999);
 				},
 				set: function (length) {
 					Vec2.norm(this._velocity, null, length);
-				},
-				configurable: true
+				}
 			},
 			applyForce: {
 				value: function applyForce(impulse, ignoreMass, continues) {
 					Vec2.add(continues ? this._continuousForce : this._force, !ignoreMass && this.mass !== 1 ? Vec2.scale(impulse, 1 / (this.mass || 1), cache) : impulse);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			applyTorque: {
 				value: function applyTorque(impulse, ignoreMass, continues) {
 					Vec2.add(continues ? this._continuousForce : this._force, !ignoreMass && this.mass !== 1 ? Vec2.scale(impulse, 1 / (this.mass || 1), cache) : impulse);
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -6330,7 +6307,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -6352,7 +6329,7 @@ velocity.mult(0.999);
   * @constructor
   */
 
-	var Boid = (function (Component) {
+	var Boid = (function (_Component) {
 		function Boid() {
 			_classCallCheck(this, Boid);
 
@@ -6367,17 +6344,16 @@ velocity.mult(0.999);
 			this.imitationMod = 1;
 		}
 
-		_inherits(Boid, Component);
+		_inherits(Boid, _Component);
 
-		_prototypeProperties(Boid, null, {
+		_createClass(Boid, {
 			attributes: {
 				get: function () {
 					return {
 						perception: 0,
 						aura: 0
 					};
-				},
-				configurable: true
+				}
 			},
 			create: {
 				value: function create() {
@@ -6391,9 +6367,7 @@ velocity.mult(0.999);
 					}
 					this.perceptionSq = this.perception * this.perception;
 					this.auraSq = this.aura * this.aura;
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -6500,16 +6474,16 @@ velocity.mult(0.999);
 });
 (function (factory) {
 	if (typeof define === "function" && define.amd) {
-		define(["exports", "../core/component", "../core/registry", "../math/vec2", "../core/context"], factory);
+		define(["exports", "../core/component", "../core/registry", "../math/vec2", "../core/context", "../core/event"], factory);
 	} else if (typeof exports !== "undefined") {
-		factory(exports, require("../core/component"), require("../core/registry"), require("../math/vec2"), require("../core/context"));
+		factory(exports, require("../core/component"), require("../core/registry"), require("../math/vec2"), require("../core/context"), require("../core/event"));
 	}
-})(function (exports, _coreComponent, _coreRegistry, _mathVec2, _coreContext) {
+})(function (exports, _coreComponent, _coreRegistry, _mathVec2, _coreContext, _coreEvent) {
 	"use strict";
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -6523,6 +6497,25 @@ velocity.mult(0.999);
 
 	var Context = _interopRequire(_coreContext);
 
+	var Event = _interopRequire(_coreEvent);
+
+	var BorderEvent = (function (_Event) {
+		function BorderEvent() {
+			_classCallCheck(this, BorderEvent);
+
+			Event.call(this);
+			this.cancelable = true;
+			this.diff = 0;
+			this.contact = 0;
+		}
+
+		_inherits(BorderEvent, _Event);
+
+		return BorderEvent;
+	})(Event);
+
+	Event.register(BorderEvent, "border");
+
 	var position = Vec2();
 	var velocity = Vec2();
 
@@ -6535,7 +6528,7 @@ velocity.mult(0.999);
   * @fires Border#onBorder
   */
 
-	var Border = (function (Component) {
+	var Border = (function (_Component) {
 		function Border() {
 			_classCallCheck(this, Border);
 
@@ -6544,17 +6537,16 @@ velocity.mult(0.999);
 			this.restitution = 0;
 		}
 
-		_inherits(Border, Component);
+		_inherits(Border, _Component);
 
-		_prototypeProperties(Border, null, {
+		_createClass(Border, {
 			attributes: {
 				get: function () {
 					return {
 						mode: "bounce",
 						restitution: 1
 					};
-				},
-				configurable: true
+				}
 			},
 			simulate: {
 				value: function simulate(dt) {
@@ -6575,12 +6567,12 @@ velocity.mult(0.999);
 					var transform = entity.components.transform;
 					transform.copyPosition(position);
 					var bounds = entity.components.bounds;
-					var contact = true;
+					var contact = -1;
 
 					// Horizontal
 					var diff = (bounce ? bounds.left : bounds.right) - topLeft[0];
 					if (diff <= 0) {
-						contact = true;
+						contact = 3;
 						if (mirror) {
 							position[0] = bottomRight[0] + bounds.width;
 						} else {
@@ -6592,7 +6584,7 @@ velocity.mult(0.999);
 					} else {
 						diff = (bounce ? bounds.right : bounds.left) - bottomRight[0];
 						if (diff >= 0) {
-							contact = true;
+							contact = 1;
 							if (mirror) {
 								position[0] = topLeft[0] - bounds.width;
 							} else {
@@ -6605,7 +6597,7 @@ velocity.mult(0.999);
 							// Vertical
 							diff = (bounce ? bounds.top : bounds.bottom) - topLeft[1];
 							if (diff <= 0) {
-								contact = true;
+								contact = 0;
 								if (mirror) {
 									position[1] = bottomRight[1] + bounds.height;
 								} else {
@@ -6617,7 +6609,7 @@ velocity.mult(0.999);
 							} else {
 								diff = (bounce ? bounds.bottom : bounds.top) - bottomRight[1];
 								if (diff >= 0) {
-									contact = true;
+									contact = 2;
 									if (mirror) {
 										position[1] = topLeft[1] - bounds.height;
 									} else {
@@ -6632,25 +6624,24 @@ velocity.mult(0.999);
 					}
 
 					// We contact
-					if (!contact) {
+					if (contact < 0) {
+						return;
+					}
+					var event = Event.create("border");
+					event.contact = contact;
+					event.diff = diff;
+					if (!this.emit(event)) {
+						return;
+					}
+					if (this.mode == "kill") {
+						entity.destroy();
 						return;
 					}
 					transform.translateTo(position);
 					if (bounce && body != null) {
 						body.velocity = velocity;
 					}
-					/**
-      * Fired on contact
-      * @event Border#onBorder
-      * @param {Number[]} contact Contact point
-      */
-					entity.emit("onBorder");
-					if (this.mode == "kill") {
-						entity.destroy();
-					}
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -6670,7 +6661,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -6682,7 +6673,7 @@ velocity.mult(0.999);
 
 	var Vec2 = _interopRequire(_mathVec2);
 
-	var TriggerEvent = (function (Event) {
+	var TriggerEvent = (function (_Event) {
 		function TriggerEvent() {
 			_classCallCheck(this, TriggerEvent);
 
@@ -6692,7 +6683,7 @@ velocity.mult(0.999);
 			this._normal = Vec2();
 		}
 
-		_inherits(TriggerEvent, Event);
+		_inherits(TriggerEvent, _Event);
 
 		return TriggerEvent;
 	})(Event);
@@ -6700,7 +6691,7 @@ velocity.mult(0.999);
 	Vec2.defineProperty(TriggerEvent, "normal");
 	Event.register(TriggerEvent, "trigger");
 
-	var CollideEvent = (function (Event) {
+	var CollideEvent = (function (_Event2) {
 		function CollideEvent() {
 			_classCallCheck(this, CollideEvent);
 
@@ -6709,7 +6700,7 @@ velocity.mult(0.999);
 			this._normal = Vec2();
 		}
 
-		_inherits(CollideEvent, Event);
+		_inherits(CollideEvent, _Event2);
 
 		return CollideEvent;
 	})(Event);
@@ -6729,7 +6720,7 @@ velocity.mult(0.999);
   * @extends Component
   */
 
-	var Collider = (function (Component) {
+	var Collider = (function (_Component) {
 		function Collider() {
 			_classCallCheck(this, Collider);
 
@@ -6739,9 +6730,9 @@ velocity.mult(0.999);
 			this.exclude = "";
 		}
 
-		_inherits(Collider, Component);
+		_inherits(Collider, _Component);
 
-		_prototypeProperties(Collider, null, {
+		_createClass(Collider, {
 			attributes: {
 				get: function () {
 					return {
@@ -6749,8 +6740,7 @@ velocity.mult(0.999);
 						include: "",
 						exclude: ""
 					};
-				},
-				configurable: true
+				}
 			}
 		});
 
@@ -6813,13 +6803,13 @@ velocity.mult(0.999);
 					var triggerEvent = Event.create("trigger");
 					triggerEvent.normal = p;
 					triggerEvent.overlap = overlap;
-					triggerEvent.entity = entity2;
+					triggerEvent.other = entity2;
 					entity1.emit(triggerEvent);
 
 					triggerEvent = Event.create("trigger");
 					triggerEvent.normal = p;
 					triggerEvent.overlap = overlap;
-					triggerEvent.entity = entity1;
+					triggerEvent.other = entity1;
 					entity2.emit(triggerEvent);
 					continue;
 				}
@@ -6876,7 +6866,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -6890,7 +6880,7 @@ velocity.mult(0.999);
 
 	var force = Vec2();
 
-	var Jitter = (function (Component) {
+	var Jitter = (function (_Component) {
 		function Jitter() {
 			_classCallCheck(this, Jitter);
 
@@ -6899,17 +6889,16 @@ velocity.mult(0.999);
 			this.force = 0;
 		}
 
-		_inherits(Jitter, Component);
+		_inherits(Jitter, _Component);
 
-		_prototypeProperties(Jitter, null, {
+		_createClass(Jitter, {
 			attributes: {
 				get: function () {
 					return {
 						factor: 0.1,
 						force: 250
 					};
-				},
-				configurable: true
+				}
 			},
 			fixedUpdate: {
 				value: function fixedUpdate(dt) {
@@ -6917,9 +6906,7 @@ velocity.mult(0.999);
 						Vec2.variant(Vec2.zero, this.force, force);
 						this.components.body.applyForce(force);
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -6939,7 +6926,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -6967,7 +6954,7 @@ velocity.mult(0.999);
 	var SpriteAsset = _coreSprite.SpriteAsset;
 	var SpriteSheet = _coreSprite.SpriteSheet;
 
-	var Particle = (function (Component) {
+	var Particle = (function (_Component) {
 		function Particle() {
 			_classCallCheck(this, Particle);
 
@@ -6982,9 +6969,68 @@ velocity.mult(0.999);
 			this.age = 0;
 		}
 
-		_inherits(Particle, Component);
+		_inherits(Particle, _Component);
 
-		_prototypeProperties(Particle, {
+		_createClass(Particle, {
+			attributes: {
+				get: function () {
+					return {
+						lifetime: 1,
+						lifetimeVariant: 1,
+						radius: 1,
+						radiusVariant: 0,
+						alphaVariant: 0,
+						shrink: Tweens.quintIn,
+						fade: Tweens.quintIn
+					};
+				}
+			},
+			create: {
+				value: function create(attributes) {
+					var variant = this.lifetimeVariant;
+					if (variant > 0) {
+						this.lifetime += random(-variant, variant);
+					}
+					variant = this.radiusVariant;
+					if (variant > 0) {
+						this.radius += random(-variant, variant);
+					}
+					variant = this.alphaVariant;
+					if (variant > 0) {
+						var transform = this.components.transform;
+						transform.alpha = clamp(transform.alpha + random(-variant, variant), 0, 1);
+					}
+					this.age = 0;
+				}
+			},
+			update: {
+				value: function update(dt) {
+					this.age += dt;
+					var age = this.age;
+					var lifetime = this.lifetime;
+					if (age > lifetime) {
+						this.entity.destroy();
+						return;
+					}
+					if (this.shrink) {
+						this.radius *= 1 - this.shrink(age / lifetime);
+						if (this.radius < 1) {
+							this.entity.destroy();
+							return;
+						}
+					}
+					if (this.fade) {
+						var transform = this.components.transform;
+						transform.alpha *= 1 - this.fade(age / lifetime);
+						if (transform.alpha <= 0.02) {
+							this.entity.destroy();
+							return;
+						}
+					}
+					this.components.spriteTween.frame = this.radius - 1 | 0;
+				}
+			}
+		}, {
 			generateSpriteAsset: {
 				value: function generateSpriteAsset(attributes) {
 					attributes = attributes || {};
@@ -7024,9 +7070,7 @@ velocity.mult(0.999);
 							}
 						}
 					}, Vec2(size, size * max));
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			generateSpriteSheet: {
 				value: function generateSpriteSheet(attributes) {
@@ -7037,73 +7081,7 @@ velocity.mult(0.999);
 						size: Vec2(size, size),
 						sprites: sprite
 					});
-				},
-				writable: true,
-				configurable: true
-			}
-		}, {
-			attributes: {
-				get: function () {
-					return {
-						lifetime: 1,
-						lifetimeVariant: 1,
-						radius: 1,
-						radiusVariant: 0,
-						alphaVariant: 0,
-						shrink: Tweens.quintIn,
-						fade: Tweens.quintIn
-					};
-				},
-				configurable: true
-			},
-			create: {
-				value: function create(attributes) {
-					var variant = this.lifetimeVariant;
-					if (variant > 0) {
-						this.lifetime += random(-variant, variant);
-					}
-					variant = this.radiusVariant;
-					if (variant > 0) {
-						this.radius += random(-variant, variant);
-					}
-					variant = this.alphaVariant;
-					if (variant > 0) {
-						var transform = this.components.transform;
-						transform.alpha = clamp(transform.alpha + random(-variant, variant), 0, 1);
-					}
-					this.age = 0;
-				},
-				writable: true,
-				configurable: true
-			},
-			update: {
-				value: function update(dt) {
-					this.age += dt;
-					var age = this.age;
-					var lifetime = this.lifetime;
-					if (age > lifetime) {
-						this.entity.destroy();
-						return;
-					}
-					if (this.shrink) {
-						this.radius *= 1 - this.shrink(age / lifetime);
-						if (this.radius < 1) {
-							this.entity.destroy();
-							return;
-						}
-					}
-					if (this.fade) {
-						var transform = this.components.transform;
-						transform.alpha *= 1 - this.fade(age / lifetime);
-						if (transform.alpha <= 0.02) {
-							this.entity.destroy();
-							return;
-						}
-					}
-					this.components.spriteTween.frame = this.radius - 1 | 0;
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -7139,7 +7117,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -7159,23 +7137,22 @@ velocity.mult(0.999);
 	var forceCache = Vec2();
 	var cache = Vec2();
 
-	var Physics = (function (Component) {
+	var Physics = (function (_Component) {
 		function Physics() {
 			_classCallCheck(this, Physics);
 
 			this._gravity = Vec2();
 		}
 
-		_inherits(Physics, Component);
+		_inherits(Physics, _Component);
 
-		_prototypeProperties(Physics, null, {
+		_createClass(Physics, {
 			attributes: {
 				get: function () {
 					return {
 						gravity: Vec2()
 					};
-				},
-				configurable: true
+				}
 			},
 			simulate: {
 
@@ -7265,9 +7242,7 @@ velocity.mult(0.999);
 						body.force = Vec2.zero;
 						body.velocity = velocity;
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -7287,7 +7262,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -7299,7 +7274,7 @@ velocity.mult(0.999);
 
 	var Vec2 = _interopRequire(_mathVec2);
 
-	var Box2dBody = exports.Box2dBody = (function (Component) {
+	var Box2dBody = exports.Box2dBody = (function (_Component) {
 		function Box2dBody() {
 			_classCallCheck(this, Box2dBody);
 
@@ -7310,13 +7285,13 @@ velocity.mult(0.999);
 			this.world = null;
 		}
 
-		_inherits(Box2dBody, Component);
+		_inherits(Box2dBody, _Component);
 
-		_prototypeProperties(Box2dBody, null, {
+		_createClass(Box2dBody, {
 			create: {
 				value: function create() {
 					var $body = this.components.body;
-					this.world = Context.$b2System.world;
+					this.world = Context.components.b2System.world;
 
 					var definition = this.definition;
 					var fixture = this.fixture;
@@ -7364,16 +7339,12 @@ velocity.mult(0.999);
 
 					body.SetActive(1);
 					this.body = body;
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			free: {
 				value: function free() {
 					this.world.DestroyBody(this.body);
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -7382,53 +7353,44 @@ velocity.mult(0.999);
 
 	Component.create(Box2dBody, "box2dBody");
 
-	var Box2dSystem = exports.Box2dSystem = (function (Component) {
+	var Box2dSystem = exports.Box2dSystem = (function (_Component2) {
 		function Box2dSystem() {
 			_classCallCheck(this, Box2dSystem);
 
 			this._gravity = Vec2();
 		}
 
-		_inherits(Box2dSystem, Component);
+		_inherits(Box2dSystem, _Component2);
 
-		_prototypeProperties(Box2dSystem, null, {
+		_createClass(Box2dSystem, {
 			attributes: {
 				get: function () {
 					return {
 						gravity: Vec2()
 					};
-				},
-				configurable: true
+				}
 			},
 			create: {
 				value: function create() {
 					var gravity = new b2Vec2(this._gravity[0], this._gravity[1]);
 					this.world = new b2World(gravity);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			onBodyCreate: {
 				value: function onBodyCreate(event) {
 					event.entity.createComponent("box2dBody");
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			onBodyDestroy: {
 				value: function onBodyDestroy(event) {
-					event.entity.$box2dBody.destroy();
-				},
-				writable: true,
-				configurable: true
+					event.entity.components.box2dBody.destroy();
+				}
 			},
 			applyContinuesForce: {
 				value: function applyContinuesForce(impulse) {
 					box2dCache.Set(impulse[0], impulse[1]);
 					this.body.ApplyLinearImpulse(box2dCache, this.body.GetWorldCenter());
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			fixedUpdate: {
 				value: function fixedUpdate() {
@@ -7450,9 +7412,7 @@ velocity.mult(0.999);
 							}
 						}
 					}
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -7686,7 +7646,7 @@ velocity.mult(0.999);
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
@@ -7700,7 +7660,7 @@ velocity.mult(0.999);
 
 	var Color = _interopRequire(_mathColor);
 
-	var PixiSprite = exports.PixiSprite = (function (Component) {
+	var PixiSprite = exports.PixiSprite = (function (_Component) {
 		function PixiSprite() {
 			_classCallCheck(this, PixiSprite);
 
@@ -7709,22 +7669,18 @@ velocity.mult(0.999);
 			this.sprite = new PIXI.Sprite();
 		}
 
-		_inherits(PixiSprite, Component);
+		_inherits(PixiSprite, _Component);
 
-		_prototypeProperties(PixiSprite, null, {
+		_createClass(PixiSprite, {
 			create: {
 				value: function create() {
-					this.container = Context.$pixiSpriteSystem.camera;
-				},
-				writable: true,
-				configurable: true
+					this.container = Context.components.pixiSpriteSystem.camera;
+				}
 			},
 			free: {
 				value: function free() {
 					this.container.removeChild(this.sprite);
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 
@@ -7733,18 +7689,18 @@ velocity.mult(0.999);
 
 	Component.create(PixiSprite, "pixiSprite");
 
-	var PixiSpriteSystem = exports.PixiSpriteSystem = (function (Component) {
+	var PixiSpriteSystem = exports.PixiSpriteSystem = (function (_Component2) {
 		function PixiSpriteSystem() {
 			_classCallCheck(this, PixiSpriteSystem);
 
-			if (Component != null) {
-				Component.apply(this, arguments);
+			if (_Component2 != null) {
+				_Component2.apply(this, arguments);
 			}
 		}
 
-		_inherits(PixiSpriteSystem, Component);
+		_inherits(PixiSpriteSystem, _Component2);
 
-		_prototypeProperties(PixiSpriteSystem, null, {
+		_createClass(PixiSpriteSystem, {
 			create: {
 				value: function create() {
 					PIXI.dontSayHello = true;
@@ -7757,23 +7713,17 @@ velocity.mult(0.999);
 						resolution: renderer.ratio
 					});
 					this.renderer.resize(renderer.content[0], renderer.content[1]);
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			onSpriteTweenCreate: {
 				value: function onSpriteTweenCreate(event) {
 					event.entity.createComponent("pixiSprite");
-				},
-				writable: true,
-				configurable: true
+				}
 			},
 			onSpriteTweenDestroy: {
 				value: function onSpriteTweenDestroy(event) {
-					event.entity.$pixiSprite.destroy();
-				},
-				writable: true,
-				configurable: true
+					event.entity.components.pixiSprite.destroy();
+				}
 			},
 			render: {
 				value: function render() {
@@ -7784,7 +7734,7 @@ velocity.mult(0.999);
 						if (!pixiSprite.enabled) {
 							continue;
 						}
-						var tween = pixiSprite.$spriteTween;
+						var tween = pixiSprite.components.spriteTween;
 						var sprite = pixiSprite.sprite;
 						if (tween != null) {
 							if (!tween.enabled) {
@@ -7826,7 +7776,7 @@ velocity.mult(0.999);
 							this.camera.addChild(sprite);
 							added = true;
 						}
-						var transform = pixiSprite.$transform;
+						var transform = pixiSprite.components.transform;
 						Vec2.toObj(transform.position, sprite.position);
 						sprite.rotation = transform.rotation;
 						sprite.alpha = transform.alpha;
@@ -7837,9 +7787,7 @@ velocity.mult(0.999);
 					// }
 					Vec2.toObj(this.renderer.projection, Context.renderer.position);
 					this.renderer.render(this.stage);
-				},
-				writable: true,
-				configurable: true
+				}
 			}
 		});
 

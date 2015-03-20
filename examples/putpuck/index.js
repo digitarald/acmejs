@@ -31,6 +31,7 @@ Context.renderer = new Renderer(
 Context.renderer.color = Color.white;
 Context.renderer.noContext = true;
 Context.createComponent('pixiSpriteSystem');
+Context.createComponent('physics');
 
 var Config = {
 	colors: [{
@@ -48,7 +49,7 @@ Config.colors.forEach(function(entry) {
 	}, Vec2(320, 160));
 	entry.puckAsset = new SpriteAsset(function(ctx) {
 		Config.sizes.forEach(function(radius, i) {
-			let top = 30 + i * 30 * 2;
+			var top = 30 + i * 30 * 2;
 			ctx.fillStyle = Color.rgba(entry.mid);
 			ctx.strokeStyle = Color.rgba(entry.mid, 0.3);
 
@@ -292,12 +293,12 @@ Puck.prototype = {
 	},
 
 	onBodySleep: function() {
-		var tween = this.$spriteTween;
+		let tween = this.components.spriteTween;
 		tween.goto(tween.frame + 1);
 	},
 
 	onBodyWake: function() {
-		var tween = this.$spriteTween;
+		let tween = this.components.spriteTween;
 		tween.goto(tween.frame - 1);
 	},
 
@@ -353,7 +354,7 @@ Field.prototype = {
 	rootOnBodySleep: function(event) {
 		var body = event.component;
 		var transform = body.components.transform;
-		if (!this.$bounds.contains(transform.position)) {
+		if (!this.components.bounds.contains(transform.position)) {
 			return;
 		}
 		body.entity.destroy();
