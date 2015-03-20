@@ -5812,53 +5812,55 @@ velocity.mult(0.999);
 	var TAU = _mathMathf.TAU;
 	var random = _mathRandom.random;
 
-	var freeStack = [];
-	var sweepStack = [];
 	function Vec2(fromOrX, y) {
-		var a = freeStack.pop() || new Float32Array(2);
+		var a = new Float32Array(2);
 		if (y != null) {
 			a[0] = fromOrX;
 			a[1] = y;
 		} else if (fromOrX != null) {
 			a[0] = fromOrX[0];
 			a[1] = fromOrX[1];
-		} else {
-			a[0] = 0;
-			a[1] = 0;
 		}
 		return a;
 	}
 
-	Vec2.marked = function () {
-		var a = Vec2();
-		sweepStack.push(a);
-		return a;
-	};
-
-	Vec2.sweep = function () {
-		if (sweepStack.length > 0) {
-			freeStack.push.apply(freeStack, sweepStack);
-			sweepStack.length = 0;
-		}
-	};
-
-	Vec2.destroy = function (a) {
-		freeStack.push(a);
-	};
-
-	Vec2.zero = Vec2(0, 0);
-	Vec2.one = Vec2(1, 1);
-	Vec2.center = Vec2(0.5, 0.5);
-	Vec2.topLeft = Vec2(0, 0);
-	Vec2.topCenter = Vec2(0.5, 0);
-	Vec2.topRight = Vec2(1, 0);
-	Vec2.centerLeft = Vec2(0, 0.5);
-	Vec2.centerRight = Vec2(1, 0.5);
-	Vec2.bottomLeft = Vec2(1, 1);
-	Vec2.bottomCenter = Vec2(0.5, 1);
-	Vec2.bottomRight = Vec2(0.5, 0.5);
-
-	/**
+	/*
+ let freeStack = [];
+ let sweepStack = [];
+ 
+ freeStack.pop()
+ 
+ Vec2.marked = function() {
+ 	let a = Vec2()
+ 	sweepStack.push(a);
+ 	return a;
+ };
+ 
+ Vec2.sweep = function() {
+ 	if (sweepStack.length > 0) {
+ 		freeStack.push.apply(freeStack, sweepStack);
+ 		sweepStack.length = 0;
+ 	}
+ };
+ 
+ Vec2.destroy = function(a) {
+ 	freeStack.push(a);
+ };
+ /*
+ 
+ Vec2.zero = Vec2(0, 0);
+ Vec2.one = Vec2(1, 1);
+ Vec2.center = Vec2(0.5, 0.5);
+ Vec2.topLeft = Vec2(0, 0);
+ Vec2.topCenter = Vec2(0.5, 0);
+ Vec2.topRight = Vec2(1, 0);
+ Vec2.centerLeft = Vec2(0, 0.5);
+ Vec2.centerRight = Vec2(1, 0.5);
+ Vec2.bottomLeft = Vec2(1, 1);
+ Vec2.bottomCenter = Vec2(0.5, 1);
+ Vec2.bottomRight = Vec2(0.5, 0.5);
+ 
+ /**
   * Set vector from x and y value
   * @param {Vec2} result Vec2 to mutate
   * @param {Number} [x=0]
