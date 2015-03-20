@@ -1147,7 +1147,6 @@
 						}
 
 						Registry.free();
-						Vec2.sweep();
 
 						// Invoke postUpdate
 						var postUpdates = Registry.methods.postUpdate;
